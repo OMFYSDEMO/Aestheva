@@ -1,0 +1,20 @@
+// Business facts shown on the site. Blank values render as "to be added" and must be filled before launch:
+// Razorpay's website review expects contact details and policy pages that name the legal entity.
+export const COMPANY = {
+  brand: "Aestheva",
+  legalName: "Haswel Care Private Limited",
+  supportEmail: "",
+  supportPhone: "",
+  registeredAddress: "",
+  launchCity: "Thiruvananthapuram",
+} as const;
+
+export const POLICY = {
+  freeCancelHours: 24,     // full deposit refund when cancelled at least this long before the start
+  holdMinutes: 15,         // an unpaid slot is held this long while the client pays
+  leadMinutes: 60,         // earliest bookable start is this far from now
+  windowDays: 60,          // how far ahead clients can book
+  commissionBp: 1000,      // 10% of the full price on completed marketplace bookings
+} as const;
+
+export const AREAS = ["Kazhakkoottam", "Kowdiar", "Pattom", "Vellayambalam"] as const;

@@ -2,12 +2,29 @@
   "name": "aestheva",
   "version": "0.1.0",
   "private": true,
-  "description": "Aestheva: aesthetic & wellness marketplace by Haswel Care Private Limited",
+  "description": "Aestheva: aesthetic & wellness marketplace by Haswel Care Private Limited. Cloudflare Workers + D1.",
   "type": "module",
-  "engines": { "node": ">=18" },
+  "engines": { "node": ">=20" },
   "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --env production",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "db:migrate:local": "wrangler d1 migrations apply aestheva --local",
+    "db:migrate:remote": "wrangler d1 migrations apply aestheva --remote --env production",
+    "db:seed:local": "node scripts/build-dev-seed.mjs && wrangler d1 execute aestheva --local --file=seed/dev-sample.sql",
     "data:sample": "node scripts/generate-sample-bookings.mjs",
     "build:dashboard": "node scripts/build-dashboard.mjs",
     "dashboard": "npm run data:sample && npm run build:dashboard"
+  },
+  "dependencies": {
+    "hono": "^4.13.13"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.4.5",
+    "@cloudflare/workers-types": "^5.20261019.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.12",
+    "wrangler": "^4.151.2"
   }
 }
