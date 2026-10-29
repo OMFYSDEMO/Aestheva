@@ -153,7 +153,7 @@ site.post("/for-practitioners/apply", async (c) => {
   return page(c, { ...applyMeta(c), noindex: true }, applyThanksPage(ref, r.value.contact_name));
 });
 
-site.get("/robots.txt", (c) => c.text(c.env.APP_ENV === "production" ? `User-agent: *\nAllow: /\nDisallow: /book/\nDisallow: /booking/\nDisallow: /ops/\nSitemap: ${base(c)}/sitemap.xml\n` : "User-agent: *\nDisallow: /\n"));
+site.get("/robots.txt", (c) => c.text(c.env.APP_ENV === "production" ? `User-agent: *\nAllow: /\nDisallow: /book/\nDisallow: /booking/\nDisallow: /ops/\nDisallow: /clinic/\nSitemap: ${base(c)}/sitemap.xml\n` : "User-agent: *\nDisallow: /\n"));
 site.get("/sitemap.xml", async (c) => {
   const ps = await liveProviders(c.env.DB), b = base(c);
   const urls = ["/", "/search", "/about", "/for-practitioners", "/for-practitioners/apply", "/policies/cancellation", "/contact", ...ps.map((p) => `/p/${p.slug}`)];
