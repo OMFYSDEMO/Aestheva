@@ -94,6 +94,7 @@ async function invite(c: C, u: ClinicUser, what: string): Promise<Issued> {
   const venue = (await c.env.DB.prepare("SELECT name FROM providers WHERE id = ?").bind(u.provider_id).first<{ name: string }>())?.name ?? "your clinic";
   const link = `${c.env.SITE_URL || new URL(c.req.url).origin}/clinic/set-password?t=${await issuePasswordLink(c.env.DB, u.id, "invite", "ops")}`;
   const r = await emailPasswordLink(c.env, u, venue, link, "invite");
+  await audit(c.env.DB, "ops", r.ok ? "clinic_user.invite_emailed" : "clinic_user.invite_email_failed", "provider_user", u.id, r.ok ? { to: u.email } : { to: u.email, code: r.code }).run();
   return r.ok ? { email: u.email, sent: true, what } : { email: u.email, sent: false, code: r.code, link, what };
 }
 ops.post("/clinics/:id/active", async (c) => {
