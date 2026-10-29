@@ -61,6 +61,7 @@ const ICONS: Record<string, string> = {
   hand:'<path d="M8 13V6.5a1.5 1.5 0 0 1 3 0V12M11 11V5a1.5 1.5 0 0 1 3 0v6M14 11V6.5a1.5 1.5 0 0 1 3 0V14c0 4-2.5 7-6 7-2.6 0-4.2-1.4-5.5-3.6L4 14.5a1.4 1.4 0 0 1 2.3-1.6L8 15"/>',
   body:'<circle cx="12" cy="5" r="2"/><path d="M12 7.5V14M7.5 10.5 12 8.5l4.5 2M9 21l3-7 3 7"/>',
   brush:'<path d="M14.5 3.5 20.5 9.5 12 18H6v-6z"/><path d="M6 18l-2.5 2.5M11 7l6 6"/>',
+  needle:'<path d="M17 3l4 4-9.5 9.5-4-4z"/><path d="M7.5 12.5 4 20l7.5-3.5M14.5 5.5l4 4"/>',
   phone:'<path d="M5 4h3.5l2 5-2.4 1.5a11 11 0 0 0 4.9 4.9L14.5 13l5 2v3.5a1.5 1.5 0 0 1-1.5 1.5A15.5 15.5 0 0 1 3.5 5.5 1.5 1.5 0 0 1 5 4z"/>',
   mail:'<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 6.5 8.5 7 8.5-7"/>',
   arrowR:'<path d="M5 12h14M13 6l6 6-6 6"/>', nav:'<path d="M3.5 11 20.5 3.5 13 20.5l-2-7.5z"/>',
@@ -81,9 +82,10 @@ export const CAT_META: Record<string, { icon: string; line: string }> = {
   medaes: { icon: "sparkle", line: "Doctor-led treatments, from laser hair reduction to mesotherapy." },
   hair: { icon: "comb", line: "Hair-fall and scalp care, starting with the cause." },
   ayur: { icon: "leaf", line: "Abhyanga, Shirodhara and Kerala's own therapies." },
-  nails: { icon: "hand", line: "Manicures, lashes and brows by certified professionals." },
+  nails: { icon: "hand", line: "Manicures, nail art, lashes and brows." },
   body: { icon: "body", line: "Physiotherapy and body care for everyday aches." },
-  groom: { icon: "brush", line: "Grooming, makeup and occasion styling." },
+  groom: { icon: "brush", line: "Bridal and party makeup, styling and grooming." },
+  tattoo: { icon: "needle", line: "Custom tattoos, cover-ups and piercing, with clean single-use kit." },
 };
 export const catIcon = (id: string, s = 20) => ic(CAT_META[id]?.icon ?? "sparkle", s);
 

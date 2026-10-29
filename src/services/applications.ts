@@ -3,7 +3,7 @@ import type { Env } from "../env";
 import { HttpError, audit, newId, newRef, sha256Hex } from "../db";
 import { normalisePhone } from "./bookings";
 
-export const ROLES = ["Owner", "Manager", "Practitioner", "Other"] as const;
+export const ROLES = ["Owner", "Manager", "Practitioner", "Independent professional", "Other"] as const;
 export const APP_STATUSES = ["new", "reviewing", "approved", "declined"] as const;
 export type AppStatus = (typeof APP_STATUSES)[number];
 

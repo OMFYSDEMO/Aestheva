@@ -19,7 +19,7 @@ const FONTS = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,
 export function layout(o: PageOpts, body: string): string {
   const ribbon = o.appEnv === "production" ? "" :
     `<div class="ribbon"><span><b>${o.appEnv === "test" ? "Test" : "Development"} build</b> · not the live site · payments are simulated or in test mode</span></div>`;
-  const desc = o.description ?? `Book verified doctors and clinics for skin, hair and dental care in ${COMPANY.launchCity}.`;
+  const desc = o.description ?? `Book salons, clinics, studios and independent professionals for beauty, wellness and care in ${COMPANY.launchCity}.`;
   const navLink = (href: string, key: PageOpts["nav"], icon: string, label: string) =>
     `<a href="${href}" class="${o.nav === key ? "on" : ""}"${o.nav === key ? ' aria-current="page"' : ""}>${ic(icon, 17)} <span class="lbl">${label}</span></a>`;
   return `<!doctype html>
@@ -53,20 +53,20 @@ ${ribbon}
   ${o.app ? `<div class="topnav">${o.app.right ?? ""}</div>` : `<nav class="topnav" aria-label="Main">
     ${navLink("/search", "explore", "search", "Explore")}
     ${navLink("/about", "story", "leaf", "Our story")}
-    ${navLink("/for-practitioners", "practitioners", "users", "For practitioners")}
+    ${navLink("/for-practitioners", "practitioners", "users", "List your business")}
   </nav>`}
 </div></header>
 <main id="main">
 ${body}
 </main>
-${o.app ? `<footer class="footer app-foot"><p>Aestheva for clinics · Help: <a href="mailto:${esc(COMPANY.supportEmail)}">${esc(COMPANY.supportEmail)}</a></p></footer>` : `<footer class="footer"><div class="footer-in">
+${o.app ? `<footer class="footer app-foot"><p>Aestheva for business · Help: <a href="mailto:${esc(COMPANY.supportEmail)}">${esc(COMPANY.supportEmail)}</a></p></footer>` : `<footer class="footer"><div class="footer-in">
   <div class="footer-brand">
     <div class="serif" style="font-size:24px;letter-spacing:.22em;color:var(--mulberry);font-weight:600">AESTHEVA</div>
-    <p class="mt12">Skin, hair and dental care in ${esc(COMPANY.launchCity)}, booked with the price, the practitioner and the time settled before you arrive.</p>
+    <p class="mt12">Beauty, wellness and care in ${esc(COMPANY.launchCity)}, booked with the price, the person and the time settled before you arrive.</p>
     <p class="mt12 xs">Made in Kazhakkoottam. Kochi, Kozhikode and Thrissur next.</p>
   </div>
-  <nav aria-label="Explore"><h2>Explore</h2><a href="/search">All treatments</a><a href="/search?cat=dental">Smile &amp; dental</a><a href="/search?cat=skin">Skin</a><a href="/search?cat=hair">Hair &amp; scalp</a></nav>
-  <nav aria-label="Aestheva"><h2>Aestheva</h2><a href="/about">Our story</a><a href="/for-practitioners">For practitioners</a><a href="/for-practitioners/apply">Apply to join</a><a href="/contact">Contact</a></nav>
+  <nav aria-label="Explore"><h2>Explore</h2><a href="/search">All services</a><a href="/search?cat=skin">Skin &amp; facials</a><a href="/search?cat=nails">Nails, lashes &amp; brows</a><a href="/search?cat=groom">Makeup &amp; grooming</a><a href="/search?cat=dental">Smile &amp; dental</a></nav>
+  <nav aria-label="Aestheva"><h2>Aestheva</h2><a href="/about">Our story</a><a href="/for-practitioners">List your business</a><a href="/for-practitioners/apply">Apply to join</a><a href="/contact">Contact</a></nav>
   <nav aria-label="Policies"><h2>Policies</h2><a href="/policies/cancellation">Cancellation &amp; refunds</a><a href="/policies/terms">Terms of use</a><a href="/policies/privacy">Privacy</a></nav>
 </div>
 <div class="footer-base">

@@ -9,7 +9,7 @@ describe("public pages", () => {
   it("renders the home page with categories and featured venues", async () => {
     const r = await req("GET", "/");
     expect(r.status).toBe(200);
-    expect(r.text).toContain("Book skin, dental and hair care <em>near you</em> in Trivandrum.");
+    expect(r.text).toContain("Book beauty, wellness and care <em>near you</em> in Trivandrum.");
     expect(r.text).toContain('href="/p/lumiere-skin-and-laser-clinic"');
     expect(r.text).toContain("Haswel Care Private Limited");
     expect(r.text).toContain("Thiruvananthapuram (Trivandrum) · Now booking");
@@ -37,6 +37,18 @@ describe("public pages", () => {
     const chips = [...r.text.matchAll(/class="chip" href="\/search\?q=([^"]+)"/g)].map((m) => decodeURIComponent(m[1]));
     expect(chips.length).toBeGreaterThan(0);
     for (const q of chips) expect((await req("GET", `/search?q=${encodeURIComponent(q)}`)).text).not.toContain("No matches yet");
+  });
+
+  it("welcomes independent professionals as well as salons and clinics", async () => {
+    const join = await req("GET", "/for-practitioners");
+    for (const w of ["beauticians, nail artists, makeup and bridal artists, tattoo and piercing artists", "Working on your own is fine", "Listing is free"]) expect(join.text).toContain(w);
+    const apply = await req("GET", "/for-practitioners/apply");
+    expect(apply.text).toContain('<option value="Independent practitioner" >Independent professional: beautician, nail, makeup or tattoo artist, therapist…</option>');
+    expect(apply.text).toContain("Tattoo &amp; piercing");
+    expect((await sql("SELECT name FROM categories WHERE id = 'tattoo'"))[0].name).toBe("Tattoo & piercing");
+    const home = await req("GET", "/");
+    expect(home.text).toContain("List your business");
+    expect(home.text).not.toMatch(/For practitioners|Clinics you can book/);
   });
 
   it("understands everyday words for treatments", async () => {
@@ -84,7 +96,7 @@ describe("public pages", () => {
     try {
       const venue = await req("GET", "/p/saanvi-ayur-wellness");
       expect(venue.text).toContain("Nothing to pay online");
-      expect(venue.text).toContain("Pay at the clinic after your visit");
+      expect(venue.text).toContain("Pay on the day, after your appointment");
       expect(venue.text).not.toContain("deposit at booking");
       const book = await req("GET", "/book/saanvi-ayur-wellness");
       expect(book.text).not.toContain("Payments are in test mode");

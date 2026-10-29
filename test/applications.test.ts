@@ -30,7 +30,7 @@ describe("online applications", () => {
   it("shows the form and links to it from the practitioners page", async () => {
     const form = await send("GET", "/for-practitioners/apply");
     expect(form.status).toBe(200);
-    for (const s of ["Tell us about your practice", 'name="business_name"', 'value="dental"', "Send application"]) expect(form.text).toContain(s);
+    for (const s of ["Tell us about you and your work", 'name="business_name"', 'value="dental"', "Send application"]) expect(form.text).toContain(s);
     expect((await send("GET", "/for-practitioners")).text).toContain('href="/for-practitioners/apply"');
   });
 

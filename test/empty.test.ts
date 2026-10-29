@@ -11,7 +11,7 @@ describe("before the first venue goes live", () => {
     expect(home.text).not.toContain("0 venues");
     expect(home.text).not.toContain("Try:");
     expect(home.text).toContain("Tell me when bookings open");
-    expect(home.text).not.toContain("Clinics you can book today");
+    expect(home.text).not.toContain("Book with them today");
     const search = await req("GET", "/search?q=facial");
     expect(search.text).toContain("Opening soon");
     expect(search.text).not.toContain("No matches yet");

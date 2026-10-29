@@ -13,7 +13,7 @@ import fs from 'node:fs';
 // The localities list lives in src/config.ts; read the names from there so the two never drift.
 const AREAS = [...fs.readFileSync(new URL('../src/config.ts', import.meta.url), 'utf8').matchAll(/\{ name: "([^"]+)", zone:/g)].map((m) => m[1]);
 const TYPES = ['Clinic', 'Salon & studio', 'Wellness centre', 'Independent practitioner'];
-const CATS = ['skin', 'medaes', 'hair', 'ayur', 'nails', 'body', 'dental', 'groom'];
+const CATS = ['skin', 'medaes', 'hair', 'ayur', 'nails', 'body', 'dental', 'groom', 'tattoo'];
 const KINDS = ['consult', 'treatment', 'beauty'];
 const DAYS = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 

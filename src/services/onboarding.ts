@@ -50,7 +50,7 @@ export async function approveApplication(env: Env, ref: string, siteUrl: string)
 
 // ---------- details ----------
 
-export const AMENITY_IDEAS = ["Parking", "Wheelchair access", "Air-conditioned rooms", "Female practitioner available", "UPI and cards accepted", "Lift to the clinic"];
+export const AMENITY_IDEAS = ["Parking", "Wheelchair access", "Air-conditioned rooms", "Women professionals available", "UPI and cards accepted", "Lift access"];
 
 export function validateDetails(f: Form) {
   const e: Errors = {};
@@ -146,7 +146,7 @@ export function validateService(f: Form, staff: StaffRow[], catIds: string[]) {
   if (!Number.isInteger(v.price) || v.price < 1 || v.price > 500000) e.price = "Enter the full price in rupees, for example 1500.";
   if (v.description.length < 20 || v.description.length > 500) e.description = "One or two plain sentences on what happens (20 to 500 characters).";
   const chosen = staff.filter((s) => v.staff.includes(s.id));
-  if (!chosen.length) e.staff = "Choose who can do this treatment.";
+  if (!chosen.length) e.staff = "Choose who can do this service.";
   else if (v.kind !== "beauty" && chosen.some((s) => !s.medical)) e.staff = "Medical consultations and treatments can only be done by a doctor, dentist or other registered practitioner. Untick the others, or choose “Beauty & wellness”.";
   if (Object.keys(e).length) throw new FormError(e);
   return { ...v, staff: chosen.map((s) => s.id) };
@@ -218,7 +218,7 @@ export async function changePhoto(env: Env, pid: string, src: string, action: "r
   await env.DB.batch([env.DB.prepare("UPDATE providers SET photos_json = ? WHERE id = ?").bind(JSON.stringify(photos), pid), audit(env.DB, actor, `listing.photo_${action}`, "provider", pid)]);
 }
 
-export const DOC_KINDS = ["Practitioner council registration", "Clinical establishment registration", "Professional certificate", "Business identity (GST, trade licence or Udyam)", "Other"];
+export const DOC_KINDS = ["Professional certificate", "Portfolio or proof of work", "ID proof (PAN or masked Aadhaar)", "Business identity (GST, trade licence or Udyam)", "Practitioner council registration", "Clinical establishment registration", "Other"];
 export async function addDocument(env: Env, pid: string, kind: string, file: unknown, actor: string) {
   if (!env.MEDIA) throw new HttpError(503, "Document storage isn't available.");
   if (!DOC_KINDS.includes(kind)) throw new HttpError(400, "Please choose what the document is.");
@@ -268,11 +268,11 @@ export function checklist(l: Awaited<ReturnType<typeof listing>>) {
   const medical = l.staff.some((s) => s.medical) || l.services.some((s) => s.kind !== "beauty");
   const bookable = l.services.filter((s) => s.staff.length);
   const steps: Step[] = [
-    { key: "details", title: "Your clinic", done: !!(l.p.tagline && l.p.about && l.p.hours_text && l.p.area && l.p.phone), summary: l.p.tagline ? `${l.p.area || "Area not chosen"} · ${l.p.hours_text || "hours to add"}` : "Name, address, phone, hours and a short introduction" },
-    { key: "photos", title: "Photos", done: photos > 0, summary: photos ? `${photos} photo${photos === 1 ? "" : "s"}${photos < 3 ? " · 3 or more look best" : ""}` : "At least one; your reception or a treatment room works well" },
-    { key: "team", title: "Your team", done: l.staff.length > 0 && l.staff.every((s) => l.hours.some((h) => h.staff_id === s.id)), summary: l.staff.length ? l.staff.map((s) => s.name).join(", ") : "Who clients can book, with their qualifications and hours" },
-    { key: "treatments", title: "Treatments & prices", done: bookable.length > 0, summary: l.services.length ? `${l.services.length} treatment${l.services.length === 1 ? "" : "s"}${bookable.length < l.services.length ? ` · ${l.services.length - bookable.length} without anyone to do them` : ""}` : "What clients can book, how long it takes and the full price" },
-    { key: "documents", title: "Verification documents", done: l.docs.length > 0, summary: l.docs.length ? `${l.docs.length} uploaded · only the Aestheva team can see them` : medical ? "Council registration for each doctor or dentist, and your business identity" : "Your professional certificates and business identity" },
+    { key: "details", title: "Your business", done: !!(l.p.tagline && l.p.about && l.p.hours_text && l.p.area && l.p.phone), summary: l.p.tagline ? `${l.p.area || "Area not chosen"} · ${l.p.hours_text || "hours to add"}` : "Name, address, phone, hours and a short introduction" },
+    { key: "photos", title: "Photos", done: photos > 0, summary: photos ? `${photos} photo${photos === 1 ? "" : "s"}${photos < 3 ? " · 3 or more look best" : ""}` : "At least one; your space or your work works well" },
+    { key: "team", title: "You and your team", done: l.staff.length > 0 && l.staff.every((s) => l.hours.some((h) => h.staff_id === s.id)), summary: l.staff.length ? l.staff.map((s) => s.name).join(", ") : "Who clients can book (just you is fine), with their hours" },
+    { key: "treatments", title: "Services & prices", done: bookable.length > 0, summary: l.services.length ? `${l.services.length} service${l.services.length === 1 ? "" : "s"}${bookable.length < l.services.length ? ` · ${l.services.length - bookable.length} without anyone to do them` : ""}` : "What clients can book, how long it takes and the full price" },
+    { key: "documents", title: "Verification documents", done: l.docs.length > 0, summary: l.docs.length ? `${l.docs.length} uploaded · only the Aestheva team can see them` : medical ? "Council registration for each doctor or dentist, and your business identity" : "A certificate or proof of your work, and an ID or business proof" },
     { key: "terms", title: "Terms", done: !!l.p.terms_accepted_at, summary: l.p.terms_accepted_at ? "Accepted" : "Commission, cancellations and your responsibilities" },
   ];
   const done = steps.filter((s) => s.done).length;
@@ -287,7 +287,7 @@ const clinicEmails = async (db: D1Database, pid: string) => (await db.prepare("S
 const escH = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 const mail = (title: string, paras: string[], button?: [string, string]) => ({
   text: `${title}\n\n${paras.join("\n\n")}${button ? `\n\n${button[0]}: ${button[1]}` : ""}\n\nAestheva`,
-  html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#302A2E;line-height:1.55;max-width:540px"><p style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#713F54;font-weight:bold;margin:0">Aestheva for clinics</p><h1 style="font-family:Georgia,serif;font-weight:normal;font-size:26px;margin:8px 0 14px">${escH(title)}</h1>${paras.map((p) => `<p style="white-space:pre-wrap">${escH(p)}</p>`).join("")}${button ? `<p style="margin:24px 0"><a href="${escH(button[1])}" style="background:#713F54;color:#fff;padding:12px 20px;border-radius:999px;text-decoration:none">${escH(button[0])}</a></p>` : ""}</div>`,
+  html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#302A2E;line-height:1.55;max-width:540px"><p style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#713F54;font-weight:bold;margin:0">Aestheva for business</p><h1 style="font-family:Georgia,serif;font-weight:normal;font-size:26px;margin:8px 0 14px">${escH(title)}</h1>${paras.map((p) => `<p style="white-space:pre-wrap">${escH(p)}</p>`).join("")}${button ? `<p style="margin:24px 0"><a href="${escH(button[1])}" style="background:#713F54;color:#fff;padding:12px 20px;border-radius:999px;text-decoration:none">${escH(button[0])}</a></p>` : ""}</div>`,
 });
 
 export async function submitForReview(env: Env, pid: string, user: ClinicUser, siteUrl: string) {
@@ -295,7 +295,7 @@ export async function submitForReview(env: Env, pid: string, user: ClinicUser, s
   if (!c.complete) throw new HttpError(400, "A few steps still need finishing before you can submit.");
   if (l.p.status === "live") throw new HttpError(409, "Your listing is already live.");
   await env.DB.batch([env.DB.prepare("UPDATE providers SET submitted_at = ?, review_note = '' WHERE id = ?").bind(nowIso(), pid), audit(env.DB, `provider_user:${user.id}`, "listing.submitted", "provider", pid)]);
-  const m = mail(`${l.p.name} is ready for review`, [`${user.name} (${user.email}) submitted ${l.p.name}, ${l.p.type} in ${l.p.area}: ${l.staff.length} team member(s), ${l.services.length} treatment(s), ${JSON.parse(l.p.photos_json || "[]").length} photo(s), ${l.docs.length} document(s).`], ["Review the listing", `${siteUrl}/ops/venues/${pid}`]);
+  const m = mail(`${l.p.name} is ready for review`, [`${user.name} (${user.email}) submitted ${l.p.name}, ${l.p.type} in ${l.p.area}: ${l.staff.length} team member(s), ${l.services.length} service(s), ${JSON.parse(l.p.photos_json || "[]").length} photo(s), ${l.docs.length} document(s).`], ["Review the listing", `${siteUrl}/ops/venues/${pid}`]);
   await sendTeamEmail(env, { subject: `Listing ready for review: ${l.p.name}`, ...m });
 }
 
@@ -305,12 +305,12 @@ export async function setVenueStage(env: Env, pid: string, action: "publish" | "
   const p = await db.prepare("SELECT * FROM providers WHERE id = ?").bind(pid).first<ProviderRow>();
   if (!p) throw new HttpError(404, "Unknown venue");
   note = note.trim().slice(0, 2000);
-  if (action === "send_back" && note.length < 5) throw new HttpError(400, "Please write what needs changing. The clinic sees this note.");
+  if (action === "send_back" && note.length < 5) throw new HttpError(400, "Please write what needs changing. They see this note.");
   if (action === "publish") await db.batch([db.prepare("UPDATE providers SET status = 'live', live_since = COALESCE(live_since, date('now')), review_note = '' WHERE id = ?").bind(pid), audit(db, "ops", "provider.live", "provider", pid)]);
   if (action === "send_back") await db.batch([db.prepare("UPDATE providers SET submitted_at = NULL, review_note = ? WHERE id = ?").bind(note, pid), audit(db, "ops", "provider.sent_back", "provider", pid)]);
   if (action === "pause") await db.batch([db.prepare("UPDATE providers SET status = 'paused' WHERE id = ?").bind(pid), audit(db, "ops", "provider.paused", "provider", pid, { note })]);
-  const m = action === "publish" ? mail(`${p.name} is live on Aestheva`, ["Clients can now find you and book online. New bookings appear in your clinic portal under Today and Calendar. Phone and walk-in bookings you add there hold the time too.", "Tip: share your page on WhatsApp and Instagram so your regular clients can book you directly."], ["See your page", `${siteUrl}/p/${p.slug}`])
-    : action === "send_back" ? mail(`A few changes for ${p.name}`, ["Thanks for setting up your listing. Before we publish it, please look at this note from the Aestheva team:", note, "Make the changes in your clinic portal, then press Submit for review again."], ["Open your listing", `${siteUrl}/clinic/setup`])
+  const m = action === "publish" ? mail(`${p.name} is live on Aestheva`, ["Clients can now find you and book online. New bookings appear in your Aestheva portal under Today and Calendar. Phone and walk-in bookings you add there hold the time too.", "Tip: share your page on WhatsApp and Instagram so your regular clients can book you directly."], ["See your page", `${siteUrl}/p/${p.slug}`])
+    : action === "send_back" ? mail(`A few changes for ${p.name}`, ["Thanks for setting up your listing. Before we publish it, please look at this note from the Aestheva team:", note, "Make the changes in your Aestheva portal, then press Submit for review again."], ["Open your listing", `${siteUrl}/clinic/setup`])
     : mail(`${p.name} is paused on Aestheva`, ["Your listing is hidden from clients for now, and no new bookings can be made. Existing bookings stay as they are.", ...(note ? [note] : []), `Questions? Write to ${COMPANY.supportEmail}.`]);
   const subject = action === "publish" ? `You're live: ${p.name}` : action === "send_back" ? `Changes needed: ${p.name}` : `Paused: ${p.name}`;
   for (const u of await clinicEmails(db, pid)) await sendEmail(env, u.email, { subject, ...m });

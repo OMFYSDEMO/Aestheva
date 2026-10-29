@@ -1,4 +1,4 @@
-import { AREAS, COMPANY, VENUE_TYPES } from "../config";
+import { AREAS, COMPANY, VENUE_TYPES, VENUE_TYPE_CHOICES } from "../config";
 import { ROLES, type ApplicationForm } from "../services/applications";
 import { catIcon, esc, ic } from "./ui";
 
@@ -14,41 +14,41 @@ export function applyPage(d: { values: ApplicationForm; errors: Record<string, s
     `<label class="f" for="f-${k}">${label}${hint ? ` <span class="hint">${hint}</span>` : ""}<input class="in" id="f-${k}" name="${k}" value="${val(v, k)}"${inv(k)} ${attrs}>${err(k)}</label>`;
   const select = (k: string, label: string, opts: readonly string[], placeholder: string) =>
     `<label class="f" for="f-${k}">${label}<select class="in" id="f-${k}" name="${k}"${inv(k)} required><option value="">${placeholder}</option>${opts.map((o) => `<option ${val(v, k) === esc(o) ? "selected" : ""}>${esc(o)}</option>`).join("")}</select>${err(k)}</label>`;
-  const labels: Record<string, string> = { business_name: "Business name", business_type: "Kind of business", area: "Area", area_other: "Area", address: "Address", website: "Website", contact_name: "Your name", contact_role: "Your role", phone: "Mobile number", email: "Email", categories: "Services", medical: "Medical services", team_size: "Practitioners", services_text: "Main services", establishment_reg: "Establishment registration", practitioner_reg: "Practitioner registration", gstin: "GSTIN", heard_from: "How you heard", consent: "Confirmation" };
+  const labels: Record<string, string> = { business_name: "Business name", business_type: "Kind of business", area: "Area", area_other: "Area", address: "Address", website: "Website", contact_name: "Your name", contact_role: "Your role", phone: "Mobile number", email: "Email", categories: "Services", medical: "Medical services", team_size: "People taking bookings", services_text: "Main services", establishment_reg: "Establishment registration", practitioner_reg: "Practitioner registration", gstin: "GSTIN", heard_from: "How you heard", consent: "Confirmation" };
   const summary = Object.keys(e).length ? `<div class="form-error" role="alert" tabindex="-1" id="apply-errors"><b>Please check ${Object.keys(e).length === 1 ? "one answer" : `${Object.keys(e).length} answers`}:</b><ul>${Object.keys(e).map((k) => `<li><a href="#${k === "categories" || k === "medical" || k === "consent" ? k : "f-" + k}">${labels[k] ?? k}</a>: ${esc(e[k])}</li>`).join("")}</ul></div>` : "";
   return `<div class="page">
-    <a class="btn btn-g btn-s" href="/for-practitioners" style="margin-left:-10px">${ic("chevL", 16)} For clinics &amp; practitioners</a>
+    <a class="btn btn-g btn-s" href="/for-practitioners" style="margin-left:-10px">${ic("chevL", 16)} List your business</a>
     <div class="apply-layout mt16">
       <div>
         <div class="eyebrow" style="color:var(--sage-d)">Apply to join</div>
-        <h1 class="mt8" style="font-size:clamp(34px,4.6vw,48px)">Tell us about your practice</h1>
-        <p class="lede mt12">It takes about five minutes. We'll review it and get in touch, usually by phone, to talk through the next steps. You don't need any documents yet.</p>
+        <h1 class="mt8" style="font-size:clamp(34px,4.6vw,48px)">Tell us about you and your work</h1>
+        <p class="lede mt12">Salon, studio, clinic or independent professional, you're welcome. It takes about five minutes. We'll review it and get in touch, usually by phone, to talk through the next steps. You don't need any documents yet.</p>
         ${summary ? `<div class="mt24">${summary}</div>` : ""}
         <form class="apply-form mt24" method="post" action="/for-practitioners/apply" novalidate>
           <input type="hidden" name="t" value="${d.started}">
           <div class="hp" aria-hidden="true"><label>Leave this empty<input name="company_website" tabindex="-1" autocomplete="off"></label></div>
 
-          <fieldset class="apply-sec"><legend><span>1</span> Your practice</legend>
-            ${input("business_name", "Business name", 'required maxlength="120" autocomplete="organization"', "As clients know it")}
-            <div class="grid g2">${select("business_type", "Kind of business", VENUE_TYPES, "Choose one")}${select("area", "Area", [...AREAS, "Other"], "Choose an area")}</div>
+          <fieldset class="apply-sec"><legend><span>1</span> Your business</legend>
+            ${input("business_name", "Business name", 'required maxlength="120" autocomplete="organization"', "As clients know it. Working on your own? Your own name is fine.")}
+            <div class="grid g2"><label class="f" for="f-business_type">Kind of business<select class="in" id="f-business_type" name="business_type"${inv("business_type")} required><option value="">Choose one</option>${VENUE_TYPES.map((o) => `<option value="${esc(o)}" ${val(v, "business_type") === esc(o) ? "selected" : ""}>${esc(VENUE_TYPE_CHOICES[o] ?? o)}</option>`).join("")}</select>${err("business_type")}</label>${select("area", "Area", [...AREAS, "Other"], "Choose an area")}</div>
             ${input("area_other", "If you chose Other, which area?", 'maxlength="60"')}
-            <label class="f" for="f-address">Full address <span class="hint">With the PIN code</span><textarea class="in" id="f-address" name="address" rows="2" maxlength="300" required${inv("address")}>${val(v, "address")}</textarea>${err("address")}</label>
+            <label class="f" for="f-address">Full address <span class="hint">Where clients come to you, with the PIN code</span><textarea class="in" id="f-address" name="address" rows="2" maxlength="300" required${inv("address")}>${val(v, "address")}</textarea>${err("address")}</label>
             ${input("website", "Website or Instagram", 'maxlength="200" inputmode="url"', "Optional")}
           </fieldset>
 
           <fieldset class="apply-sec"><legend><span>2</span> What you offer</legend>
             <div class="f" id="categories"><span>Kinds of service <span class="hint">Choose all that apply</span></span>
               <div class="pick mt8">${d.categories.map((c) => `<label class="pick-item"><input type="checkbox" name="categories" value="${esc(c.id)}" ${has(v, "categories", c.id) ? "checked" : ""}> ${catIcon(c.id, 16)} ${esc(c.name)}</label>`).join("")}</div>${err("categories")}</div>
-            <div class="f" id="medical"><span>Do you offer medical treatments? <span class="hint">For example dental work, laser, peels or injectables given by a doctor or dentist</span></span>
-              <div class="row wrap mt8" style="gap:10px"><label class="pick-item"><input type="radio" name="medical" value="yes" ${val(v, "medical") === "yes" ? "checked" : ""}> Yes</label><label class="pick-item"><input type="radio" name="medical" value="no" ${val(v, "medical") === "no" ? "checked" : ""}> No, beauty and wellness only</label></div>${err("medical")}</div>
-            ${input("team_size", "How many practitioners would take bookings?", 'type="number" min="1" max="500" inputmode="numeric" required style="max-width:160px"')}
-            <label class="f" for="f-services_text">Your main services, with prices <span class="hint">One per line is fine, for example "Scaling, 20 min, ₹2,000"</span><textarea class="in" id="f-services_text" name="services_text" rows="5" maxlength="2000" required${inv("services_text")}>${val(v, "services_text")}</textarea>${err("services_text")}</label>
+            <div class="f" id="medical"><span>Do you offer medical treatments? <span class="hint">Only treatments given by a doctor or dentist, for example dental work, medical lasers, medical peels or injectables. Beauty, nails, makeup, tattoos and massage are not medical.</span></span>
+              <div class="row wrap mt8" style="gap:10px"><label class="pick-item"><input type="radio" name="medical" value="yes" ${val(v, "medical") === "yes" ? "checked" : ""}> Yes</label><label class="pick-item"><input type="radio" name="medical" value="no" ${val(v, "medical") === "no" ? "checked" : ""}> No, beauty, wellness or body art</label></div>${err("medical")}</div>
+            ${input("team_size", "How many people would take bookings, including you?", 'type="number" min="1" max="500" inputmode="numeric" required style="max-width:160px"')}
+            <label class="f" for="f-services_text">Your main services, with prices <span class="hint">One per line is fine, for example "Gel nail art, 60 min, ₹1,200" or "Scaling, 20 min, ₹2,000"</span><textarea class="in" id="f-services_text" name="services_text" rows="5" maxlength="2000" required${inv("services_text")}>${val(v, "services_text")}</textarea>${err("services_text")}</label>
           </fieldset>
 
-          <fieldset class="apply-sec"><legend><span>3</span> Registrations</legend>
-            <p class="small muted">Optional now; we'll verify these before you go live. Fill in what applies to you.</p>
-            ${input("establishment_reg", "Clinical establishment registration number", 'maxlength="80"', "For clinics offering medical services")}
-            ${input("practitioner_reg", "Lead practitioner's council registration", 'maxlength="120"', 'For example "Kerala State Dental Council, Reg. No. 12345"')}
+          <fieldset class="apply-sec"><legend><span>3</span> Registrations, if you have them</legend>
+            <p class="small muted">Optional now, and only what applies to you. Most beauty, wellness and body-art professionals can leave this blank.</p>
+            ${input("establishment_reg", "Clinical establishment registration number", 'maxlength="80"', "Only for clinics offering medical services")}
+            ${input("practitioner_reg", "Doctor's or dentist's council registration", 'maxlength="120"', 'For example "Kerala State Dental Council, Reg. No. 12345"')}
             ${input("gstin", "GSTIN", 'maxlength="15" autocapitalize="characters" style="max-width:260px"', "If registered")}
           </fieldset>
 

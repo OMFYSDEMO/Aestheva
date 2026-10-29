@@ -142,7 +142,7 @@ describe("clinic portal", () => {
     await req("POST", `/api/bookings/${r0.json.ref}/payment`, await rp.pay(r0.json.payment.orderId));
     const page = await send("GET", `/clinic/bookings/${r0.json.ref}`, undefined, cookie);
     expect(page.text).toContain("Deposit</dt><dd>₹300 paid online");
-    expect(page.text).toContain("₹500</b> at the clinic");
+    expect(page.text).toContain("₹500</b> on the day");
     const noReason = await send("POST", `/clinic/bookings/${r0.json.ref}`, { csrf, action: "cancel", reason: "" }, cookie);
     expect(noReason.status).toBe(400);
     const done = await send("POST", `/clinic/bookings/${r0.json.ref}`, { csrf, action: "cancel", reason: "Doctor unwell" }, cookie);

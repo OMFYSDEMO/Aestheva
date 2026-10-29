@@ -108,11 +108,11 @@ const escH = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "
 export async function emailPasswordLink(env: Env, u: { name: string; email: string }, venue: string, url: string, purpose: LinkPurpose) {
   const invite = purpose === "invite";
   const subject = invite ? `Your Aestheva login for ${venue}` : "Reset your Aestheva password";
-  const lead = invite ? `You've been given a login to ${venue}'s clinic portal on Aestheva, where your team sees the calendar, bookings and clients.` : "Someone asked to reset the password for your Aestheva clinic login. If it wasn't you, ignore this email; your password stays the same.";
+  const lead = invite ? `You've been given a login to ${venue}'s portal on Aestheva, where you see your calendar, bookings and clients.` : "Someone asked to reset the password for your Aestheva login. If it wasn't you, ignore this email; your password stays the same.";
   const until = invite ? `${LINK_HOURS.invite / 24} days` : "1 hour";
   const text = `Hello ${u.name},\n\n${lead}\n\n${invite ? "Set your password" : "Choose a new password"} here (the link works once, for ${until}):\n${url}\n\nYour login email is ${u.email}. After that, sign in at ${new URL(url).origin}/clinic.\n\nAestheva`;
   const html = `<div style="font-family:Arial,sans-serif;font-size:15px;color:#302A2E;line-height:1.55;max-width:520px">
-    <p style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#713F54;font-weight:bold;margin:0">Aestheva for clinics</p>
+    <p style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#713F54;font-weight:bold;margin:0">Aestheva for business</p>
     <h1 style="font-family:Georgia,serif;font-weight:normal;font-size:26px;margin:8px 0 14px">${invite ? `Welcome, ${escH(u.name)}` : "Reset your password"}</h1>
     <p>${escH(lead)}</p>
     <p style="margin:24px 0"><a href="${escH(url)}" style="background:#713F54;color:#fff;padding:12px 20px;border-radius:999px;text-decoration:none">${invite ? "Set your password" : "Choose a new password"}</a></p>

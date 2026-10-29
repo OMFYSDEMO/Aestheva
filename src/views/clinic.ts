@@ -24,7 +24,7 @@ const timeOpts = (from: number, to: number, sel?: number) => Array.from({ length
 export function clinicShell(d: { user: ClinicUser; providerName: string; section: Section; csrf: string }, body: string) {
   const items = NAV.map(([k, href, icon, label]) => `<a class="nav ${d.section === k ? "on" : ""}" href="${href}"${d.section === k ? ' aria-current="page"' : ""}>${ic(icon, 18)} ${label}</a>`).join("");
   return `<div class="ws">
-    <aside class="side" aria-label="Clinic">
+    <aside class="side" aria-label="Your business">
       <div class="who">${avatar(d.providerName, 40, d.user.provider_id)}<div class="col" style="gap:0;min-width:0"><b style="font-size:14px">${esc(d.providerName)}</b><span class="xs muted">${esc(d.user.name)}</span></div></div>
       <a class="btn btn-p btn-s" href="/clinic/new" style="margin:0 8px 12px">${ic("plus", 15)} Add a booking</a>
       <nav class="col" style="gap:2px">${items}</nav>
@@ -37,8 +37,8 @@ export const signOutButton = (csrf: string, name: string) => `<span class="small
 
 export function clinicLoginPage(error = "", configured = true, notice = "") {
   return `<div class="page narrow" style="max-width:460px;padding-top:56px">
-    <div class="card"><div class="eyebrow">Aestheva for clinics</div><h1 class="mt8" style="font-size:34px">Sign in</h1>
-    <p class="small muted mt8">For clinic teams listed on Aestheva. Your login comes from the Aestheva team.</p>
+    <div class="card"><div class="eyebrow">Aestheva for business</div><h1 class="mt8" style="font-size:34px">Sign in</h1>
+    <p class="small muted mt8">For salons, studios, clinics and independent professionals listed on Aestheva. Your login comes from the Aestheva team.</p>
     ${notice ? `<div class="form-ok mt12" role="status">${esc(notice)}</div>` : ""}
     ${configured ? `<form method="post" action="/clinic/login" class="col mt16" style="gap:12px">
       <label class="f" for="cl-email">Email<input class="in" id="cl-email" name="email" type="email" autocomplete="username" required autofocus></label>
@@ -46,7 +46,7 @@ export function clinicLoginPage(error = "", configured = true, notice = "") {
       ${error ? `<div class="form-error" role="alert">${esc(error)}</div>` : ""}
       <button class="btn btn-p" type="submit">Sign in</button></form>
       <p class="small mt16"><a href="/clinic/forgot">Forgot your password?</a></p>`
-    : `<p class="small muted mt12">Clinic sign-in isn't switched on yet.</p>`}
+    : `<p class="small muted mt12">Business sign-in isn't switched on yet.</p>`}
     </div></div>`;
 }
 
@@ -64,12 +64,12 @@ export function setPasswordPage(d: { token: string; email: string; venue: string
     </form></div></div>`;
 }
 export function linkInvalidPage() {
-  return `<div class="page narrow" style="max-width:480px;padding-top:56px"><div class="card"><div class="eyebrow">Aestheva for clinics</div><h1 class="mt8" style="font-size:30px">This link has expired</h1>
+  return `<div class="page narrow" style="max-width:480px;padding-top:56px"><div class="card"><div class="eyebrow">Aestheva for business</div><h1 class="mt8" style="font-size:30px">This link has expired</h1>
     <p class="small muted mt8">Set-password links work once, for a limited time. You can ask for a new one below, or ask the Aestheva team to send a fresh invitation.</p>
     <div class="row wrap mt16" style="gap:8px"><a class="btn btn-p btn-s" href="/clinic/forgot">Email me a new link</a><a class="btn btn-o btn-s" href="/clinic/login">Sign in</a></div></div></div>`;
 }
 export function forgotPage(sent = false) {
-  return `<div class="page narrow" style="max-width:460px;padding-top:56px"><div class="card"><div class="eyebrow">Aestheva for clinics</div><h1 class="mt8" style="font-size:32px">Forgot your password?</h1>
+  return `<div class="page narrow" style="max-width:460px;padding-top:56px"><div class="card"><div class="eyebrow">Aestheva for business</div><h1 class="mt8" style="font-size:32px">Forgot your password?</h1>
     ${sent ? `<div class="form-ok mt12" role="status">If that email has a clinic login, we've sent it a link to choose a new password. It works for 1 hour. Check spam if it isn't there in a few minutes.</div><p class="small mt16"><a href="/clinic/login">Back to sign in</a></p>`
     : `<p class="small muted mt8">Enter your login email and we'll send you a link to choose a new password.</p>
       <form method="post" action="/clinic/forgot" class="col mt16" style="gap:12px"><label class="f" for="fe">Email<input class="in" id="fe" name="email" type="email" autocomplete="username" required autofocus></label><button class="btn btn-p" type="submit">Email me a link</button></form>
@@ -79,7 +79,7 @@ export function forgotPage(sent = false) {
 const apptRow = (a: Appt, today: string, showDate = false) => `<a class="appt-row" href="/clinic/bookings/${esc(a.ref)}">
   <span class="appt-time"><b>${fmtTime(a.start_min)}</b>${showDate ? `<span class="xs muted">${relDay(a.date, today)}</span>` : `<span class="xs muted">${a.dur_min} min</span>`}</span>
   <span class="grow col" style="gap:1px;min-width:0"><b>${esc(a.client_name)}</b><span class="small muted">${esc(a.service_name)} · ${esc(a.staff_name)}</span></span>
-  <span class="col" style="gap:4px;align-items:flex-end">${statusBadge(a.status)}${a.source === "direct" ? '<span class="xs soft">Booked by clinic</span>' : a.pay_status === "captured" ? `<span class="xs" style="color:var(--ok)">Deposit ${inr(a.deposit_paise)} paid</span>` : ""}</span>
+  <span class="col" style="gap:4px;align-items:flex-end">${statusBadge(a.status)}${a.source === "direct" ? '<span class="xs soft">Added by you</span>' : a.pay_status === "captured" ? `<span class="xs" style="color:var(--ok)">Deposit ${inr(a.deposit_paise)} paid</span>` : ""}</span>
 </a>`;
 
 export function todayPage(o: { providerName: string; now: { date: string; min: number }; today: Appt[]; upcoming: Appt[]; newThisWeek: number; weekCount: number; depositsThisMonth: number; todo?: string[] }) {
@@ -130,7 +130,7 @@ export function calendarPage(d: { date: string; today: string; nowMin: number; s
     <details class="card mt24"><summary><b>Block time</b> <span class="small muted">for leave, a break or anything else that should stop online bookings</span></summary>
       <form method="post" action="/clinic/blocks" class="grid g4 mt16" style="align-items:end">
         <input type="hidden" name="csrf" value="${esc(d.csrf)}"><input type="hidden" name="date" value="${d.date}">
-        <label class="f">Practitioner<select class="in" name="staff">${d.staff.map((t) => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("")}</select></label>
+        <label class="f">Who<select class="in" name="staff">${d.staff.map((t) => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("")}</select></label>
         <label class="f">From<select class="in" name="start">${timeOpts(6 * 60, 22 * 60 + 30, 13 * 60)}</select></label>
         <label class="f">To<select class="in" name="end">${timeOpts(6 * 60 + 30, 23 * 60, 14 * 60)}</select></label>
         <label class="f">Reason <span class="hint">Optional</span><input class="in" name="reason" maxlength="80" placeholder="e.g. Leave"></label>
@@ -143,7 +143,7 @@ export function bookingsPage(d: { list: Appt[]; view: string; q: string; today: 
   return `<div class="ws-head"><div><div class="eyebrow">Bookings</div><h2 class="mt8">${d.view === "past" ? "Past appointments" : d.view === "cancelled" ? "Cancelled" : "Upcoming"}</h2></div><a class="btn btn-p btn-s" href="/clinic/new">${ic("plus", 15)} Add a booking</a></div>
     <div class="row wrap between" style="gap:12px"><div class="chips">${tab("upcoming", "Upcoming")}${tab("past", "Past")}${tab("cancelled", "Cancelled")}</div>
       <form method="get" action="/clinic/bookings" class="row" style="gap:8px"><input type="hidden" name="view" value="${esc(d.view)}"><label class="sr" for="bq">Search</label><input class="in" id="bq" name="q" value="${esc(d.q)}" placeholder="Name, mobile or AE- reference" style="min-width:240px"><button class="btn btn-o btn-s" type="submit">Search</button></form></div>
-    ${d.list.length ? `<div class="card mt16 only-s">${d.list.map((a) => apptRow(a, d.today, true)).join("")}</div><div class="tbl-wrap mt16 hide-s"><table class="tbl"><thead><tr><th>When</th><th>Client</th><th>Treatment</th><th>Practitioner</th><th>Status</th></tr></thead><tbody>
+    ${d.list.length ? `<div class="card mt16 only-s">${d.list.map((a) => apptRow(a, d.today, true)).join("")}</div><div class="tbl-wrap mt16 hide-s"><table class="tbl"><thead><tr><th>When</th><th>Client</th><th>Service</th><th>Who</th><th>Status</th></tr></thead><tbody>
       ${d.list.map((a) => `<tr class="click"><td style="white-space:nowrap"><a href="/clinic/bookings/${esc(a.ref)}"><b>${relDay(a.date, d.today)}</b></a><div class="xs muted">${fmtTime(a.start_min)}</div></td><td>${esc(a.client_name)}<div class="xs muted">${esc(fmtPhone(a.client_phone))}</div></td><td class="small">${esc(a.service_name)}${a.source === "direct" ? '<div class="xs soft">Booked by clinic</div>' : ""}</td><td class="small">${esc(a.staff_name)}</td><td>${statusBadge(a.status)}</td></tr>`).join("")}
     </tbody></table></div>` : `<div class="card mt16" style="text-align:center;padding:40px"><p class="muted">${d.q ? "No bookings match that search." : d.view === "upcoming" ? "No upcoming bookings yet." : "Nothing here yet."}</p></div>`}`;
 }
@@ -158,7 +158,7 @@ export function bookingDetailPage(d: { a: Appt; b: { status: string; date: strin
   const upcoming = actionable && !d.canMark;
   return `<a class="btn btn-g btn-s" href="/clinic/bookings" style="margin-left:-10px">${ic("chevL", 16)} Bookings</a>
     ${d.message ? `<div class="form-ok mt12" role="status">${esc(d.message)}</div>` : ""}${d.error ? `<div class="form-error mt12" role="alert">${esc(d.error)}</div>` : ""}
-    <div class="row wrap between mt12"><div><div class="eyebrow">${esc(a.ref)}${a.source === "direct" ? " · booked by clinic" : " · booked on Aestheva"}</div><h2 class="mt8" style="font-size:clamp(28px,3vw,36px)">${esc(a.service_name)}</h2></div>${statusBadge(a.status)}</div>
+    <div class="row wrap between mt12"><div><div class="eyebrow">${esc(a.ref)}${a.source === "direct" ? " · added by you" : " · booked on Aestheva"}</div><h2 class="mt8" style="font-size:clamp(28px,3vw,36px)">${esc(a.service_name)}</h2></div>${statusBadge(a.status)}</div>
     <div class="apply-layout mt16">
       <div class="col" style="gap:16px">
         <div class="card"><dl class="kv">
@@ -166,9 +166,9 @@ export function bookingDetailPage(d: { a: Appt; b: { status: string; date: strin
           <dt>With</dt><dd>${esc(a.staff_name)}</dd>
           <dt>Price</dt><dd>${inr(a.price_paise)}</dd>
           <dt>Deposit</dt><dd>${paid ? `${inr(paid)} paid online${d.payment?.method ? ` (${esc(d.payment.method)})` : ""}${refunded ? ` · ${inr(refunded)} refunded` : ""}` : a.status === "held" ? "Waiting for the client to pay" : "None"}</dd>
-          ${a.status === "confirmed" || a.status === "completed" ? `<dt>To collect</dt><dd><b>${inr(Math.max(0, balance))}</b> at the clinic</dd>` : ""}
+          ${a.status === "confirmed" || a.status === "completed" ? `<dt>To collect</dt><dd><b>${inr(Math.max(0, balance))}</b> on the day</dd>` : ""}
           ${a.client_note ? `<dt>Client's note</dt><dd>${esc(a.client_note)}</dd>` : ""}
-          ${d.b.cancel_reason && a.status === "cancelled" ? `<dt>Cancelled</dt><dd>By ${esc(d.b.cancelled_by === "provider" ? "the clinic" : d.b.cancelled_by ?? "")}: ${esc(d.b.cancel_reason)}</dd>` : ""}
+          ${d.b.cancel_reason && a.status === "cancelled" ? `<dt>Cancelled</dt><dd>By ${esc(d.b.cancelled_by === "provider" ? "you" : d.b.cancelled_by ?? "")}: ${esc(d.b.cancel_reason)}</dd>` : ""}
         </dl></div>
         ${actionable ? `<div class="card"><h3 style="font-size:22px">After the appointment</h3>
           ${d.canMark ? `<div class="row wrap mt12" style="gap:8px">
@@ -179,7 +179,7 @@ export function bookingDetailPage(d: { a: Appt; b: { status: string; date: strin
         <details class="card"><summary><b>Cancel this booking</b> <span class="small muted">${paid ? `the ${inr(paid)} deposit is refunded in full` : "no payment to refund"}</span></summary>
           <form method="post" action="/clinic/bookings/${esc(a.ref)}" class="col mt12" style="gap:10px"><input type="hidden" name="csrf" value="${esc(d.csrf)}"><input type="hidden" name="action" value="cancel">
             <label class="f">Reason <span class="hint">Kept with the booking</span><input class="in" name="reason" required maxlength="300" placeholder="e.g. Doctor unwell"></label>
-            <p class="xs muted">When the clinic cancels, any deposit goes back to the client in full. Please also call or message them.</p>
+            <p class="xs muted">When you cancel, any deposit goes back to the client in full. Please also call or message them.</p>
             <div><button class="btn btn-d btn-s" type="submit">Cancel booking</button></div></form></details>` : ""}
       </div>
       <aside class="col" style="gap:16px">
@@ -195,19 +195,19 @@ export function bookingDetailPage(d: { a: Appt; b: { status: string; date: strin
 export function newBookingPage(d: { services: (ServiceRow & { staff: string[] })[]; staff: StaffRow[]; v: Record<string, string>; error?: string; today: string }) {
   const v = d.v, start = Number(v.start || 600);
   return `<div class="ws-head"><div><div class="eyebrow">Phone, walk-in or Sunday</div><h2 class="mt8">Add a booking</h2></div></div>
-    <p class="small muted" style="max-width:640px">Bookings you add here can be at any time, including outside online hours. They take no deposit and no Aestheva commission, and they hold the practitioner's time so online clients can't take it.</p>
+    <p class="small muted" style="max-width:640px">Bookings you add here can be at any time, including outside online hours. They take no deposit and no Aestheva commission, and they hold that person's time so online clients can't take it.</p>
     ${d.error ? `<div class="form-error mt16" role="alert">${esc(d.error)}</div>` : ""}
     <form method="post" action="/clinic/new" class="card col mt16" style="gap:16px;max-width:760px">
       <input type="hidden" name="csrf" value="${esc(v.csrf ?? "")}">
-      <label class="f">Treatment<select class="in" name="service" required><option value="">Choose a treatment</option>${d.services.map((s) => `<option value="${esc(s.id)}" ${v.service === s.id ? "selected" : ""}>${esc(s.name)} · ${s.dur_min} min · ${inr(s.price_paise)}</option>`).join("")}</select></label>
-      <div class="grid g3"><label class="f">Practitioner<select class="in" name="staff" required>${d.staff.map((t) => `<option value="${esc(t.id)}" ${v.staff === t.id ? "selected" : ""}>${esc(t.name)}</option>`).join("")}</select></label>
+      <label class="f">Service<select class="in" name="service" required><option value="">Choose a service</option>${d.services.map((s) => `<option value="${esc(s.id)}" ${v.service === s.id ? "selected" : ""}>${esc(s.name)} · ${s.dur_min} min · ${inr(s.price_paise)}</option>`).join("")}</select></label>
+      <div class="grid g3"><label class="f">Who<select class="in" name="staff" required>${d.staff.map((t) => `<option value="${esc(t.id)}" ${v.staff === t.id ? "selected" : ""}>${esc(t.name)}</option>`).join("")}</select></label>
         <label class="f">Date<input class="in" type="date" name="date" min="${d.today}" value="${esc(v.date || d.today)}" required></label>
         <label class="f">Time<select class="in" name="start">${timeOpts(6 * 60, 22 * 60 + 30, start)}</select></label></div>
       <div class="grid g2"><label class="f">Client's name<input class="in" name="name" required maxlength="80" value="${esc(v.name ?? "")}" autocomplete="off"></label>
         <label class="f">Mobile number<input class="in" name="phone" required type="tel" inputmode="tel" placeholder="98765 43210" value="${esc(v.phone ?? "")}" autocomplete="off"></label></div>
       <label class="f">Email <span class="hint">Optional</span><input class="in" name="email" type="email" value="${esc(v.email ?? "")}" autocomplete="off"></label>
       <label class="f">Note <span class="hint">Optional, seen only by your team</span><input class="in" name="note" maxlength="240" value="${esc(v.note ?? "")}"></label>
-      <p class="xs muted">Only the practitioners who offer the chosen treatment can be booked for it. The client's details are used only for this booking.</p>
+      <p class="xs muted">Only the people who offer the chosen service can be booked for it. The client's details are used only for this booking.</p>
       <div><button class="btn btn-p" type="submit">Save booking</button></div>
     </form>`;
 }
@@ -242,11 +242,11 @@ export function servicesPage(d: { services: (ServiceRow & { staff: string[] })[]
   return `<div class="ws-head"><div><div class="eyebrow">What clients see</div><h2 class="mt8">Services &amp; hours</h2></div><a class="btn btn-o btn-s" href="/clinic/setup">${ic("edit", 15)} Edit your listing</a></div>
     <p class="small muted" style="max-width:680px">Change treatments, prices, team and online hours under <a href="/clinic/setup">Your listing</a>. Changes appear on your page straight away.</p>
     <h3 class="mt24" style="font-size:22px">Online booking hours</h3>
-    <div class="tbl-wrap mt12"><table class="tbl"><thead><tr><th>Practitioner</th>${[1, 2, 3, 4, 5, 6, 0].map((x) => `<th>${DOW[x]}</th>`).join("")}</tr></thead><tbody>
+    <div class="tbl-wrap mt12"><table class="tbl"><thead><tr><th>Who</th>${[1, 2, 3, 4, 5, 6, 0].map((x) => `<th>${DOW[x]}</th>`).join("")}</tr></thead><tbody>
       ${d.staff.map((t) => `<tr><td><b>${esc(t.name)}</b><div class="xs muted">${esc(t.role)}</div></td>${[1, 2, 3, 4, 5, 6, 0].map((x) => { const h = d.hours.find((r) => r.staff_id === t.id && r.dow === x); return `<td class="small">${h ? `${fmtTime(h.start_min)}–${fmtTime(h.end_min)}` : '<span class="soft">—</span>'}</td>`; }).join("")}</tr>`).join("")}
     </tbody></table></div>
-    <h3 class="mt32" style="font-size:22px">Treatments</h3>
-    <div class="tbl-wrap mt12"><table class="tbl"><thead><tr><th>Treatment</th><th>Time</th><th>Price</th><th>Deposit</th><th>Who</th></tr></thead><tbody>
+    <h3 class="mt32" style="font-size:22px">Services</h3>
+    <div class="tbl-wrap mt12"><table class="tbl"><thead><tr><th>Service</th><th>Time</th><th>Price</th><th>Deposit</th><th>Who</th></tr></thead><tbody>
       ${d.services.map((s) => `<tr><td><b>${esc(s.name)}</b><div class="xs muted">${esc(d.catName(s.cat))}</div></td><td class="small">${s.dur_min} min</td><td>${inr(s.price_paise)}</td><td class="small">${s.deposit_paise ? inr(s.deposit_paise) : "None"}</td><td class="small">${s.staff.map(name).map(esc).join(", ")}</td></tr>`).join("")}
     </tbody></table></div>`;
 }
@@ -258,12 +258,12 @@ export function paymentsPage(d: { month: string; m: Awaited<ReturnType<typeof im
     <div class="grid g4 kpis">
       ${kpi("Completed", String(d.m.completedCount), `appointments worth ${inr(d.m.completedValue)}`)}
       ${kpi("Deposits paid online", inr(d.m.depositsPaid), d.m.refunded ? `${inr(d.m.refunded)} refunded` : "nothing refunded")}
-      ${kpi("Collected at the clinic", inr(d.m.balanceAtClinic), "balance on completed visits")}
+      ${kpi("Collected on the day", inr(d.m.balanceAtClinic), "balance on completed visits")}
       ${kpi("Aestheva commission", inr(d.m.commission), `${POLICY.commissionBp / 100}% of completed online bookings`)}
     </div>
     ${d.m.keptOnCancellation ? `<p class="small muted mt12">Deposits kept on late cancellations and no-shows: <b>${inr(d.m.keptOnCancellation)}</b>.</p>` : ""}
-    <p class="xs muted mt12">Bookings your team adds carry no commission. Settlement statements will appear here once payouts to clinics start.</p>
-    ${d.m.rows.length ? `<div class="tbl-wrap mt16"><table class="tbl"><thead><tr><th>Date</th><th>Client</th><th>Treatment</th><th>Status</th><th>Price</th><th>Deposit</th></tr></thead><tbody>
+    <p class="xs muted mt12">Bookings your team adds carry no commission. Settlement statements will appear here once payouts start.</p>
+    ${d.m.rows.length ? `<div class="tbl-wrap mt16"><table class="tbl"><thead><tr><th>Date</th><th>Client</th><th>Service</th><th>Status</th><th>Price</th><th>Deposit</th></tr></thead><tbody>
       ${d.m.rows.map((r) => `<tr><td class="small" style="white-space:nowrap"><a href="/clinic/bookings/${esc(r.ref)}">${fmtDate(r.date)}</a></td><td class="small">${esc(r.client_name)}</td><td class="small">${esc(r.service_name)}${r.source === "direct" ? '<div class="xs soft">Booked by clinic</div>' : ""}</td><td>${statusBadge(r.status)}</td><td>${inr(r.price_paise)}</td><td class="small">${r.paid ? inr(r.paid) + (r.refunded ? ` <span class="soft">(−${inr(r.refunded)})</span>` : "") : "—"}</td></tr>`).join("")}
     </tbody></table></div>` : `<div class="card mt16" style="text-align:center;padding:40px"><p class="muted">No appointments this month yet.</p></div>`}`;
 }

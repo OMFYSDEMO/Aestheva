@@ -63,7 +63,7 @@ describe("self-serve onboarding, from application to a live listing", () => {
     const home = await send("GET", "/clinic", undefined, { cookie: clinic });
     expect(home.headers.get("location")).toBe("/clinic/setup");
     const setup = await send("GET", "/clinic/setup", undefined, { cookie: clinic });
-    for (const s of ["Welcome, Nisha", "Six short steps", "0 of 6 steps done", "Your clinic", "Photos", "Your team", "Treatments &amp; prices", "Verification documents", "Terms"]) expect(setup.text).toContain(s);
+    for (const s of ["Welcome, Nisha", "Six short steps", "0 of 6 steps done", "Your business", "Photos", "You and your team", "Services &amp; prices", "Verification documents", "Terms"]) expect(setup.text).toContain(s);
     expect(setup.text).toMatch(/<button class="btn btn-p" type="submit" disabled>Submit for review<\/button>/);
     csrf = csrfIn(setup.text);
   });
@@ -167,7 +167,7 @@ describe("self-serve onboarding, from application to a live listing", () => {
     expect(sent[0]).toMatchObject({ to: "nisha@glow.example", subject: "You're live: Glow Lounge" });
     const pub = await req("GET", `/p/${slug}`);
     expect(pub.status).toBe(200);
-    for (const s of ["Glow Lounge", "Beautician certificates checked", "Certified professional (non-medical)", "Call the clinic", `/media/${pid}/`]) expect(pub.text).toContain(s);
+    for (const s of ["Glow Lounge", "Beautician certificates checked", "Professional (non-medical)", "Call Glow Lounge", `/media/${pid}/`]) expect(pub.text).toContain(s);
     expect((await send("GET", "/clinic", undefined, { cookie: clinic })).status).toBe(200);   // now opens on Today
   });
 
@@ -183,7 +183,7 @@ describe("self-serve onboarding, from application to a live listing", () => {
 
   it("a venue that went live before the checklist shows what's left, and the team can file documents for it", async () => {
     const list = await send("GET", "/ops/venues", undefined, { cookie: ops });
-    expect(list.text).toMatch(/Lumière Skin &amp; Laser Clinic[\s\S]*?To finish: Your clinic, Photos, Verification documents, Terms/);
+    expect(list.text).toMatch(/Lumière Skin &amp; Laser Clinic[\s\S]*?To finish: Your business, Photos, Verification documents, Terms/);
     const page = await send("GET", "/ops/venues/p1", undefined, { cookie: ops });
     expect(page.text).toContain("This listing is already live");
     const oc = csrfIn(page.text);

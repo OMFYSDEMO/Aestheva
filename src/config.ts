@@ -62,8 +62,16 @@ export const LOCALITIES = [
 export const AREAS: readonly string[] = LOCALITIES.map((l) => l.name);
 export const ZONES = [...new Set(LOCALITIES.map((l) => l.zone))];
 
-/** Kinds of business that can list on Aestheva (matches scripts/provider-sql.mjs). */
+/** Kinds of business that can list on Aestheva (matches scripts/provider-sql.mjs). The stored values stay fixed; people see the labels. */
 export const VENUE_TYPES = ["Clinic", "Salon & studio", "Wellness centre", "Independent practitioner"] as const;
+export const VENUE_TYPE_CHOICES: Record<string, string> = {
+  "Salon & studio": "Salon or studio: beauty, hair, nails, makeup, tattoo…",
+  "Independent practitioner": "Independent professional: beautician, nail, makeup or tattoo artist, therapist…",
+  "Clinic": "Clinic: skin, dental, hair, physio…",
+  "Wellness centre": "Wellness or Ayurveda centre",
+};
+/** How a kind of business reads on a public page. */
+export const typeLabel = (t: string) => (t === "Independent practitioner" ? "Independent professional" : t);
 
 /** Cities people can ask to hear about. The launch city is offered while it has no live venues. */
 export const WAITLIST_CITIES = ["Thiruvananthapuram", "Kochi", "Kozhikode", "Thrissur", "Bengaluru", "Chennai", "Mumbai"] as const;

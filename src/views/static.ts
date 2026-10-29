@@ -7,7 +7,7 @@ const DRAFT = `<div class="note n-plain mt16">${ic("info", 16)}<div><b>Draft for
 export function cancellationPage() {
   return `<div class="page narrow prose">
     <div class="eyebrow">Policies</div><h1 class="mt8" style="font-size:44px">Cancellation &amp; refunds</h1>
-    <p>Many services on Aestheva take a deposit when you book. The deposit holds the practitioner's time, and the rest of the price is paid at the venue.</p>
+    <p>Many services on Aestheva take a deposit when you book. The deposit holds the professional's time, and the rest of the price is paid on the day.</p>
     <h2>If you cancel</h2>
     <ul>
       <li><b>${POLICY.freeCancelHours} hours or more before your appointment:</b> cancel from your booking page and the deposit is refunded in full to the account you paid from.</li>
@@ -29,9 +29,9 @@ export function termsPage() {
   return `<div class="page narrow prose">
     <div class="eyebrow">Policies</div><h1 class="mt8" style="font-size:44px">Terms of use</h1>${DRAFT}
     <h2>Who we are</h2>
-    <p>Aestheva is a marketplace operated by ${esc(COMPANY.legalName)} (registered office: ${fact(COMPANY.registeredAddress, "Registered address")}). It lists independent clinics, salons, wellness centres and practitioners, and lets you book and pay a deposit for their services.</p>
+    <p>Aestheva is a marketplace operated by ${esc(COMPANY.legalName)} (registered office: ${fact(COMPANY.registeredAddress, "Registered address")}). It lists independent salons, studios, clinics, wellness centres and professionals, and lets you book and pay a deposit for their services.</p>
     <h2>Who provides the service</h2>
-    <p>The venue or practitioner you book provides the service and is responsible for it. Aestheva is not a healthcare provider. For medical services, your practitioner decides at assessment whether any treatment is suitable for you.</p>
+    <p>The business or professional you book provides the service and is responsible for it. Aestheva is not a healthcare provider. For medical services, your practitioner decides at assessment whether any treatment is suitable for you.</p>
     <h2>Verification</h2>
     <p>Each profile lists what Aestheva checked, its scope and when. Verification confirms documents within that scope on that date. It is not a guarantee of results.</p>
     <h2>Payments</h2>
@@ -61,7 +61,7 @@ export function contactPage() {
   const tel = COMPANY.supportPhone.replace(/\s/g, "");
   return `<div class="page narrow prose">
     <div class="eyebrow">Contact</div><h1 class="mt8" style="font-size:44px">Talk to us</h1>
-    <p class="lede">A question about a booking, a clinic you'd like to see on Aestheva, or something that didn't feel right? We'd like to hear it.</p>
+    <p class="lede">A question about a booking, a salon, studio or clinic you'd like to see on Aestheva, or something that didn't feel right? We'd like to hear it.</p>
     <div class="contact-grid mt24">
       <a class="contact-card" href="mailto:${esc(COMPANY.supportEmail)}">${ic("mail", 22)}<b>Email</b><span>${fact(COMPANY.supportEmail, "Support email")}</span></a>
       ${COMPANY.supportPhone ? `<a class="contact-card" href="tel:${esc(tel)}">${ic("phone", 22)}<b>Phone</b><span>${esc(COMPANY.supportPhone)}</span></a>` : ""}
@@ -85,45 +85,53 @@ export function aboutPage() {
     <h2>What you can count on</h2>
     <div class="promises">
       <div>${ic("receipt", 20)}<b>Prices in full</b><p>Every treatment shows its full price and how long it takes. No “call for rates”.</p></div>
-      <div>${ic("users", 20)}<b>Names, not just brands</b><p>Practitioners are named with their qualifications, and registration numbers for medical care.</p></div>
+      <div>${ic("users", 20)}<b>Names, not just brands</b><p>The people who look after you are named, with their training, and registration numbers for medical care.</p></div>
       <div>${ic("shield", 20)}<b>Medical stays medical</b><p>Medical treatments are labelled as such and begin with your doctor checking they suit you. Beauty and wellness are labelled separately.</p></div>
       <div>${ic("check", 20)}<b>We say what we checked</b><p>Verification lists exactly what we looked at and when. It never promises results.</p></div>
       <div>${ic("cal", 20)}<b>Your time, respected</b><p>A deposit holds your place. Cancel ${POLICY.freeCancelHours} hours or more ahead and it comes back in full.</p></div>
     </div>
 
     <h2>Why ${esc(COMPANY.launchCity)} first</h2>
-    <p>Because it's home. We know the drive from Kazhakkoottam to Kowdiar at six in the evening, and how much a free Saturday afternoon is worth. Starting here lets us get to know the clinics we list and grow carefully, one neighbourhood at a time, before Kochi, Kozhikode and Thrissur.</p>
+    <p>Because it's home. We know the drive from Kazhakkoottam to Kowdiar at six in the evening, and how much a free Saturday afternoon is worth. Starting here lets us get to know everyone we list and grow carefully, one neighbourhood at a time, before Kochi, Kozhikode and Thrissur.</p>
 
     <div class="story-cta mt32">
       <a class="btn btn-p" href="/search">Explore treatments</a>
-      <a class="btn btn-o" href="/for-practitioners">List your practice</a>
+      <a class="btn btn-o" href="/for-practitioners">List your business</a>
     </div>
   </div>`;
 }
 
 export function practitionersPage() {
   return `<div class="page narrow prose">
-    <div class="eyebrow" style="color:var(--sage-d)">For clinics &amp; practitioners</div>
-    <h1 class="mt8" style="font-size:clamp(36px,5vw,52px)">Fill your diary with people who turn up.</h1>
-    <p class="lede mt16">Aestheva brings clients in ${esc(COMPANY.launchCity)} to your door having already seen your prices, your team and a time that suits your rota, with a deposit paid to hold it.</p>
+    <div class="eyebrow" style="color:var(--sage-d)">List your business</div>
+    <h1 class="mt8" style="font-size:clamp(36px,5vw,52px)">Whatever you do to help people look and feel good, there's room for you here.</h1>
+    <p class="lede mt16">Aestheva is for everyone in beauty, wellness and care in ${esc(COMPANY.launchCity)}: big salons and one-chair studios, clinics, and independent professionals building their own name. Clients find you, see your prices and your work, and book a time that fits your diary.</p>
     <div class="row wrap mt24" style="gap:10px"><a class="btn btn-ok" href="/for-practitioners/apply">Apply online ${ic("arrowR", 16)}</a><span class="small muted">About five minutes. No documents needed yet.</span></div>
+    <h2>Who can join</h2>
+    <ul class="ticks">
+      <li>${ic("check", 15)} <span><b>Independent professionals</b>: beauticians, nail artists, makeup and bridal artists, tattoo and piercing artists, hair stylists, massage and wellness therapists.</span></li>
+      <li>${ic("check", 15)} <span><b>Salons and studios</b>: beauty parlours, unisex salons, nail bars, tattoo studios, barbers and grooming lounges.</span></li>
+      <li>${ic("check", 15)} <span><b>Wellness and Ayurveda centres</b>, spas and physiotherapy studios.</span></li>
+      <li>${ic("check", 15)} <span><b>Clinics</b>: skin, hair, dental and aesthetic care led by registered doctors and dentists.</span></li>
+    </ul>
+    <p class="small muted">Working on your own is fine. You'll be the only person on your profile, with your own hours, and you can add others later.</p>
     <div class="promises mt24">
-      <div>${ic("wallet", 20)}<b>Deposits at booking</b><p>Clients pay a deposit online to hold the time, so a missed appointment isn't a lost afternoon.</p></div>
-      <div>${ic("cal", 20)}<b>Your real availability</b><p>Clients only see the hours each practitioner actually works, and two people can never take the same slot or machine.</p></div>
-      <div>${ic("users", 20)}<b>Your team, properly credited</b><p>Each practitioner has their own profile line, with qualifications and registration where they apply.</p></div>
-      <div>${ic("shield", 20)}<b>Verified by scope</b><p>We check what applies to you and say exactly what we checked, which is what careful clients look for.</p></div>
+      <div>${ic("users", 20)}<b>Your name, your work</b><p>Each person has their own profile line, with their training, experience and the languages they speak, so clients know who they're booking.</p></div>
+      <div>${ic("cal", 20)}<b>Your real availability</b><p>Clients only see the hours you actually work, and two people can never take the same slot or chair.</p></div>
+      <div>${ic("receipt", 20)}<b>Prices in full</b><p>Clients see the full price before they book, so there are no awkward surprises on the day.</p></div>
+      <div>${ic("shield", 20)}<b>Checked, fairly</b><p>We check what applies to your kind of work and say exactly what we checked. Medical care is held to medical standards; everyone else, to theirs.</p></div>
     </div>
     <h2>What it costs</h2>
-    <p>Aestheva takes a ${POLICY.commissionBp / 100}% commission on completed bookings made through the marketplace. Deposits are settled to your bank account weekly, less the commission.</p>
+    <p>Listing is free. Aestheva takes a ${POLICY.commissionBp / 100}% commission only on completed bookings that clients make through the marketplace. Bookings you add yourself, for your regulars, phone calls or walk-ins, carry no commission.</p>
     <h2>How joining works</h2>
     <ol>
-      <li><b>Apply</b> with your business details, services and team.</li>
-      <li><b>Verification by scope.</b> We check what applies to you: clinical establishment and council registrations for medical services, certifications for beauty and wellness, and business identity for everyone. Your profile shows exactly what we checked.</li>
-      <li><b>Payouts.</b> You complete a short KYC with our payment partner, Razorpay, so deposits can be settled to your account.</li>
-      <li><b>Go live.</b> Your profile, services and live availability appear on Aestheva.</li>
+      <li><b>Apply</b> with your business details and the services you offer. Five minutes.</li>
+      <li><b>Set up your listing</b> in six short steps: your details, photos of your space or your work, who takes bookings, services and prices, a few documents, and our terms.</li>
+      <li><b>We check by scope.</b> Council and clinical registrations for medical care; training certificates, a portfolio or proof of work for beauty, wellness and body art; and an ID or business proof for everyone. Your page shows exactly what we checked.</li>
+      <li><b>Go live.</b> Your profile, services and free times appear on Aestheva, and bookings arrive in your calendar.</li>
     </ol>
     <h2>Apply</h2>
-    <p>Clinics, salons, wellness centres and independent practitioners can all apply. Tell us about your practice and the services you offer, and we'll be in touch to talk through the next steps.</p>
+    <p>Tell us about yourself or your business and what you offer, and we'll be in touch, usually by phone, to help you get set up.</p>
     <p class="mt16"><a class="btn btn-ok" href="/for-practitioners/apply">Apply online ${ic("arrowR", 16)}</a></p>
     <p class="small muted mt16">Questions first? Email <a href="mailto:${esc(COMPANY.supportEmail)}">${esc(COMPANY.supportEmail)}</a>.</p>
   </div>`;

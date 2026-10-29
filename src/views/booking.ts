@@ -5,7 +5,7 @@ import { isMedical } from "../services/catalog";
 import type { BookingRow, PaymentRow } from "../services/bookings";
 import { MED_NOTE, esc, ic, inr, mapsUrl, venueThumb } from "./ui";
 
-const STEPS = ["Service", "Practitioner", "Date & time", "Your details"];
+const STEPS = ["Service", "Who", "Date & time", "Your details"];
 
 /** The booking flow. The page carries the provider's services and team as JSON; /book.js drives the steps. */
 export function bookPage(d: ProviderDetail, preselect: string | null, payments: { gateway: string; mode: string }, preview?: string, categories: { id: string; name: string }[] = []) {
@@ -77,7 +77,7 @@ export function managePage(d: {
         <div class="line tot"><span>Nothing to pay at the venue</span><span>${inr(0)}</span></div>`
     : `<div class="line"><span>Service price</span><span>${inr(b.price_paise)}</span></div>
         ${b.deposit_paise ? `<div class="line"><span>Deposit ${paid ? "paid" : "due"}</span><span>${inr(b.deposit_paise)}</span></div>` : ""}
-        <div class="line tot"><span>Pay at the clinic</span><span>${inr(b.price_paise - b.deposit_paise)}</span></div>`;
+        <div class="line tot"><span>Pay on the day</span><span>${inr(b.price_paise - b.deposit_paise)}</span></div>`;
 
   const held = b.status === "held" && d.resume ? `
     <div class="card mt16"><h2 style="font-size:24px">Pay the deposit to confirm</h2>
@@ -114,7 +114,7 @@ export function managePage(d: {
     </div>
     ${b.status === "confirmed" ? `<div class="card mt16"><h2 style="font-size:24px">Before you go</h2><ul class="ticks mt12">
       <li>${ic("clock", 15)} Arrive about 10 minutes early, so there's time to settle in.</li>
-      ${b.price_paise - b.deposit_paise > 0 ? `<li>${ic("wallet", 15)} Pay the remaining ${inr(b.price_paise - b.deposit_paise)} at the clinic.</li>` : ""}
+      ${b.price_paise - b.deposit_paise > 0 ? `<li>${ic("wallet", 15)} Pay the remaining ${inr(b.price_paise - b.deposit_paise)} on the day.</li>` : ""}
       ${isMedical(b) ? `<li>${ic("shield", 15)} Tell your practitioner about any medicines you take or allergies you have.</li>` : ""}
       ${b.deposit_paise ? (d.terms.free ? `<li>${ic("cal", 15)} Plans changed? Cancel on this page; it's free until ${esc(freeUntil)}.</li>` : "")
         : `<li>${ic("cal", 15)} Plans changed? Please cancel on this page, so someone else can have the time.</li>`}

@@ -33,12 +33,12 @@ const base = (c: C) => c.env.SITE_URL || new URL(c.req.url).origin;
 
 const bare = (c: C, title: string, body: string, status = 200) => {
   c.header("cache-control", "no-store");
-  return c.html(layout({ title: `${title} · Aestheva for clinics`, appEnv: c.env.APP_ENV, noindex: true, app: { label: "for clinics" } }, body), status as 200);
+  return c.html(layout({ title: `${title} · Aestheva for business`, appEnv: c.env.APP_ENV, noindex: true, app: { label: "for business" } }, body), status as 200);
 };
 const page = (c: C, title: string, section: Section, body: string, status = 200) => {
   c.header("cache-control", "no-store");
   const u = c.get("user");
-  return c.html(layout({ title: `${title} · ${c.get("providerName")} · Aestheva`, appEnv: c.env.APP_ENV, noindex: true, app: { label: "for clinics", right: signOutButton(c.get("csrf"), u.name) }, scripts: section === "setup" ? ["/setup.js"] : [] },
+  return c.html(layout({ title: `${title} · ${c.get("providerName")} · Aestheva`, appEnv: c.env.APP_ENV, noindex: true, app: { label: "for business", right: signOutButton(c.get("csrf"), u.name) }, scripts: section === "setup" ? ["/setup.js"] : [] },
     clinicShell({ user: u, providerName: c.get("providerName"), section, csrf: c.get("csrf") }, body)), status as 200);
 };
 
