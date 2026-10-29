@@ -1,49 +1,44 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
+  // The top level is PRODUCTION, so Cloudflare's Git deploy (default command `npx wrangler deploy`) needs no settings.
+  // Local development uses `--env dev` (see package.json), which overrides the variables below.
   "name": "aestheva",
   "main": "src/index.ts",
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat"],
   "assets": { "directory": "./public", "binding": "ASSETS" },
-  // Production database (APAC), created October 2026. `wrangler dev` uses a local copy, never this one.
+  // Production database (APAC), created October 2026.
   "d1_databases": [
     { "binding": "DB", "database_name": "aestheva", "database_id": "d4250b41-2f5b-4dbc-9e58-dc7f1acb4fe8", "migrations_dir": "migrations" }
   ],
   // Every 5 minutes: release unpaid slot holds.
   "triggers": { "crons": ["*/5 * * * *"] },
   "observability": { "enabled": true },
-
-  // Local development. Without Razorpay keys the booking page offers a simulated payment.
-  // To test real Razorpay test-mode checkout locally, put RAZORPAY_KEY_SECRET and RAZORPAY_WEBHOOK_SECRET in .dev.vars.
+  // bookaestheva.com is registered through Cloudflare in this account; deploy attaches both hostnames and certificates.
+  // www redirects to the bare domain in the Worker.
+  "routes": [
+    { "pattern": "bookaestheva.com", "custom_domain": true },
+    { "pattern": "www.bookaestheva.com", "custom_domain": true }
+  ],
+  "workers_dev": false,
   "vars": {
-    "APP_ENV": "development",
-    "SITE_URL": "",
+    "APP_ENV": "production",
+    "SITE_URL": "https://bookaestheva.com",
+    // Public key id (rzp_live_...). Secrets are set in the dashboard (Worker > Settings > Variables and Secrets)
+    // or with `npx wrangler secret put RAZORPAY_KEY_SECRET` and `... RAZORPAY_WEBHOOK_SECRET`.
     "RAZORPAY_KEY_ID": ""
   },
 
   "env": {
-    "production": {
-      "name": "aestheva",
+    // Local development: `npm run dev`. Uses a local copy of the database, never production.
+    // Without Razorpay keys the booking page offers a simulated payment.
+    "dev": {
       "d1_databases": [
         { "binding": "DB", "database_name": "aestheva", "database_id": "d4250b41-2f5b-4dbc-9e58-dc7f1acb4fe8", "migrations_dir": "migrations" }
       ],
-      "triggers": { "crons": ["*/5 * * * *"] },
-      "observability": { "enabled": true },
-      // The bookaestheva.com zone must be in this Cloudflare account; deploy attaches both hostnames and their certificates.
-      // www redirects to the bare domain in the Worker.
-      "routes": [
-        { "pattern": "bookaestheva.com", "custom_domain": true },
-        { "pattern": "www.bookaestheva.com", "custom_domain": true }
-      ],
-      "workers_dev": false,
-      "vars": {
-        "APP_ENV": "production",
-        "SITE_URL": "https://bookaestheva.com",
-        // Public key id (rzp_live_...). The secrets are set with:
-        //   npx wrangler secret put RAZORPAY_KEY_SECRET --env production
-        //   npx wrangler secret put RAZORPAY_WEBHOOK_SECRET --env production
-        "RAZORPAY_KEY_ID": ""
-      }
+      "workers_dev": true,
+      "routes": [],
+      "vars": { "APP_ENV": "development", "SITE_URL": "", "RAZORPAY_KEY_ID": "" }
     }
   }
 }

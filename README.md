@@ -60,33 +60,21 @@ The site lives at **https://bookaestheva.com**. Already done:
 - `bookaestheva.com` was registered through Cloudflare Registrar, so its zone is already in the same account.
 - `wrangler.jsonc` attaches `bookaestheva.com` and `www.bookaestheva.com` as custom domains on deploy, and the app redirects www to the bare domain.
 
-Remaining steps:
+Remaining steps, all in the Cloudflare dashboard:
 
-1. Log in and deploy. The first deploy creates the Worker, both hostnames and their certificates.
+1. **Connect GitHub and deploy.** Go to **Workers & Pages**, select **Create application**, then **GitHub**. Approve access to the OMFYSDEMO account if asked, choose the **Aestheva** repository, keep the project name `aestheva`, choose the branch `claude/data-build-dashboard-5qxapk`, leave the build and deploy commands as they are, and select **Deploy**. Every later push to that branch deploys automatically.
 
-   ```sh
-   npx wrangler login
-   npm run deploy
-   ```
+2. **Razorpay keys.** In the Razorpay Dashboard, generate API keys. In Cloudflare, open the `aestheva` Worker, go to **Settings**, then **Variables and Secrets**, and add `RAZORPAY_KEY_ID` as text and `RAZORPAY_KEY_SECRET` as a secret.
 
-2. In the Razorpay Dashboard, generate API keys. Put the key id in `env.production.vars.RAZORPAY_KEY_ID` in `wrangler.jsonc`, store the secret, and deploy again:
+3. **Razorpay webhook.** In the Razorpay Dashboard, add a webhook to `https://bookaestheva.com/hooks/razorpay` for `payment.captured`, `payment.authorized`, `order.paid`, `refund.processed` and `refund.failed`. Add its secret in Cloudflare as `RAZORPAY_WEBHOOK_SECRET`.
 
-   ```sh
-   npx wrangler secret put RAZORPAY_KEY_SECRET --env production
-   npm run deploy
-   ```
-
-3. In the Razorpay Dashboard, add a webhook to `https://bookaestheva.com/hooks/razorpay` for `payment.captured`, `payment.authorized`, `order.paid`, `refund.processed` and `refund.failed`. Store its secret:
-
-   ```sh
-   npx wrangler secret put RAZORPAY_WEBHOOK_SECRET --env production
-   ```
-
-4. For a support address such as support@bookaestheva.com, turn on **Email Routing** for the zone and forward it to a company inbox. Then put the address in `src/config.ts`.
+4. **Support email.** In Cloudflare, open the `bookaestheva.com` domain, turn on **Email Routing**, and forward an address such as support@bookaestheva.com to a company inbox. Then put the address in `src/config.ts`.
 
 Check the deployment at https://bookaestheva.com/api/health. Production refuses bookings that need a deposit until the Razorpay keys are set.
 
-Future schema changes go in a new file under `migrations/` and are applied with `npm run db:migrate:remote`.
+If the first deploy reports a problem attaching the domain, add it by hand: open the `aestheva` Worker, go to **Settings**, then **Domains & Routes**, and add the custom domains `bookaestheva.com` and `www.bookaestheva.com`.
+
+The top level of `wrangler.jsonc` is production. Local development runs with `npm run dev`, which uses the `dev` environment and a local database. Future schema changes go in a new file under `migrations/` and are applied with `npm run db:migrate:remote`.
 
 ### Before going live
 
