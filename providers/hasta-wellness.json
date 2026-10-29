@@ -41,12 +41,13 @@
     },
     {
       "id": "hasta-dr-akshara",
-      "name": "Dr. Akshara A",
+      "name": "Dr. Akshara A S",
       "role": "Periodontist",
       "medical": true,
       "quals": [
         "BDS",
-        "MDS (Periodontics)"
+        "MDS (Periodontology, Implantology & Laser Dentistry)",
+        "Fellowship in Implantology"
       ],
       "registration": "Reg. No. 18299",
       "langs": [
