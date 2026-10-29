@@ -8,18 +8,20 @@ import { MED_NOTE, artBox, esc, ic, inr } from "./ui";
 const STEPS = ["Service", "Practitioner", "Date & time", "Your details", "Deposit"];
 
 /** The booking flow. The page carries the provider's services and team as JSON; /book.js drives the steps. */
-export function bookPage(d: ProviderDetail, preselect: string | null, payments: { gateway: string }) {
+export function bookPage(d: ProviderDetail, preselect: string | null, payments: { gateway: string; mode: string }, preview?: string) {
   const p = d.provider;
   const data = {
     provider: { slug: p.slug, name: p.name, area: p.area, city: p.city },
     services: d.services.map((s) => ({ id: s.id, name: s.name, kind: s.kind, cat: s.cat, dur: s.dur_min, price: s.price_paise, deposit: s.deposit_paise, staff: s.staff })),
     staff: d.staff.map((t) => ({ id: t.id, name: t.name, role: t.role, medical: !!t.medical })),
-    preselect, gateway: payments.gateway, freeCancelHours: POLICY.freeCancelHours, holdMinutes: POLICY.holdMinutes,
+    preselect, gateway: payments.gateway, freeCancelHours: POLICY.freeCancelHours, holdMinutes: POLICY.holdMinutes, preview: preview ?? null,
   };
   const json = JSON.stringify(data).replace(/</g, "\\u003c");
   return `<div class="page">
     <a class="btn btn-g btn-s" href="/p/${esc(p.slug)}" style="margin-left:-10px">${ic("chevL", 16)} ${esc(p.name)}</a>
     <h1 class="sr">Book at ${esc(p.name)}</h1>
+    ${p.status === "draft" ? `<div class="note n-plain mt12" role="status">${ic("info", 16)}<div><b>Preview.</b> This venue isn't public yet.</div></div>` : ""}
+    ${payments.mode === "test" ? `<div class="note n-plain mt12" role="status">${ic("info", 16)}<div><b>Payments are in test mode.</b> No real money is charged. In Razorpay's test checkout, use the UPI ID <b>success@razorpay</b> or a Razorpay test card.</div></div>` : ""}
     <ol class="steps mt16" id="bk-steps" aria-label="Booking steps" style="list-style:none;padding:0;margin-left:0">${STEPS.map((n, i) => `<li class="st ${i === 0 ? "on" : ""}"><i>${i + 1}</i>${n}</li>`).join("")}</ol>
     <div class="flow">
       <div id="bk-main" aria-live="polite">

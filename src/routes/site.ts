@@ -5,7 +5,7 @@ import { HttpError, isUniqueViolation } from "../db";
 import { nowIst } from "../domain/time";
 import { categories, liveProviders, liveServices, nextAvailable, providerBySlug, ratings } from "../services/catalog";
 import { authorisedBooking, bookingView, cancelByClient, cancellationTerms, type PaymentRow } from "../services/bookings";
-import { gatewayFor } from "../services/gateway";
+import { gatewayFor, paymentMode, previewAllowed } from "../services/gateway";
 import { layout, type PageOpts } from "../views/layout";
 import { homePage, matchServices, notFoundPage, providerPage, searchPage, type SearchQuery } from "../views/pages";
 import { bookPage, managePage } from "../views/booking";
@@ -58,25 +58,27 @@ site.get("/search", async (c) => {
 });
 
 site.get("/p/:slug", async (c) => {
-  const db = c.env.DB, d = await providerBySlug(db, c.req.param("slug"));
+  const preview = previewAllowed(c.env, c.req.query("preview")) ? c.req.query("preview") : undefined;
+  const db = c.env.DB, d = await providerBySlug(db, c.req.param("slug"), !!preview);
   if (!d) return page(c, { title: "Not found · Aestheva", noindex: true }, notFoundPage("We couldn't find that venue."), 404);
   const [cats, next] = await Promise.all([categories(db), nextAvailable(db, d.services)]);
   return page(c, {
     title: `${d.provider.name} · ${d.provider.area}, ${d.provider.city} · Aestheva`,
     description: `${d.provider.tagline}. ${d.provider.type} in ${d.provider.area}, ${d.provider.city}. See services, prices and live availability, and book online.`,
-    canonical: `${base(c)}/p/${d.provider.slug}`, nav: "explore",
-  }, providerPage({ ...d, categories: cats, next, today: nowIst().date }));
+    canonical: `${base(c)}/p/${d.provider.slug}`, nav: "explore", noindex: d.provider.status !== "live",
+  }, providerPage({ ...d, categories: cats, next, today: nowIst().date, preview }));
 });
 
 site.get("/book/:slug", async (c) => {
-  const d = await providerBySlug(c.env.DB, c.req.param("slug"));
+  const preview = previewAllowed(c.env, c.req.query("preview")) ? c.req.query("preview") : undefined;
+  const d = await providerBySlug(c.env.DB, c.req.param("slug"), !!preview);
   if (!d) return page(c, { title: "Not found · Aestheva", noindex: true }, notFoundPage("We couldn't find that venue."), 404);
   const pre = c.req.query("service");
   let gateway = "unavailable";
   try { gateway = gatewayFor(c.env).kind; } catch { /* production without keys: deposits can't be taken */ }
   const scripts = ["/book.js", ...(gateway === "razorpay" ? ["https://checkout.razorpay.com/v1/checkout.js"] : [])];
   return page(c, { title: `Book · ${d.provider.name} · Aestheva`, noindex: true, scripts },
-    bookPage(d, pre && d.services.some((s) => s.id === pre) ? pre : null, { gateway }));
+    bookPage(d, pre && d.services.some((s) => s.id === pre) ? pre : null, { gateway, mode: paymentMode(c.env) }, preview));
 });
 
 async function renderManage(c: C, ref: string, token: string, message?: string) {

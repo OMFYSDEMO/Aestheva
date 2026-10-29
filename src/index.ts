@@ -5,6 +5,7 @@ import api from "./routes/api";
 import hooks from "./routes/hooks";
 import site from "./routes/site";
 import { expireHolds } from "./services/bookings";
+import { paymentMode } from "./services/gateway";
 import { layout } from "./views/layout";
 import { notFoundPage } from "./views/pages";
 
@@ -34,7 +35,8 @@ app.use("*", async (c, next) => {
 
 app.get("/api/health", async (c) => {
   const db = await c.env.DB.prepare("SELECT COUNT(*) AS n FROM providers WHERE status = 'live'").first<{ n: number }>().then((r) => ({ ok: true, live: r?.n ?? 0 }), (e) => ({ ok: false, error: String(e) }));
-  return c.json({ ok: db.ok, env: c.env.APP_ENV, db }, db.ok ? 200 : 503);
+  const payments = { mode: paymentMode(c.env), webhook: !!c.env.RAZORPAY_WEBHOOK_SECRET };
+  return c.json({ ok: db.ok, env: c.env.APP_ENV, db, payments }, db.ok ? 200 : 503);
 });
 app.route("/api", api);
 app.route("/hooks", hooks);

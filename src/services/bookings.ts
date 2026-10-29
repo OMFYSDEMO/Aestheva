@@ -22,6 +22,7 @@ export interface PaymentRow {
 export interface NewBooking {
   serviceId: string; staffId: string; date: string; start: number;
   name: string; phone: string; email: string; note?: string; ackMedical?: boolean; ackTreatment?: boolean;
+  allowDraft?: boolean;   // set only when the request carried a valid preview key
 }
 
 /** Indian mobile numbers to E.164: 98765 43210, 098765..., +91 98765... all become +919876543210. */
@@ -62,7 +63,7 @@ export interface CreatedBooking {
 export async function createBooking(env: Env, input: NewBooking, now: Date = new Date()): Promise<CreatedBooking> {
   const db = env.DB;
   const service = await db.prepare(
-    "SELECT s.* FROM services s JOIN providers p ON p.id = s.provider_id WHERE s.id = ? AND s.active = 1 AND p.status = 'live'",
+    `SELECT s.* FROM services s JOIN providers p ON p.id = s.provider_id WHERE s.id = ? AND s.active = 1 AND p.status IN (${input.allowDraft ? "'live','draft'" : "'live'"})`,
   ).bind(String(input.serviceId ?? "")).first<ServiceRow>();
   if (!service) throw new HttpError(404, "This service is no longer available");
   const { name, phone, email, note } = validate(input, service);

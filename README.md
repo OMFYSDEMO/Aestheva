@@ -64,9 +64,9 @@ Remaining steps, all in the Cloudflare dashboard:
 
 1. **Connect GitHub and deploy.** Go to **Workers & Pages**, select **Create application**, then **GitHub**. Approve access to the OMFYSDEMO account if asked, choose the **Aestheva** repository, keep the project name `aestheva`, choose the branch `claude/data-build-dashboard-5qxapk`, leave the build and deploy commands as they are, and select **Deploy**. Every later push to that branch deploys automatically.
 
-2. **Razorpay keys.** In the Razorpay Dashboard, generate API keys. In Cloudflare, open the `aestheva` Worker, go to **Settings**, then **Variables and Secrets**, and add `RAZORPAY_KEY_ID` as text and `RAZORPAY_KEY_SECRET` as a secret.
+2. **Razorpay keys.** In the Razorpay Dashboard, switch to **Test mode** and generate API keys. In Cloudflare, open the `aestheva` Worker, go to **Settings**, then **Variables and Secrets**, and add each of these as type **Secret**: `RAZORPAY_KEY_ID` (starts `rzp_test_`), `RAZORPAY_KEY_SECRET`, and `PREVIEW_KEY` (any long random phrase you choose; it unlocks hidden venues). Use Secret even for the key id: plain-text variables added in the dashboard are reset by the next deploy.
 
-3. **Razorpay webhook.** In the Razorpay Dashboard, add a webhook to `https://bookaestheva.com/hooks/razorpay` for `payment.captured`, `payment.authorized`, `order.paid`, `refund.processed` and `refund.failed`. Add its secret in Cloudflare as `RAZORPAY_WEBHOOK_SECRET`.
+3. **Razorpay webhook.** In the Razorpay Dashboard (still in Test mode), go to **Webhooks**, add `https://bookaestheva.com/hooks/razorpay`, choose a secret, and tick `payment.captured`, `payment.authorized`, `order.paid`, `refund.processed` and `refund.failed`. Add the same secret in Cloudflare as the Secret `RAZORPAY_WEBHOOK_SECRET`.
 
 4. **Support email.** In Cloudflare, open the `bookaestheva.com` domain, turn on **Email Routing**, and forward an address such as support@bookaestheva.com to a company inbox. Then put the address in `src/config.ts`.
 
@@ -75,6 +75,20 @@ Check the deployment at https://bookaestheva.com/api/health. Production refuses 
 If the first deploy reports a problem attaching the domain, add it by hand: open the `aestheva` Worker, go to **Settings**, then **Domains & Routes**, and add the custom domains `bookaestheva.com` and `www.bookaestheva.com`.
 
 The top level of `wrangler.jsonc` is production. Local development runs with `npm run dev`, which uses the `dev` environment and a local database. Future schema changes go in a new file under `migrations/` and are applied with `npm run db:migrate:remote`.
+
+### Testing payments on the live site
+
+`providers/aestheva-test.json` is a hidden test venue, already loaded into production as a draft. It never appears in listings. Open it at:
+
+```
+https://bookaestheva.com/p/aestheva-test-clinic?preview=<your PREVIEW_KEY>
+```
+
+With Razorpay test keys, the booking page says payments are in test mode. Pay with the UPI ID `success@razorpay` or a Razorpay test card; no money moves. Try a booking with the ₹100 deposit, then cancel it from the confirmation page to see the refund. https://bookaestheva.com/api/health shows `"payments":{"mode":"test","webhook":true}` once the keys and webhook secret are in place.
+
+The same `?preview=` link works for any draft venue, so a new venue can be checked before it goes live.
+
+Switching to real payments later: complete Razorpay's account activation, generate Live mode keys and a Live mode webhook, and replace the three Razorpay secrets. The health check then shows `"mode":"live"` and the test-mode notice disappears.
 
 ### Adding a venue
 

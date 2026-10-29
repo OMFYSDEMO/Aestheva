@@ -82,6 +82,17 @@ export function gatewayFor(env: Env): Gateway {
   return simulated;
 }
 
+/** True when a request carries the preview key, which lets draft venues be viewed and booked. */
+export function previewAllowed(env: Env, key: unknown): boolean {
+  return !!env.PREVIEW_KEY && typeof key === "string" && key.length > 0 && safeEqual(key, env.PREVIEW_KEY);
+}
+
+/** Which payments are active: shown on /api/health and used for the test-mode notice. */
+export function paymentMode(env: Env): "live" | "test" | "simulated" | "off" {
+  if (env.RAZORPAY_KEY_ID && env.RAZORPAY_KEY_SECRET) return env.RAZORPAY_KEY_ID.startsWith("rzp_live_") ? "live" : "test";
+  return env.APP_ENV === "production" ? "off" : "simulated";
+}
+
 /** Webhook signature = HMAC-SHA256(raw body, webhook secret), hex, in the X-Razorpay-Signature header. */
 export async function verifyWebhook(env: Env, rawBody: string, signature: string | null): Promise<boolean> {
   if (!env.RAZORPAY_WEBHOOK_SECRET || !signature) return false;

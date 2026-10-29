@@ -5,7 +5,7 @@ import { POLICY } from "../config";
 import { addDays, daysBetween, fmtTime, isIsoDate, nowIst } from "../domain/time";
 import { loadInventory, slotsOn, type ServiceRow } from "../services/catalog";
 import { applyCapturedPayment, authorisedBooking, bookingByRef, cancelByClient, createBooking, type PaymentRow } from "../services/bookings";
-import { gatewayFor } from "../services/gateway";
+import { gatewayFor, previewAllowed } from "../services/gateway";
 import { COMPANY } from "../config";
 
 const api = new Hono<{ Bindings: Env }>();
@@ -22,7 +22,8 @@ api.get("/slots", async (c) => {
   const from = isIsoDate(c.req.query("from")) ? c.req.query("from")! : now.date;
   const days = Math.min(Math.max(Number(c.req.query("days")) || 14, 1), 21);
   if (daysBetween(now.date, from) < 0 || daysBetween(now.date, from) > POLICY.windowDays) throw new HttpError(400, "Dates outside the booking window");
-  const svc = await c.env.DB.prepare("SELECT s.* FROM services s JOIN providers p ON p.id = s.provider_id WHERE s.id = ? AND s.active = 1 AND p.status = 'live'")
+  const statuses = previewAllowed(c.env, c.req.query("preview")) ? "'live','draft'" : "'live'";
+  const svc = await c.env.DB.prepare(`SELECT s.* FROM services s JOIN providers p ON p.id = s.provider_id WHERE s.id = ? AND s.active = 1 AND p.status IN (${statuses})`)
     .bind(serviceId).first<ServiceRow>();
   if (!svc) throw new HttpError(404, "Service not found");
   const offered = (await c.env.DB.prepare("SELECT ss.staff_id FROM service_staff ss JOIN staff t ON t.id = ss.staff_id WHERE ss.service_id = ? AND t.active = 1 ORDER BY t.rowid")
@@ -47,6 +48,7 @@ api.post("/bookings", async (c) => {
     serviceId: String(b.serviceId ?? ""), staffId: String(b.staffId ?? "any"), date: String(b.date ?? ""), start: Number(b.start),
     name: String(b.name ?? ""), phone: String(b.phone ?? ""), email: String(b.email ?? ""), note: String(b.note ?? ""),
     ackMedical: b.ackMedical === true, ackTreatment: b.ackTreatment === true,
+    allowDraft: previewAllowed(c.env, b.preview),
   });
   const bk = created.booking;
   const manageUrl = `${origin(c.env, c.req.raw)}/booking/${bk.ref}?t=${created.manageToken}`;

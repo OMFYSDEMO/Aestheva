@@ -23,10 +23,9 @@
   "workers_dev": false,
   "vars": {
     "APP_ENV": "production",
-    "SITE_URL": "https://bookaestheva.com",
-    // Public key id (rzp_live_...). Secrets are set in the dashboard (Worker > Settings > Variables and Secrets)
-    // or with `npx wrangler secret put RAZORPAY_KEY_SECRET` and `... RAZORPAY_WEBHOOK_SECRET`.
-    "RAZORPAY_KEY_ID": ""
+    "SITE_URL": "https://bookaestheva.com"
+    // Set as Secrets in the dashboard (Worker > Settings > Variables and Secrets), never here:
+    // RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET, PREVIEW_KEY.
   },
 
   "env": {

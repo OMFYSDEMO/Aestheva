@@ -37,8 +37,9 @@ export async function liveServices(db: D1Database, providerIds?: string[]) {
   return providerIds ? all.filter((s) => providerIds.includes(s.provider_id)) : all;
 }
 
-export async function providerBySlug(db: D1Database, slug: string) {
-  const p = await db.prepare("SELECT * FROM providers WHERE slug = ? AND status = 'live'").bind(slug).first<ProviderRow>();
+/** A live venue by slug; with includeDraft (a valid preview key), draft venues too. */
+export async function providerBySlug(db: D1Database, slug: string, includeDraft = false) {
+  const p = await db.prepare(`SELECT * FROM providers WHERE slug = ? AND status IN (${includeDraft ? "'live','draft'" : "'live'"})`).bind(slug).first<ProviderRow>();
   if (!p) return null;
   const [services, staff, links, verifications, reviews] = await db.batch([
     db.prepare("SELECT * FROM services WHERE provider_id = ? AND active = 1 ORDER BY sort").bind(p.id),

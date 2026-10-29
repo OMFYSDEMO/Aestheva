@@ -87,7 +87,7 @@
 
   async function loadDays() {
     const today = new Date(Date.now() + 330 * 6e4).toISOString().slice(0, 10);
-    const r = await fetch(`/api/slots?service=${encodeURIComponent(F.svc.id)}&staff=${encodeURIComponent(F.staff)}&from=${today}&days=14`);
+    const r = await fetch(`/api/slots?service=${encodeURIComponent(F.svc.id)}&staff=${encodeURIComponent(F.staff)}&from=${today}&days=14${D.preview ? '&preview=' + encodeURIComponent(D.preview) : ''}`);
     const j = await r.json();
     if (!r.ok) throw new Error(j.error || 'Could not load availability');
     F.days = j.days;
@@ -167,7 +167,7 @@
       el.disabled = true; el.textContent = 'Reserving your time…';
       const fail = (m) => { const box = document.getElementById('pay-err'); if (box) box.innerHTML = errBox(m); el.disabled = false; el.textContent = 'Try again'; };
       try {
-        if (!created) created = await post('/api/bookings', { serviceId: F.svc.id, staffId: F.staff === 'any' ? 'any' : F.slot.staffId, date: F.date, start: F.slot.min, ...F.details, ackMedical: F.details.ackMed, ackTreatment: F.details.ackTreat });
+        if (!created) created = await post('/api/bookings', { serviceId: F.svc.id, staffId: F.staff === 'any' ? 'any' : F.slot.staffId, date: F.date, start: F.slot.min, ...F.details, ackMedical: F.details.ackMed, ackTreatment: F.details.ackTreat, preview: D.preview || undefined });
         if (!created.payment) { location.href = created.manageUrl; return; }
         el.textContent = 'Waiting for payment…';
         pay(created, document.getElementById('pay-mount'), fail);

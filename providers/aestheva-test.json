@@ -1,0 +1,24 @@
+{
+  "_about": "A hidden venue for testing bookings and Razorpay payments on the live site. Keep status 'draft': it is reachable only at /p/aestheva-test-clinic?preview=<PREVIEW_KEY> and never listed.",
+  "id": "aestheva-test",
+  "slug": "aestheva-test-clinic",
+  "name": "Aestheva Test Clinic",
+  "type": "Clinic",
+  "area": "Kazhakkoottam",
+  "address": "Test listing for checking bookings and payments. Not a real venue.",
+  "tagline": "Test listing. Not a real venue.",
+  "about": "This venue exists only so the Aestheva team can test bookings, deposits, cancellations and refunds on the live site. No appointment booked here takes place.",
+  "hours_text": "Daily · 09:00–21:00",
+  "amenities": [],
+  "art": 2,
+  "status": "draft",
+  "verifications": [],
+  "staff": [
+    { "id": "aestheva-test-staff", "name": "Test Practitioner", "role": "Test listing", "medical": false, "quals": [], "registration": "", "langs": ["English"], "bio": "",
+      "hours": { "sun-sat": "09:00-21:00" } }
+  ],
+  "services": [
+    { "id": "aestheva-test-deposit", "name": "Test booking with ₹100 deposit", "cat": "skin", "kind": "beauty", "dur": 30, "price": 200, "deposit": 100, "staff": ["aestheva-test-staff"], "desc": "Takes a ₹100 deposit through Razorpay. Use it to test payment, cancellation and refund." },
+    { "id": "aestheva-test-free", "name": "Test booking without deposit", "cat": "skin", "kind": "beauty", "dur": 30, "price": 200, "deposit": 0, "staff": ["aestheva-test-staff"], "desc": "Confirms without payment. Use it to test the booking flow on its own." }
+  ]
+}

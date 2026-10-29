@@ -164,7 +164,9 @@ export function searchPage(d: {
 
 // ---------- provider ----------
 
-export function providerPage(d: ProviderDetail & { categories: { id: string; name: string }[]; next: Next; today: string }) {
+export function providerPage(d: ProviderDetail & { categories: { id: string; name: string }[]; next: Next; today: string; preview?: string }) {
+  const pv = d.preview ? `preview=${encodeURIComponent(d.preview)}` : "";
+  const draftBanner = d.provider.status === "draft" ? `<div class="note n-plain" role="status" style="margin-bottom:16px">${ic("info", 16)}<div><b>Preview.</b> This venue isn't public yet. Only people with this link can see it or book it.</div></div>` : "";
   const p = d.provider, staffById = new Map(d.staff.map((s) => [s.id, s]));
   const catName = (id: string) => d.categories.find((c) => c.id === id)?.name ?? id;
   const cats = [...new Set(d.services.map((s) => s.cat))];
@@ -172,6 +174,7 @@ export function providerPage(d: ProviderDetail & { categories: { id: string; nam
   const amen: string[] = JSON.parse(p.amenities_json || "[]");
   const na = d.next.get(p.id);
   return `<div class="page">
+    ${draftBanner}
     <a class="btn btn-g btn-s" href="/search" style="margin-left:-10px">${ic("chevL", 16)} All venues</a>
     <div class="p-hero mt12">${artBox(p.id, p.art)}${artBox(p.id + "b", p.art + 1)}${artBox(p.id + "c", p.art + 3)}</div>
     <div class="p-layout mt32">
@@ -186,7 +189,7 @@ export function providerPage(d: ProviderDetail & { categories: { id: string; nam
           ${medical ? MED_NOTE : ""}
           ${cats.map((c) => `<h3 class="mt24" style="margin-bottom:6px;font-size:19px;font-weight:600">${esc(catName(c))}</h3>${d.services.filter((s) => s.cat === c).map((s) => `
             <div class="svc-row"><div class="col grow" style="gap:4px"><div class="row wrap" style="gap:8px"><b style="font-size:15.5px">${esc(s.name)}</b>${kindBadge(s)}</div><span class="small muted">${esc(s.description)}</span><span class="xs soft">${s.dur_min} min · ${s.deposit_paise ? `${inr(s.deposit_paise)} deposit at booking` : "No deposit"} · with ${s.staff.map((x) => esc(staffById.get(x)?.name ?? "")).join(", ")}</span></div>
-            <div class="row" style="gap:14px"><b style="font-size:16px;white-space:nowrap">${inr(s.price_paise)}</b><a class="btn btn-p btn-s" href="/book/${esc(p.slug)}?service=${esc(s.id)}" aria-label="Book ${esc(s.name)}">Book</a></div></div>`).join("")}`).join("")}
+            <div class="row" style="gap:14px"><b style="font-size:16px;white-space:nowrap">${inr(s.price_paise)}</b><a class="btn btn-p btn-s" href="/book/${esc(p.slug)}?service=${esc(s.id)}${pv ? "&amp;" + pv : ""}" aria-label="Book ${esc(s.name)}">Book</a></div></div>`).join("")}`).join("")}
         </section>
         <section id="sec-team" class="mt48"><h2 style="font-size:28px">Team</h2><p class="small muted mt8">Qualifications are shown as provided and checked within the scope listed.</p>
           <div class="grid g2 mt16">${d.staff.map((t) => `<div class="team-card">${avatar(t.name, 52, t.id)}<div class="col" style="gap:2px"><b>${esc(t.name)}</b><span class="small muted">${esc(t.role)}</span><span class="xs" style="color:${t.medical ? "var(--mulberry)" : "var(--sage-d)"};font-weight:600">${t.medical ? "Registered medical practitioner" : "Certified professional (non-medical)"}</span>${t.registration ? `<span class="xs muted">${esc(t.registration)}</span>` : ""}</div></div>`).join("")}</div>
@@ -203,7 +206,7 @@ export function providerPage(d: ProviderDetail & { categories: { id: string; nam
       <aside class="sticky col" style="gap:16px">
         <div class="card"><div class="eyebrow">Book an appointment</div>
           <p class="mt12 small muted">Next available</p><p class="serif" style="font-size:26px;font-weight:600">${na ? nextLabel(na, d.today) : "Fully booked for 10 days"}</p>
-          <a class="btn btn-p mt16" style="width:100%" href="/book/${esc(p.slug)}">Book now</a>
+          <a class="btn btn-p mt16" style="width:100%" href="/book/${esc(p.slug)}${pv ? "?" + pv : ""}">Book now</a>
           <p class="xs muted mt12">Free cancellation up to ${POLICY.freeCancelHours} hours before. <a href="/policies/cancellation">Cancellation policy</a></p></div>
         <div class="card"><div class="row" style="gap:8px">${ic("shield", 18, 'style="color:var(--sage-d)"')}<b>What we've verified</b></div>
           ${d.verifications.length ? d.verifications.map((v) => `<div class="verify">${ic("check", 16)}<div><b>${esc(v.label)}</b><div class="xs muted">${esc(v.scope)} · checked ${esc(v.checked_on)}</div></div></div>`).join("")
