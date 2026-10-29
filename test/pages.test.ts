@@ -68,7 +68,9 @@ describe("public pages", () => {
     }
     const contact = await req("GET", "/contact");
     expect(contact.text).toContain("hello@bookaestheva.com");
-    expect(contact.text).not.toContain("Support email to be added");
+    expect(contact.text).not.toContain("to be added");
+    expect(contact.text).toContain("+91 97784 58883");
+    expect(contact.text).toContain("Technopark Phase 3 Service Road");
   });
 
   it("adds an email to a city waitlist once", async () => {

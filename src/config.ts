@@ -4,8 +4,9 @@ export const COMPANY = {
   brand: "Aestheva",
   legalName: "Haswel Care Private Limited",
   supportEmail: "hello@bookaestheva.com",
-  supportPhone: "",
-  registeredAddress: "",
+  // Temporary: Hasta Wellness's number, shared until Aestheva has its own line (planned once ~10 practitioners are onboarded).
+  supportPhone: "+91 97784 58883",
+  registeredAddress: "1st floor, Anjali Arcade, near Nippon Toyota, Technopark Phase 3 Service Road, Kazhakkoottam, Thiruvananthapuram, Kerala 695583",
   launchCity: "Thiruvananthapuram",
 } as const;
 
