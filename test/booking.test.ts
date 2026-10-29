@@ -78,6 +78,10 @@ describe("booking with a Razorpay deposit", () => {
     const paid = await rp.pay(second.payment.orderId);
     const entity = { id: paid.razorpay_payment_id, order_id: second.payment.orderId, amount: 50000, status: "captured", method: "card" };
     expect((await webhook("payment.captured", { payment: { entity } }, "evt_1", "wrong_secret")).status).toBe(401);
+    const [rej] = await sql("SELECT entity_id, data_json FROM audit_log WHERE action = 'webhook.rejected' ORDER BY id DESC LIMIT 1");
+    expect(rej.entity_id).toBe("payment.captured");
+    expect(JSON.parse(rej.data_json).reason).toBe("signature does not match the webhook secret");
+    expect((await req("GET", "/hooks/razorpay")).json).toMatchObject({ ok: true, secretConfigured: true });
     const r = await webhook("payment.captured", { payment: { entity } }, "evt_1");
     expect(r.status).toBe(200);
     expect((await bookingByRef(env.DB, second.ref))!.status).toBe("confirmed");
