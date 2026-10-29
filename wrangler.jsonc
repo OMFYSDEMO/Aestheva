@@ -5,9 +5,9 @@
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat"],
   "assets": { "directory": "./public", "binding": "ASSETS" },
-  // Create with `npx wrangler d1 create aestheva`, then paste the id here and under env.production.
+  // Production database (APAC), created October 2026. `wrangler dev` uses a local copy, never this one.
   "d1_databases": [
-    { "binding": "DB", "database_name": "aestheva", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
+    { "binding": "DB", "database_name": "aestheva", "database_id": "d4250b41-2f5b-4dbc-9e58-dc7f1acb4fe8", "migrations_dir": "migrations" }
   ],
   // Every 5 minutes: release unpaid slot holds.
   "triggers": { "crons": ["*/5 * * * *"] },
@@ -25,13 +25,20 @@
     "production": {
       "name": "aestheva",
       "d1_databases": [
-        { "binding": "DB", "database_name": "aestheva", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
+        { "binding": "DB", "database_name": "aestheva", "database_id": "d4250b41-2f5b-4dbc-9e58-dc7f1acb4fe8", "migrations_dir": "migrations" }
       ],
       "triggers": { "crons": ["*/5 * * * *"] },
       "observability": { "enabled": true },
+      // The bookaestheva.com zone must be in this Cloudflare account; deploy attaches both hostnames and their certificates.
+      // www redirects to the bare domain in the Worker.
+      "routes": [
+        { "pattern": "bookaestheva.com", "custom_domain": true },
+        { "pattern": "www.bookaestheva.com", "custom_domain": true }
+      ],
+      "workers_dev": false,
       "vars": {
         "APP_ENV": "production",
-        "SITE_URL": "",
+        "SITE_URL": "https://bookaestheva.com",
         // Public key id (rzp_live_...). The secrets are set with:
         //   npx wrangler secret put RAZORPAY_KEY_SECRET --env production
         //   npx wrangler secret put RAZORPAY_WEBHOOK_SECRET --env production

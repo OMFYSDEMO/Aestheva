@@ -19,8 +19,14 @@ app.onError((err, c) => {
   return c.html(layout({ title: "Aestheva", appEnv: c.env.APP_ENV, noindex: true }, body), status as 500);
 });
 
+// One canonical address: www.<site> and http:// redirect to SITE_URL.
 app.use("*", async (c, next) => {
+  if (c.env.SITE_URL) {
+    const site = new URL(c.env.SITE_URL), url = new URL(c.req.url);
+    if (url.hostname === "www." + site.hostname) return c.redirect(site.origin + url.pathname + url.search, 301);
+  }
   await next();
+  if (c.env.APP_ENV === "production") c.header("strict-transport-security", "max-age=31536000; includeSubDomains");
   c.header("x-content-type-options", "nosniff");
   c.header("referrer-policy", "strict-origin-when-cross-origin");
   c.header("x-frame-options", "DENY");

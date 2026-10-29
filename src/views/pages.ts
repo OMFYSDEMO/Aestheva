@@ -55,6 +55,8 @@ export function homePage(d: {
     <div class="grid g4 cat-grid">${d.categories.map((c, i) => `<a class="cat-tile" href="/search?cat=${c.id}">${artBox("cat" + c.id, [2, 0, 3, 1, 4, 5, 6, 7][i])}<div class="t"><h3 style="font-size:18px;font-weight:600">${esc(c.name)}</h3><div class="xs muted">${d.services.filter((s) => s.cat === c.id).length} services</div></div></a>`).join("")}</div>
   </section>
 
+  ${d.providers.length ? "" : `<section class="mt48 sage-card" style="padding:clamp(24px,4vw,40px)"><div class="eyebrow" style="color:var(--sage-d)">Opening soon</div><h2 class="mt8">We're welcoming our first venues in ${esc(COMPANY.launchCity)}</h2><p class="mt12" style="max-width:620px;color:#33463A">Clinics, salons, wellness centres and practitioners are being verified now. Bookings open as each venue goes live.</p><a class="btn btn-ok btn-s mt16" href="/for-practitioners">Run a clinic or salon? Join us</a></section>`}
+
   ${featured.length ? `<section class="mt48"><div class="section-head"><div><div class="eyebrow">Well reviewed</div><h2 class="mt8">Featured in Trivandrum</h2></div></div>
     <div class="grid g4 pgrid">${featured.map((p) => providerCard(p, byProv(p.id), d.ratings.get(p.id), d.next, d.today)).join("")}</div>
   </section>` : ""}
@@ -103,7 +105,7 @@ export function matchServices(svcs: ServiceRow[], p: ProviderRow, f: SearchQuery
 
 export function searchPage(d: {
   f: SearchQuery; results: { p: ProviderRow; svcs: ServiceRow[]; verifications: number }[]; categories: { id: string; name: string }[];
-  ratings: Map<string, Rating>; next: Next; today: string;
+  ratings: Map<string, Rating>; next: Next; today: string; anyLive: boolean;
 }) {
   const { f } = d;
   const catName = (id: string) => d.categories.find((c) => c.id === id)?.name ?? id;
@@ -141,7 +143,8 @@ export function searchPage(d: {
       <div>
         <div class="row between small muted" style="margin-bottom:14px"><span><b style="color:var(--charcoal)">${d.results.length}</b> venue${d.results.length === 1 ? "" : "s"} · ${d.results.reduce((a, x) => a + x.svcs.length, 0)} matching services</span>${f.kind === "medical" ? '<span class="badge b-med">Medical only</span>' : ""}</div>
         ${d.results.length ? `<div class="col" style="gap:16px">${list}</div>` :
-          `<div class="card" style="text-align:center;padding:48px 24px"><h2 style="font-size:26px">No matches yet</h2><p class="muted mt8">Try another treatment, neighbourhood or service type.</p><a class="btn btn-p mt16" href="/search">Clear filters</a></div>`}
+          d.anyLive ? `<div class="card" style="text-align:center;padding:48px 24px"><h2 style="font-size:26px">No matches yet</h2><p class="muted mt8">Try another treatment, neighbourhood or service type.</p><a class="btn btn-p mt16" href="/search">Clear filters</a></div>`
+          : `<div class="card" style="text-align:center;padding:48px 24px"><h2 style="font-size:26px">Opening soon</h2><p class="muted mt8">We're verifying our first venues in ${esc(COMPANY.launchCity)}. Bookings open as each one goes live.</p><a class="btn btn-o mt16" href="/for-practitioners">Run a clinic or salon? Join us</a></div>`}
       </div>
     </div></div>`;
 }

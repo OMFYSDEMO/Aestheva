@@ -54,7 +54,7 @@ site.get("/search", async (c) => {
     title: `${f.q ? f.q + " · " : f.cat ? catName(f.cat) + " · " : ""}${f.area || COMPANY.launchCity} · Aestheva`,
     description: `Book ${f.cat ? catName(f.cat).toLowerCase() : "aesthetic and wellness services"} in ${f.area || COMPANY.launchCity} with verified providers.`,
     canonical: base(c) + "/search", nav: "explore", noindex: !!f.q,
-  }, searchPage({ f, results, categories: cats, ratings: rt, next, today }));
+  }, searchPage({ f, results, categories: cats, ratings: rt, next, today, anyLive: providers.length > 0 }));
 });
 
 site.get("/p/:slug", async (c) => {

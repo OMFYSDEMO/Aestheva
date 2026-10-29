@@ -48,44 +48,46 @@ npm run dev                 # http://localhost:8787
 Without Razorpay keys, the deposit step offers a simulated payment, so the whole flow works offline. To try real Razorpay test mode locally, create `.dev.vars` with `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET`, and set `RAZORPAY_KEY_ID` in `wrangler.jsonc` to your `rzp_test_` key.
 
 ```sh
-npm test                    # 30 tests: domain rules, booking and payment flows, pages
+npm test                    # domain rules, booking and payment flows, pages
 npm run typecheck
 ```
 
 ### Deploy to Cloudflare
 
-1. Create the database, then put its id in `wrangler.jsonc` in both places:
+The site lives at **https://bookaestheva.com**. Already done:
+
+- The production D1 database `aestheva` exists in the Haswel Care Cloudflare account, in the Asia-Pacific region, with the schema applied and recorded as migration `0001_init.sql`. Its id is in `wrangler.jsonc`. It holds no venues; real providers join through onboarding. Never load `seed/dev-sample.sql` into it.
+- `wrangler.jsonc` attaches `bookaestheva.com` and `www.bookaestheva.com` as custom domains on deploy, and the app redirects www to the bare domain.
+
+Remaining steps:
+
+1. Make sure the `bookaestheva.com` zone is active in the same Cloudflare account. If the domain was bought through Cloudflare, it already is. If it was bought elsewhere, add it under **Add a domain** in the Cloudflare dashboard and set the two nameservers Cloudflare gives you at the registrar.
+
+2. Log in and deploy. The first deploy creates the Worker, both hostnames and their certificates.
 
    ```sh
    npx wrangler login
-   npx wrangler d1 create aestheva
-   ```
-
-2. Apply the schema. Do **not** load `seed/dev-sample.sql` into production; real providers join through onboarding.
-
-   ```sh
-   npm run db:migrate:remote
-   ```
-
-3. In the Razorpay Dashboard, generate API keys. Put the key id in `env.production.vars.RAZORPAY_KEY_ID`, and the secret in Cloudflare:
-
-   ```sh
-   npx wrangler secret put RAZORPAY_KEY_SECRET --env production
-   ```
-
-4. Deploy, attach the custom domain, and set `SITE_URL` to it.
-
-   ```sh
    npm run deploy
    ```
 
-5. In the Razorpay Dashboard, add a webhook to `https://<your domain>/hooks/razorpay` for `payment.captured`, `payment.authorized`, `order.paid`, `refund.processed` and `refund.failed`. Store its secret:
+3. In the Razorpay Dashboard, generate API keys. Put the key id in `env.production.vars.RAZORPAY_KEY_ID` in `wrangler.jsonc`, store the secret, and deploy again:
+
+   ```sh
+   npx wrangler secret put RAZORPAY_KEY_SECRET --env production
+   npm run deploy
+   ```
+
+4. In the Razorpay Dashboard, add a webhook to `https://bookaestheva.com/hooks/razorpay` for `payment.captured`, `payment.authorized`, `order.paid`, `refund.processed` and `refund.failed`. Store its secret:
 
    ```sh
    npx wrangler secret put RAZORPAY_WEBHOOK_SECRET --env production
    ```
 
-Production refuses to take bookings that need a deposit until the Razorpay keys are set.
+5. For a support address such as support@bookaestheva.com, turn on **Email Routing** for the zone and forward it to a company inbox. Then put the address in `src/config.ts`.
+
+Check the deployment at https://bookaestheva.com/api/health. Production refuses bookings that need a deposit until the Razorpay keys are set.
+
+Future schema changes go in a new file under `migrations/` and are applied with `npm run db:migrate:remote`.
 
 ### Before going live
 
