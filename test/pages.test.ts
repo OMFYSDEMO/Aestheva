@@ -33,6 +33,12 @@ describe("public pages", () => {
     for (const s of ["Dermatology consultation", "Dr. Meera Nair", "Clinical establishment registration checked", "/book/lumiere-skin-and-laser-clinic?service=v1", "Next available"]) expect(r.text).toContain(s);
   });
 
+  it("says verification is in progress when nothing has been checked yet", async () => {
+    await sql("DELETE FROM verifications WHERE provider_id = 'p8'");
+    const r = await req("GET", "/p/ember-and-oud-grooming");
+    expect(r.text).toContain("Verification in progress");
+  });
+
   it("serves the booking page with its data and the Razorpay script", async () => {
     const r = await req("GET", "/book/saanvi-ayur-wellness?service=v7");
     expect(r.text).toContain('"preselect":"v7"');

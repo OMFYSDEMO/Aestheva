@@ -206,7 +206,8 @@ export function providerPage(d: ProviderDetail & { categories: { id: string; nam
           <a class="btn btn-p mt16" style="width:100%" href="/book/${esc(p.slug)}">Book now</a>
           <p class="xs muted mt12">Free cancellation up to ${POLICY.freeCancelHours} hours before. <a href="/policies/cancellation">Cancellation policy</a></p></div>
         <div class="card"><div class="row" style="gap:8px">${ic("shield", 18, 'style="color:var(--sage-d)"')}<b>What we've verified</b></div>
-          ${d.verifications.map((v) => `<div class="verify">${ic("check", 16)}<div><b>${esc(v.label)}</b><div class="xs muted">${esc(v.scope)} · checked ${esc(v.checked_on)}</div></div></div>`).join("")}
+          ${d.verifications.length ? d.verifications.map((v) => `<div class="verify">${ic("check", 16)}<div><b>${esc(v.label)}</b><div class="xs muted">${esc(v.scope)} · checked ${esc(v.checked_on)}</div></div></div>`).join("")
+            : `<p class="small muted mt12">Verification in progress. We list each check here, with its scope and date, once it's complete.</p>`}
           <p class="xs soft mt8">Verification confirms documents within the stated scope on the date checked. It doesn't guarantee outcomes or suitability for you.</p></div>
       </aside>
     </div></div>`;

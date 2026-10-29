@@ -76,6 +76,18 @@ If the first deploy reports a problem attaching the domain, add it by hand: open
 
 The top level of `wrangler.jsonc` is production. Local development runs with `npm run dev`, which uses the `dev` environment and a local database. Future schema changes go in a new file under `migrations/` and are applied with `npm run db:migrate:remote`.
 
+### Adding a venue
+
+Until the operations console exists, each venue is a file in `providers/`, such as `providers/hasta-wellness.json`. Fill in every `TODO`, then:
+
+```sh
+node scripts/provider-sql.mjs providers/hasta-wellness.json --check     # lists anything still missing
+node scripts/provider-sql.mjs providers/hasta-wellness.json > venue.sql
+npx wrangler d1 execute aestheva --remote --file=venue.sql
+```
+
+Prices and deposits in the file are in rupees. Set `"status": "live"` to list the venue, `"draft"` to keep it hidden. Re-running the same file updates the venue safely: services and staff removed from the file are deactivated, never deleted, because bookings refer to them. Add verification entries only for checks that have actually been completed; the profile says "Verification in progress" until then.
+
 ### Before going live
 
 - Fill in `src/config.ts`: support email, support phone and registered address. Pages show "to be added" markers until then. Razorpay's website review expects contact details and the cancellation, terms and privacy pages, which already exist.

@@ -1,0 +1,38 @@
+{
+  "_about": "Hasta Wellness, Aestheva's first venue. Facts below come from hastawellnessclinic.com (October 2026). Every \"TODO\" must be replaced before the venue can go live; scripts/provider-sql.mjs refuses to run while any remain.",
+  "id": "hasta-wellness",
+  "slug": "hasta-wellness-kazhakkoottam",
+  "name": "Hasta Wellness",
+  "type": "Clinic",
+  "area": "Kazhakkoottam",
+  "address": "1st floor, Anjali Arcade, near Nippon Toyota, Technopark Phase 3 Service Road, Kazhakkoottam, Thiruvananthapuram 695583",
+  "tagline": "Dental, skin, hair and signature wellness near Technopark Phase 3",
+  "about": "A consultation-led clinic bringing dental, skin, hair and wellness care together near Technopark Phase 3. Every pathway starts with an individual assessment, a clear explanation of options, costs and aftercare, and room for your questions. A venture of Haswel Care Private Limited, which also operates Aestheva.",
+  "hours_text": "Mon–Sat · 10:00–20:00 · Sun 10:00–14:00",
+  "amenities": ["Near Technopark Phase 3", "Dental, skin, hair and wellness under one roof", "Fibe healthcare finance enquiries for eligible dental treatment"],
+  "art": 5,
+  "status": "draft",
+  "verifications": [],
+  "staff": [
+    { "id": "hasta-dental", "name": "TODO: dentist's name", "role": "Dental surgeon", "medical": true, "quals": ["TODO: e.g. BDS"], "registration": "TODO: Kerala State Dental Council registration no.", "langs": ["Malayalam", "English"], "bio": "",
+      "hours": { "mon-sat": "10:00-20:00", "sun": "10:00-14:00" } },
+    { "id": "hasta-skin", "name": "TODO: skin & hair clinician's name", "role": "TODO: e.g. Dermatologist or Cosmetologist", "medical": true, "quals": ["TODO"], "registration": "TODO: council registration no.", "langs": ["Malayalam", "English"], "bio": "",
+      "hours": { "mon-sat": "10:00-20:00", "sun": "10:00-14:00" } },
+    { "id": "hasta-wellness-team", "name": "TODO: EMS & weight management lead", "role": "TODO", "medical": false, "quals": ["TODO"], "registration": "", "langs": ["Malayalam", "English"], "bio": "",
+      "hours": { "mon-sat": "10:00-20:00", "sun": "10:00-14:00" } }
+  ],
+  "services": [
+    { "id": "hasta-dental-consult", "name": "Dental consultation · Smile Forward", "cat": "dental", "kind": "consult", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-dental"], "desc": "Dental health, smile goals and practical planning in one conversation. Oral health comes first; a plan before a commitment." },
+    { "id": "hasta-aligner-assess", "name": "Clear aligner assessment", "cat": "dental", "kind": "consult", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-dental"], "desc": "Dental and bite assessment to discuss whether removable aligners suit your teeth, bite and routine, compared with other options." },
+    { "id": "hasta-smile-correction", "name": "Smile correction consultation", "cat": "dental", "kind": "consult", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-dental"], "desc": "Talk through gaps, uneven edges, alignment or tooth-colour concerns, conservative options first, and receive an individual proposal." },
+    { "id": "hasta-acne-consult", "name": "Acne & breakout consultation", "cat": "skin", "kind": "consult", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-skin"], "desc": "Assessment of active acne and your routine, with laser or light options discussed only when appropriate." },
+    { "id": "hasta-scar-consult", "name": "Acne marks & scars consultation", "cat": "skin", "kind": "consult", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-skin"], "desc": "Distinguish colour changes from scarring and discuss suitable treatments, recovery and realistic expectations." },
+    { "id": "hasta-wart-assess", "name": "Wart & bump assessment", "cat": "skin", "kind": "consult", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-skin"], "desc": "Clinical identification first, then options for confirmed warts. Laser is considered for selected cases." },
+    { "id": "hasta-laser-consult", "name": "Laser hair reduction consultation", "cat": "medaes", "kind": "consult", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-skin"], "desc": "Private consultation for face, underarm, leg or body areas: skin tone and hair review, honest expectations and a written proposal." },
+    { "id": "hasta-bridal-consult", "name": "Bridal & event skin consultation", "cat": "skin", "kind": "consult", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-skin"], "desc": "Plan skin care around your wedding or event date, with a realistic preparation timeline and a personalised bundle." },
+    { "id": "hasta-hair-assess", "name": "Hair & scalp assessment · Root & Reset", "cat": "hair", "kind": "consult", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-skin"], "desc": "Review of shedding or thinning, scalp, nutrition, sleep and stress, with targeted tests only if indicated." },
+    { "id": "hasta-prp-consult", "name": "PRP consultation for hair loss", "cat": "hair", "kind": "consult", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-skin"], "desc": "Discuss whether platelet-rich plasma suits your diagnosed hair-loss concern, the procedure, sessions and alternatives." },
+    { "id": "hasta-ems-consult", "name": "EMS wellness consultation", "cat": "body", "kind": "TODO: beauty (non-medical) or consult (medical)", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-wellness-team"], "desc": "An introduction to electrical muscle stimulation and whether it fits your wellness goals. Suitability first." },
+    { "id": "hasta-weight-consult", "name": "Weight management consultation", "cat": "body", "kind": "TODO: beauty (non-medical) or consult (medical)", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-wellness-team"], "desc": "A conversation about your weight, routine and goals before choosing a programme." }
+  ]
+}
