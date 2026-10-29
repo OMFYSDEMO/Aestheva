@@ -205,7 +205,7 @@ export function providerPage(d: ProviderDetail & { categories: { id: string; nam
   const facts = [
     [ic("users", 18), `${d.staff.length} ${medical ? "practitioner" : "professional"}${d.staff.length === 1 ? "" : "s"}`, d.staff.some((t) => t.medical) ? "Registration numbers shown" : "Certifications shown"],
     [ic("receipt", 18), `${d.services.length} treatment${d.services.length === 1 ? "" : "s"}`, d.services.length ? `From ${inr(minPrice(d.services))}, prices in full` : ""],
-    [ic("wallet", 18), deposits.length ? `Deposit from ${inr(Math.min(...deposits))}` : "No deposit", `Free cancellation up to ${POLICY.freeCancelHours}h before`],
+    [ic("wallet", 18), deposits.length ? `Deposit from ${inr(Math.min(...deposits))}` : "Nothing to pay online", deposits.length ? `Free cancellation up to ${POLICY.freeCancelHours}h before` : "Pay at the clinic after your visit"],
     ...(spoken.length ? [[ic("chat", 18), spoken.join(", "), "Languages spoken"]] : []),
   ];
   return `<div class="page">
@@ -254,7 +254,7 @@ export function providerPage(d: ProviderDetail & { categories: { id: string; nam
         <div class="card book-card"><div class="eyebrow">Book an appointment</div>
           <p class="mt12 small muted">Next free time</p><p class="serif" style="font-size:28px;font-weight:600;line-height:1.15">${na ? nextLabel(na, d.today) : "Fully booked for 10 days"}</p>
           <a class="btn btn-p mt16" style="width:100%" href="${bookHref()}">Choose a time</a>
-          <ul class="ticks mt16"><li>${ic("check", 14)} Full price shown before you book</li><li>${ic("check", 14)} Free cancellation up to ${POLICY.freeCancelHours} hours before</li><li>${ic("check", 14)} Pay the balance at the clinic</li></ul></div>
+          <ul class="ticks mt16"><li>${ic("check", 14)} Full price shown before you book</li>${deposits.length ? `<li>${ic("check", 14)} Free cancellation up to ${POLICY.freeCancelHours} hours before</li><li>${ic("check", 14)} Pay the balance at the clinic</li>` : `<li>${ic("check", 14)} Nothing to pay online</li><li>${ic("check", 14)} Pay at the clinic after your visit</li>`}</ul></div>
         <div class="card"><div class="row" style="gap:8px">${ic("shield", 18, 'style="color:var(--sage-d)"')}<b>What we've verified</b></div>
           ${d.verifications.length ? d.verifications.map((v) => `<div class="verify">${ic("check", 16)}<div><b>${esc(v.label)}</b><div class="xs muted">${esc(v.scope)} · checked ${esc(v.checked_on)}</div></div></div>`).join("")
             : `<p class="small muted mt12">Verification in progress. We list each check here, with its scope and date, once it's complete.</p>`}

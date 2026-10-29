@@ -40,6 +40,21 @@ describe("public pages", () => {
     await sql("UPDATE providers SET photos_json = '[]' WHERE slug = ?", "lumiere-skin-and-laser-clinic");
   });
 
+  it("reads correctly for a venue that takes no deposits", async () => {
+    const before = await sql("SELECT id, deposit_paise FROM services WHERE provider_id = 'p2'");
+    await sql("UPDATE services SET deposit_paise = 0 WHERE provider_id = 'p2'");
+    try {
+      const venue = await req("GET", "/p/saanvi-ayur-wellness");
+      expect(venue.text).toContain("Nothing to pay online");
+      expect(venue.text).toContain("Pay at the clinic after your visit");
+      expect(venue.text).not.toContain("deposit at booking");
+      const book = await req("GET", "/book/saanvi-ayur-wellness");
+      expect(book.text).not.toContain("Payments are in test mode");
+      expect(book.text).toContain("<i>5</i>Confirm</li>");
+      expect(book.text).not.toContain("<i>5</i>Deposit</li>");
+    } finally { for (const r of before) await sql("UPDATE services SET deposit_paise = ? WHERE id = ?", r.deposit_paise, r.id); }
+  });
+
   it("shows a provider with services, team, verification and booking links", async () => {
     const r = await req("GET", "/p/lumiere-skin-and-laser-clinic");
     expect(r.status).toBe(200);

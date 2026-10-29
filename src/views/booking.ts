@@ -5,11 +5,14 @@ import { isMedical } from "../services/catalog";
 import type { BookingRow, PaymentRow } from "../services/bookings";
 import { MED_NOTE, esc, ic, inr, mapsUrl, venueThumb } from "./ui";
 
-const STEPS = ["Service", "Practitioner", "Date & time", "Your details", "Deposit"];
+const STEPS = ["Service", "Practitioner", "Date & time", "Your details"];
 
 /** The booking flow. The page carries the provider's services and team as JSON; /book.js drives the steps. */
 export function bookPage(d: ProviderDetail, preselect: string | null, payments: { gateway: string; mode: string }, preview?: string, categories: { id: string; name: string }[] = []) {
   const p = d.provider;
+  // A venue that takes no deposits (for example before online payments are switched on) ends with "Confirm".
+  const takesDeposits = d.services.some((s) => s.deposit_paise > 0);
+  const steps = [...STEPS, takesDeposits ? "Deposit" : "Confirm"];
   const data = {
     provider: { slug: p.slug, name: p.name, area: p.area, city: p.city },
     services: d.services.map((s) => ({ id: s.id, name: s.name, kind: s.kind, cat: s.cat, dur: s.dur_min, price: s.price_paise, deposit: s.deposit_paise, staff: s.staff })),
@@ -22,12 +25,12 @@ export function bookPage(d: ProviderDetail, preselect: string | null, payments: 
     <a class="btn btn-g btn-s" href="/p/${esc(p.slug)}" style="margin-left:-10px">${ic("chevL", 16)} ${esc(p.name)}</a>
     <h1 class="sr">Book at ${esc(p.name)}</h1>
     ${p.status === "draft" ? `<div class="note n-plain mt12" role="status">${ic("info", 16)}<div><b>Preview.</b> This venue isn't public yet.</div></div>` : ""}
-    ${payments.mode === "test" ? `<div class="note n-plain mt12" role="status">${ic("info", 16)}<div><b>Payments are in test mode.</b> No real money is charged. In Razorpay's test checkout, use the UPI ID <b>success@razorpay</b> or a Razorpay test card.</div></div>` : ""}
-    <ol class="steps mt16" id="bk-steps" aria-label="Booking steps" style="list-style:none;padding:0;margin-left:0">${STEPS.map((n, i) => `<li class="st ${i === 0 ? "on" : ""}"><i>${i + 1}</i>${n}</li>`).join("")}</ol>
-    <div class="stepbar mt16" aria-hidden="true"><div class="row between xs"><b id="bk-steptxt">Step 1 of ${STEPS.length} · ${STEPS[0]}</b><span class="muted">${esc(p.name)}</span></div><div class="stepbar-track"><i id="bk-stepfill" style="width:${100 / STEPS.length}%"></i></div></div>
+    ${payments.mode === "test" && takesDeposits ? `<div class="note n-plain mt12" role="status">${ic("info", 16)}<div><b>Payments are in test mode.</b> No real money is charged. In Razorpay's test checkout, use the UPI ID <b>success@razorpay</b> or a Razorpay test card.</div></div>` : ""}
+    <ol class="steps mt16" id="bk-steps" aria-label="Booking steps" style="list-style:none;padding:0;margin-left:0">${steps.map((n, i) => `<li class="st ${i === 0 ? "on" : ""}"><i>${i + 1}</i>${n}</li>`).join("")}</ol>
+    <div class="stepbar mt16" aria-hidden="true"><div class="row between xs"><b id="bk-steptxt">Step 1 of ${steps.length} · ${steps[0]}</b><span class="muted">${esc(p.name)}</span></div><div class="stepbar-track"><i id="bk-stepfill" style="width:${100 / steps.length}%"></i></div></div>
     <div class="flow">
       <div id="bk-main" aria-live="polite">
-        <noscript><div class="note n-plain">${ic("info", 16)}<div>Booking needs JavaScript to show live availability and take the deposit. Please enable it, or call the venue directly.</div></div></noscript>
+        <noscript><div class="note n-plain">${ic("info", 16)}<div>Booking needs JavaScript to show live availability${takesDeposits ? " and take the deposit" : ""}. Please enable it, or call the venue directly.</div></div></noscript>
       </div>
       <aside class="sticky"><div class="card summary" id="bk-summary"><div class="row" style="gap:12px">${venueThumb(p, "s")}<div class="col" style="gap:0"><b class="serif" style="font-size:21px">${esc(p.name)}</b><span class="xs muted">${esc(p.area)}, ${esc(p.city)}</span></div></div><div class="divider"></div><p class="small muted">Choose a treatment to see the price.</p></div></aside>
     </div>
@@ -73,8 +76,8 @@ export function managePage(d: {
         ${refunded ? `<div class="line"><span>Deposit refunded</span><span>−${inr(pay!.amount_paise)}</span></div>` : ""}
         <div class="line tot"><span>Nothing to pay at the venue</span><span>${inr(0)}</span></div>`
     : `<div class="line"><span>Service price</span><span>${inr(b.price_paise)}</span></div>
-        <div class="line"><span>Deposit ${paid ? "paid" : b.deposit_paise ? "due" : ""}</span><span>${inr(b.deposit_paise)}</span></div>
-        <div class="line tot"><span>Pay at the venue</span><span>${inr(b.price_paise - b.deposit_paise)}</span></div>`;
+        ${b.deposit_paise ? `<div class="line"><span>Deposit ${paid ? "paid" : "due"}</span><span>${inr(b.deposit_paise)}</span></div>` : ""}
+        <div class="line tot"><span>Pay at the clinic</span><span>${inr(b.price_paise - b.deposit_paise)}</span></div>`;
 
   const held = b.status === "held" && d.resume ? `
     <div class="card mt16"><h2 style="font-size:24px">Pay the deposit to confirm</h2>
@@ -86,7 +89,8 @@ export function managePage(d: {
     <div class="card mt16"><h2 style="font-size:24px">Need to cancel?</h2>
       ${d.terms.free
         ? `<p class="small mt8">It's more than ${POLICY.freeCancelHours} hours before your appointment, so ${paid ? `your ${inr(paid)} deposit will be refunded in full` : "there's nothing to pay"}.</p>`
-        : `<p class="small mt8">Your appointment is less than ${POLICY.freeCancelHours} hours away, so the ${inr(paid)} deposit is normally kept by the venue. If something serious came up, ask for a review and our team will look at it.</p>`}
+        : paid ? `<p class="small mt8">Your appointment is less than ${POLICY.freeCancelHours} hours away, so the ${inr(paid)} deposit is normally kept by the venue. If something serious came up, ask for a review and our team will look at it.</p>`
+        : `<p class="small mt8">There's nothing to pay. Please cancel here if you can't come, so someone else can have the time.</p>`}
       <form method="post" action="/booking/${esc(b.ref)}/cancel" class="col mt16" style="gap:12px">
         <input type="hidden" name="t" value="${esc(d.token)}">
         <label class="f">Reason <span class="hint">Optional</span><textarea class="in" name="reason" maxlength="300" rows="2"></textarea></label>
@@ -112,7 +116,8 @@ export function managePage(d: {
       <li>${ic("clock", 15)} Arrive about 10 minutes early, so there's time to settle in.</li>
       ${b.price_paise - b.deposit_paise > 0 ? `<li>${ic("wallet", 15)} Pay the remaining ${inr(b.price_paise - b.deposit_paise)} at the clinic.</li>` : ""}
       ${isMedical(b) ? `<li>${ic("shield", 15)} Tell your practitioner about any medicines you take or allergies you have.</li>` : ""}
-      ${d.terms.free ? `<li>${ic("cal", 15)} Plans changed? Cancel on this page; it's free until ${esc(freeUntil)}.</li>` : ""}
+      ${b.deposit_paise ? (d.terms.free ? `<li>${ic("cal", 15)} Plans changed? Cancel on this page; it's free until ${esc(freeUntil)}.</li>` : "")
+        : `<li>${ic("cal", 15)} Plans changed? Please cancel on this page, so someone else can have the time.</li>`}
     </ul></div>` : ""}
     ${isMedical(b) ? `<div class="mt16">${MED_NOTE}</div>` : ""}
     ${held}

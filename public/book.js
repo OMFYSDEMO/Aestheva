@@ -84,7 +84,8 @@
     const who = F.slot ? staffById[F.slot.staffId] : F.staff && F.staff !== 'any' ? staffById[F.staff] : null;
     head.insertAdjacentHTML('afterend', s ? `<div class="line"><span>${esc(s.name)}<div class="xs muted">${s.dur} min${who ? ' · ' + esc(who.name) : F.staff === 'any' ? ' · any practitioner' : ''}</div></span><b>${inr(s.price)}</b></div>
       ${F.date && F.slot ? `<div class="line small muted"><span>${dParts(F.date).long}</span><span>${esc(F.slot.label)}</span></div>` : ''}
-      <div class="line tot"><span>Due now (deposit)</span><span>${inr(s.deposit)}</span></div><div class="line small muted"><span>Pay at the venue</span><span>${inr(s.price - s.deposit)}</span></div>
+      ${s.deposit ? `<div class="line tot"><span>Due now (deposit)</span><span>${inr(s.deposit)}</span></div><div class="line small muted"><span>Pay at the clinic</span><span>${inr(s.price - s.deposit)}</span></div>`
+        : `<div class="line tot"><span>Pay at the clinic</span><span>${inr(s.price)}</span></div><div class="line small muted"><span>Nothing to pay online</span><span></span></div>`}
       <div class="mt8">${kindBadge(s)}</div>` : '<p class="small muted">Select a service to see pricing.</p>');
   }
   const nav = (canNext) => `<div class="row between mt32">${F.step > 1 ? '<button class="btn btn-o" type="button" data-act="back">Back</button>' : '<span></span>'}<button class="btn btn-p" type="button" data-act="next" ${canNext ? '' : 'disabled'}>Continue</button></div>`;
@@ -133,7 +134,7 @@
           <label class="f">Email<input class="in" type="email" name="email" required autocomplete="email" value="${esc(d.email)}"></label>
           <label class="f">Anything the clinic should know? <span class="hint">Optional, for example access needs. Please keep health details for your practitioner in person.</span><textarea class="in" name="note" maxlength="240">${esc(d.note)}</textarea></label>
           ${isMed(s) ? `<label class="check consent"><input type="checkbox" name="ackMed" required ${d.ackMed ? 'checked' : ''}> <span>${s.kind === 'consult' ? 'I understand this is a consultation with a registered practitioner, who will advise me on what suits me.' : 'I understand this is a medical treatment. My practitioner will first check it suits me, and may suggest a consultation or a different treatment instead.'}</span></label>` : ''}
-          <div class="note n-plain"><div>Free cancellation up to ${D.freeCancelHours} hours before. Within ${D.freeCancelHours} hours the deposit is normally kept; you can ask for a review. <a href="/policies/cancellation" target="_blank" rel="noopener">Cancellation policy</a></div></div>
+          <div class="note n-plain"><div>${s.deposit ? `Free cancellation up to ${D.freeCancelHours} hours before. Within ${D.freeCancelHours} hours the deposit is normally kept; you can ask for a review.` : "Nothing to pay now; you pay at the clinic. If your plans change, please cancel from your booking page so someone else can have the time."} <a href="/policies/cancellation" target="_blank" rel="noopener">Cancellation policy</a></div></div>
           ${F.error ? errBox(F.error) : ''}
           <div class="row between mt8"><button type="button" class="btn btn-o" data-act="back">Back</button><button class="btn btn-p" type="submit">Continue to ${s.deposit ? 'deposit' : 'confirm'}</button></div>
         </form>`;
@@ -141,7 +142,7 @@
     if (F.step === 5) {
       const ok = D.gateway !== 'unavailable';
       html = `<h2>${s.deposit ? 'Hold your time with a deposit' : 'Confirm your booking'}</h2>
-        <p class="muted mt8">${s.deposit ? `Pay ${inr(s.deposit)} now to confirm. The remaining ${inr(s.price - s.deposit)} is paid at the venue.` : 'No deposit is needed for this service.'}</p>
+        <p class="muted mt8">${s.deposit ? `Pay ${inr(s.deposit)} now to confirm. The remaining ${inr(s.price - s.deposit)} is paid at the clinic.` : `Nothing to pay now. The ${inr(s.price)} is paid at the clinic after your visit.`}</p>
         <div class="card mt16 review-card"><b class="serif" style="font-size:20px">${esc(s.name)}</b>
           <dl class="kv mt12"><dt>When</dt><dd>${dParts(F.date).long} · ${esc(F.slot.label)}</dd><dt>With</dt><dd>${esc(staffById[F.slot.staffId].name)}, ${esc(staffById[F.slot.staffId].role)}</dd><dt>For</dt><dd>${esc(F.details.name)} · ${esc(F.details.phone)}<br>${esc(F.details.email)}</dd></dl></div>
         ${s.deposit ? `<p class="xs muted mt16">Payments are processed securely by Razorpay: UPI, cards, netbanking and wallets. We hold your time for ${D.holdMinutes} minutes while you pay.</p>` : ''}
