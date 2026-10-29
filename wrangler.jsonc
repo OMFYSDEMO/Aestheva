@@ -21,11 +21,13 @@
     { "pattern": "www.bookaestheva.com", "custom_domain": true }
   ],
   "workers_dev": false,
+  // Team emails (new applications). Delivers to addresses verified in Cloudflare Email Routing; see README.
+  "send_email": [{ "name": "EMAIL" }],
   "vars": {
     "APP_ENV": "production",
     "SITE_URL": "https://bookaestheva.com"
     // Set as Secrets in the dashboard (Worker > Settings > Variables and Secrets), never here:
-    // RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET, PREVIEW_KEY.
+    // RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET, PREVIEW_KEY, OPS_KEY, NOTIFY_EMAIL.
   },
 
   "env": {

@@ -96,6 +96,17 @@ Clinics, salons, wellness centres and independent practitioners apply at `/for-p
 
 The team reviews them at `/ops/applications`. Sign-in uses a Worker secret called `OPS_KEY` (Settings → Variables and Secrets, type Secret): choose a long password and share it only with the team. Until it is set, the team pages say they aren't switched on. Each application page has a status (new, reviewing, approved, declined), private team notes, and a draft venue file to start from once you approve it.
 
+#### Email for new applications
+
+Each new application is emailed to the team from `notifications@bookaestheva.com`, with Reply-To set to the applicant, through Cloudflare Email Service (the `EMAIL` binding in `wrangler.jsonc`). On Cloudflare's free tier, Workers can only email addresses verified in Email Routing, so:
+
+1. In Cloudflare, open **Email Service → Email Routing** for bookaestheva.com and make sure it is enabled.
+2. Under **Destination addresses**, add the inbox the team reads (for example the Gmail that `hello@` forwards to) and verify it from the email Cloudflare sends.
+3. Add a Worker secret `NOTIFY_EMAIL` with that inbox. Without it, emails go to hello@bookaestheva.com, which only works if that address is itself a verified destination.
+4. Sign in at `/ops/applications` and press **Send a test email**. If it fails, the page shows Cloudflare's reason and what to change.
+
+A failed email never loses an application: it is saved first, and the outcome is recorded in `audit_log` (`application.notified` or `application.notify_failed`).
+
 ### Adding a venue
 
 Until the operations console exists, each venue is a file in `providers/`, such as `providers/hasta-wellness.json`. Fill in every `TODO`, then:

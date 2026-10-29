@@ -48,7 +48,8 @@ app.get("/api/health", async (c) => {
       OPS_KEY: c.env.OPS_KEY ? "set" : "missing",
     },
   };
-  return c.json({ ok: db.ok, env: c.env.APP_ENV, db, payments }, db.ok ? 200 : 503);
+  const email = { binding: !!c.env.EMAIL, NOTIFY_EMAIL: c.env.NOTIFY_EMAIL ? "set" : "missing (using the support address)" };
+  return c.json({ ok: db.ok, env: c.env.APP_ENV, db, payments, email }, db.ok ? 200 : 503);
 });
 app.route("/api", api);
 app.route("/hooks", hooks);

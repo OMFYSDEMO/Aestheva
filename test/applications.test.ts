@@ -128,3 +128,71 @@ describe("team review pages", () => {
     expect((await send("GET", "/sitemap.xml")).text).not.toContain("/ops");
   });
 });
+
+describe("team email for new applications", () => {
+  type Sent = { from: { email: string }; to: string; subject: string; text: string; html: string; replyTo?: { email: string; name: string } };
+  let sent: Sent[] = [], failWith: string | null = null;
+  const realEmail = env.EMAIL;
+  beforeAll(() => {
+    (env as { EMAIL: unknown }).EMAIL = { send: async (m: Sent) => { if (failWith) throw Object.assign(new Error("nope"), { code: failWith }); sent.push(m); return { messageId: "m1" }; } };
+    return () => { (env as { EMAIL: unknown }).EMAIL = realEmail; };
+  });
+
+  it("emails the team inbox once, with reply-to set to the applicant", async () => {
+    sent = [];
+    const r = await send("POST", "/for-practitioners/apply", good({ business_name: "Smile <b>Point</b>", phone: "9446001122", email: "ravi@smile.example", contact_name: "Ravi Nair", services_text: "Scaling ₹1,800" }), { ip: "192.0.2.10" });
+    const ref = /AP-[2-9A-HJ-NP-Z]{6}/.exec(r.text)![0];
+    expect(sent).toHaveLength(1);
+    const m = sent[0];
+    expect(m.to).toBe("hello@bookaestheva.com");
+    expect(m.from.email).toBe("notifications@bookaestheva.com");
+    expect(m.replyTo).toEqual({ email: "ravi@smile.example", name: "Ravi Nair" });
+    expect(m.subject).toBe(`New application: Smile <b>Point</b> (Clinic, Pattom) · ${ref}`);
+    expect(m.html).toContain("Smile &lt;b&gt;Point&lt;/b&gt;");
+    expect(m.html).toContain(`https://aestheva.test/ops/applications/${ref}`);
+    expect(m.text).toContain("Mobile: +919446001122");
+    expect((await sql("SELECT COUNT(*) AS n FROM audit_log WHERE action = 'application.notified' AND entity_id = ?", ref))[0].n).toBe(1);
+    // The same application sent again is not emailed twice.
+    await send("POST", "/for-practitioners/apply", good({ business_name: "Smile <b>Point</b>", phone: "9446001122", email: "ravi@smile.example", contact_name: "Ravi Nair" }), { ip: "192.0.2.10" });
+    expect(sent).toHaveLength(1);
+  });
+
+  it("sends to NOTIFY_EMAIL when it is set", async () => {
+    sent = []; env.NOTIFY_EMAIL = " team-inbox@example.com ";
+    try { await send("POST", "/for-practitioners/apply", good({ business_name: "Tidy Brows", phone: "9446001133" }), { ip: "192.0.2.11" }); }
+    finally { delete env.NOTIFY_EMAIL; }
+    expect(sent[0].to).toBe("team-inbox@example.com");
+  });
+
+  it("keeps the application when the email can't be sent, and records why", async () => {
+    sent = []; failWith = "E_SENDER_DOMAIN_NOT_AVAILABLE";
+    try {
+      const r = await send("POST", "/for-practitioners/apply", good({ business_name: "Quiet Hands Spa", phone: "9446001144" }), { ip: "192.0.2.12" });
+      expect(r.status).toBe(200);
+      const ref = /AP-[2-9A-HJ-NP-Z]{6}/.exec(r.text)![0];
+      expect((await sql("SELECT COUNT(*) AS n FROM applications WHERE ref = ?", ref))[0].n).toBe(1);
+      const [log] = await sql("SELECT data_json FROM audit_log WHERE action = 'application.notify_failed' AND entity_id = ?", ref);
+      expect(JSON.parse(log.data_json)).toEqual({ code: "E_SENDER_DOMAIN_NOT_AVAILABLE" });
+    } finally { failWith = null; }
+  });
+
+  it("lets the team send a test email and explains a failure", async () => {
+    const login = await send("POST", "/ops/login", { key: "test-ops-key" });
+    const cookie = login.headers.get("set-cookie")!.split(";")[0];
+    const list = await send("GET", "/ops/applications", undefined, { cookie });
+    const csrf = /name="csrf" value="([0-9a-f]{64})"/.exec(list.text)![1];
+    sent = [];
+    const ok = await send("POST", "/ops/test-email", { csrf }, { cookie });
+    expect(ok.headers.get("location")).toBe("/ops/applications?email=sent");
+    expect(sent[0].subject).toBe("Aestheva test email");
+    expect((await send("GET", ok.headers.get("location")!, undefined, { cookie })).text).toContain("Test email sent to hello@bookaestheva.com");
+    failWith = "E_RECIPIENT_NOT_ALLOWED";
+    try {
+      const bad = await send("POST", "/ops/test-email", { csrf }, { cookie });
+      const page = await send("GET", bad.headers.get("location")!, undefined, { cookie });
+      expect(page.text).toContain("E_RECIPIENT_NOT_ALLOWED");
+      expect(page.text).toContain("Destination addresses");
+    } finally { failWith = null; }
+    expect((await send("POST", "/ops/test-email", { csrf: "0".repeat(64) }, { cookie })).status).toBe(403);
+  });
+});

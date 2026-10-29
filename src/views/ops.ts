@@ -18,10 +18,20 @@ export function opsLoginPage(error = "", configured = true) {
     </div></div>`;
 }
 
-export function opsListPage(d: { rows: ApplicationRow[]; counts: Record<string, number>; status: string }) {
+const EMAIL_HELP: Record<string, string> = {
+  NO_BINDING: "The email binding isn't available here. It only exists on the deployed site.",
+  E_SENDER_DOMAIN_NOT_AVAILABLE: "Email Routing isn't switched on for bookaestheva.com yet. Turn it on in Cloudflare: Email Service → Email Routing.",
+  E_SENDER_NOT_VERIFIED: "Email Routing isn't switched on for bookaestheva.com yet. Turn it on in Cloudflare: Email Service → Email Routing.",
+  E_RECIPIENT_NOT_ALLOWED: "Cloudflare will only email a verified inbox. Add the inbox under Email Routing → Destination addresses, verify it, and set NOTIFY_EMAIL to it.",
+};
+export function opsListPage(d: { rows: ApplicationRow[]; counts: Record<string, number>; status: string; csrf: string; emailResult?: { ok: boolean; to: string; code?: string } }) {
   const total = Object.values(d.counts).reduce((a, b) => a + b, 0);
   const tab = (s: string, label: string, n: number) => `<a class="chip ${d.status === s ? "on" : ""}" href="/ops/applications${s ? "?status=" + s : ""}">${label} <b>${n}</b></a>`;
-  return shell(`<h1 class="mt8" style="font-size:40px">Applications</h1>
+  const er = d.emailResult;
+  const emailNote = er ? (er.ok ? `<div class="form-ok mt12" role="status">Test email sent to ${esc(er.to)}. Check that inbox, including spam.</div>`
+    : `<div class="form-error mt12" role="alert">The test email to ${esc(er.to)} didn't send${er.code ? ` (${esc(er.code)})` : ""}. ${esc(EMAIL_HELP[er.code ?? ""] ?? "Check Email Routing in Cloudflare, then try again.")}</div>`) : "";
+  return shell(`${emailNote}<div class="row wrap between mt8"><h1 style="font-size:40px">Applications</h1>
+    <form method="post" action="/ops/test-email"><input type="hidden" name="csrf" value="${esc(d.csrf)}"><button class="btn btn-o btn-s" type="submit">${ic("mail", 15)} Send a test email</button></form></div>
     <div class="chips mt16">${tab("", "All", total)}${APP_STATUSES.map((s) => tab(s, s[0].toUpperCase() + s.slice(1), d.counts[s] ?? 0)).join("")}</div>
     ${d.rows.length ? `<div class="tbl-wrap mt24"><table class="tbl"><thead><tr><th>Received</th><th>Business</th><th>Area</th><th>Contact</th><th>Status</th></tr></thead><tbody>
       ${d.rows.map((a) => `<tr><td class="small" style="white-space:nowrap">${when(a.created_at)}</td><td><a href="/ops/applications/${esc(a.ref)}"><b>${esc(a.business_name)}</b></a><div class="xs muted">${esc(a.business_type)}${a.medical ? " · medical" : ""} · ${esc(a.ref)}</div></td><td class="small">${esc(a.area)}</td><td class="small">${esc(a.contact_name)}<div class="xs muted">${esc(a.phone)}</div></td><td>${badge(a.status)}</td></tr>`).join("")}

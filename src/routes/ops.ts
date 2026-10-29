@@ -7,6 +7,7 @@ import { categories } from "../services/catalog";
 import { getApplication, listApplications, updateApplication, venueDraft } from "../services/applications";
 import { layout } from "../views/layout";
 import { opsDetailPage, opsListPage, opsLoginPage } from "../views/ops";
+import { sendTestEmail, teamInbox } from "../services/notify";
 
 type C = Context<{ Bindings: Env; Variables: { csrf: string } }>;
 const ops = new Hono<{ Bindings: Env; Variables: { csrf: string } }>();
@@ -60,7 +61,13 @@ ops.use("*", async (c: C, next: Next) => {
 ops.get("/", (c) => c.redirect("/ops/applications", 303));
 ops.get("/applications", async (c) => {
   const status = c.req.query("status") ?? "";
-  return page(c, "Applications", opsListPage({ ...(await listApplications(c.env.DB, status)), status }));
+  const e = c.req.query("email");
+  const emailResult = e === "sent" ? { ok: true, to: teamInbox(c.env) } : e === "failed" ? { ok: false, to: teamInbox(c.env), code: c.req.query("code") ?? "" } : undefined;
+  return page(c, "Applications", opsListPage({ ...(await listApplications(c.env.DB, status)), status, csrf: c.get("csrf"), emailResult }));
+});
+ops.post("/test-email", async (c) => {
+  const r = await sendTestEmail(c.env, new URL(c.req.url).origin);
+  return c.redirect(`/ops/applications?email=${r.ok ? "sent" : "failed&code=" + encodeURIComponent(r.code ?? "")}`, 303);
 });
 ops.get("/applications/:ref", async (c) => {
   const a = await getApplication(c.env.DB, c.req.param("ref"));

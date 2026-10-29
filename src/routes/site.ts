@@ -12,6 +12,7 @@ import { homePage, matchServices, notFoundPage, providerPage, searchPage, type S
 import { bookPage, managePage } from "../views/booking";
 import { applyPage, applyThanksPage } from "../views/apply";
 import { createApplication, validateApplication, type ApplicationForm } from "../services/applications";
+import { notifyNewApplication } from "../services/notify";
 import { aboutPage, cancellationPage, contactPage, practitionersPage, privacyPage, termsPage } from "../views/static";
 
 type C = Context<{ Bindings: Env }>;
@@ -146,7 +147,9 @@ site.post("/for-practitioners/apply", async (c) => {
   }
   const r = validateApplication(form, cats.map((x) => x.id));
   if (!r.ok) return page(c, { ...applyMeta(c), noindex: true }, applyPage({ values: form, errors: r.errors, categories: cats, started }), 400);
-  const { ref } = await createApplication(c.env, r.value, c.req.header("cf-connecting-ip") ?? "");
+  const { ref, repeat } = await createApplication(c.env, r.value, c.req.header("cf-connecting-ip") ?? "");
+  // Email the team after responding; a failed email never loses the application, which is already saved.
+  if (!repeat) c.executionCtx.waitUntil(notifyNewApplication(c.env, ref, r.value, base(c), r.value.categories.map((id) => cats.find((x) => x.id === id)?.name ?? id)));
   return page(c, { ...applyMeta(c), noindex: true }, applyThanksPage(ref, r.value.contact_name));
 });
 
