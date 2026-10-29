@@ -1,5 +1,5 @@
 {
-  "_about": "Hasta Wellness, Aestheva's first venue. Venue facts from hastawellnessclinic.com; services, durations, prices and doctors from Dr Sooraj (October 2026). Assumptions awaiting confirmation: deposits (20% of price rounded to the nearest ₹100, minimum ₹200), 60-minute tooth brightening, Dr Sooraj on full clinic hours (Dr Akshara's hours confirmed), confirmation that both doctors' qualifications cover the skin and hair services listed.",
+  "_about": "Hasta Wellness, Aestheva's first venue. Venue facts from hastawellnessclinic.com; services, durations, prices and doctors from Dr Sooraj (October 2026). Assumptions awaiting confirmation: deposits (20% of price rounded to the nearest ₹100, minimum ₹200), 60-minute tooth brightening, Dr Sooraj on full clinic hours (Dr Akshara's hours confirmed), Dr Akshara offers dental services only (owner's decision, October 2026).",
   "id": "hasta-wellness",
   "slug": "hasta-wellness-kazhakkoottam",
   "name": "Hasta Wellness",
@@ -143,8 +143,7 @@
       "price": 4000,
       "deposit": 800,
       "staff": [
-        "hasta-dr-sooraj",
-        "hasta-dr-akshara"
+        "hasta-dr-sooraj"
       ],
       "desc": "Carbon laser peel for the face.",
       "resources": [
@@ -160,8 +159,7 @@
       "price": 1500,
       "deposit": 300,
       "staff": [
-        "hasta-dr-sooraj",
-        "hasta-dr-akshara"
+        "hasta-dr-sooraj"
       ],
       "desc": "Carbon laser peel for the lips.",
       "resources": [
@@ -177,8 +175,7 @@
       "price": 2500,
       "deposit": 500,
       "staff": [
-        "hasta-dr-sooraj",
-        "hasta-dr-akshara"
+        "hasta-dr-sooraj"
       ],
       "desc": "Carbon laser treatment for the under-eye area.",
       "resources": [
@@ -194,8 +191,7 @@
       "price": 2500,
       "deposit": 500,
       "staff": [
-        "hasta-dr-sooraj",
-        "hasta-dr-akshara"
+        "hasta-dr-sooraj"
       ],
       "desc": "Carbon laser peel for the underarms or elbows.",
       "resources": [
@@ -211,8 +207,7 @@
       "price": 1500,
       "deposit": 300,
       "staff": [
-        "hasta-dr-sooraj",
-        "hasta-dr-akshara"
+        "hasta-dr-sooraj"
       ],
       "desc": "A chemical peel for dull-looking skin."
     },
@@ -225,8 +220,7 @@
       "price": 1500,
       "deposit": 300,
       "staff": [
-        "hasta-dr-sooraj",
-        "hasta-dr-akshara"
+        "hasta-dr-sooraj"
       ],
       "desc": "A chemical peel for acne and acne marks."
     },
@@ -239,8 +233,7 @@
       "price": 1500,
       "deposit": 300,
       "staff": [
-        "hasta-dr-sooraj",
-        "hasta-dr-akshara"
+        "hasta-dr-sooraj"
       ],
       "desc": "A chemical peel for uneven pigmentation."
     },
@@ -253,8 +246,7 @@
       "price": 1500,
       "deposit": 300,
       "staff": [
-        "hasta-dr-sooraj",
-        "hasta-dr-akshara"
+        "hasta-dr-sooraj"
       ],
       "desc": "One laser hair reduction session for the upper lip and lower chin.",
       "resources": [
@@ -270,8 +262,7 @@
       "price": 2300,
       "deposit": 500,
       "staff": [
-        "hasta-dr-sooraj",
-        "hasta-dr-akshara"
+        "hasta-dr-sooraj"
       ],
       "desc": "One laser hair reduction session for the full face.",
       "resources": [
@@ -287,8 +278,7 @@
       "price": 2300,
       "deposit": 500,
       "staff": [
-        "hasta-dr-sooraj",
-        "hasta-dr-akshara"
+        "hasta-dr-sooraj"
       ],
       "desc": "One laser hair reduction session for the upper arms.",
       "resources": [
@@ -304,8 +294,7 @@
       "price": 2500,
       "deposit": 500,
       "staff": [
-        "hasta-dr-sooraj",
-        "hasta-dr-akshara"
+        "hasta-dr-sooraj"
       ],
       "desc": "One mesotherapy session for the face."
     },
@@ -318,8 +307,7 @@
       "price": 4500,
       "deposit": 900,
       "staff": [
-        "hasta-dr-sooraj",
-        "hasta-dr-akshara"
+        "hasta-dr-sooraj"
       ],
       "desc": "One GFC Exo mesotherapy session for the face."
     },
@@ -332,8 +320,7 @@
       "price": 2500,
       "deposit": 500,
       "staff": [
-        "hasta-dr-sooraj",
-        "hasta-dr-akshara"
+        "hasta-dr-sooraj"
       ],
       "desc": "One mesotherapy session for the neck."
     },
@@ -346,8 +333,7 @@
       "price": 6500,
       "deposit": 1300,
       "staff": [
-        "hasta-dr-sooraj",
-        "hasta-dr-akshara"
+        "hasta-dr-sooraj"
       ],
       "desc": "One GFC Exo mesotherapy session for the scalp."
     },
@@ -360,8 +346,7 @@
       "price": 5500,
       "deposit": 1100,
       "staff": [
-        "hasta-dr-sooraj",
-        "hasta-dr-akshara"
+        "hasta-dr-sooraj"
       ],
       "desc": "One GFC mesotherapy session for the scalp."
     },
@@ -374,8 +359,7 @@
       "price": 2500,
       "deposit": 500,
       "staff": [
-        "hasta-dr-sooraj",
-        "hasta-dr-akshara"
+        "hasta-dr-sooraj"
       ],
       "desc": "One anti-hair-loss mesotherapy session for the scalp."
     }
