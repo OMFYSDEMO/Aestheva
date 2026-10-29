@@ -22,6 +22,7 @@ const EMAIL_HELP: Record<string, string> = {
   NO_BINDING: "The email binding isn't available here. It only exists on the deployed site.",
   E_SENDER_DOMAIN_NOT_AVAILABLE: "Email Routing isn't switched on for bookaestheva.com yet. Turn it on in Cloudflare: Email Service → Email Routing.",
   E_SENDER_NOT_VERIFIED: "Email Routing isn't switched on for bookaestheva.com yet. Turn it on in Cloudflare: Email Service → Email Routing.",
+  E_SENDER_DOMAIN_NOT_CONFIGURED: "bookaestheva.com isn't set up in Email Routing yet. In Cloudflare go to Compute → Email Service → Email Routing, onboard bookaestheva.com, and check its DNS records under Settings are all configured.",
   E_RECIPIENT_NOT_ALLOWED: "Cloudflare will only email a verified inbox. Add the inbox under Email Routing → Destination addresses, verify it, and set NOTIFY_EMAIL to it.",
 };
 export function opsListPage(d: { rows: ApplicationRow[]; counts: Record<string, number>; status: string; csrf: string; emailResult?: { ok: boolean; to: string; code?: string } }) {
