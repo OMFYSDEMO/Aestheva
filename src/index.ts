@@ -35,7 +35,17 @@ app.use("*", async (c, next) => {
 
 app.get("/api/health", async (c) => {
   const db = await c.env.DB.prepare("SELECT COUNT(*) AS n FROM providers WHERE status = 'live'").first<{ n: number }>().then((r) => ({ ok: true, live: r?.n ?? 0 }), (e) => ({ ok: false, error: String(e) }));
-  const payments = { mode: paymentMode(c.env), webhook: !!c.env.RAZORPAY_WEBHOOK_SECRET };
+  // Presence only, never values: lets the owner see which secret is missing.
+  const id = c.env.RAZORPAY_KEY_ID ?? "";
+  const payments = {
+    mode: paymentMode(c.env), webhook: !!c.env.RAZORPAY_WEBHOOK_SECRET,
+    secrets: {
+      RAZORPAY_KEY_ID: id ? (id.startsWith("rzp_test_") ? "set (test key)" : id.startsWith("rzp_live_") ? "set (live key)" : "set (unexpected format)") : "missing",
+      RAZORPAY_KEY_SECRET: c.env.RAZORPAY_KEY_SECRET ? "set" : "missing",
+      RAZORPAY_WEBHOOK_SECRET: c.env.RAZORPAY_WEBHOOK_SECRET ? "set" : "missing",
+      PREVIEW_KEY: c.env.PREVIEW_KEY ? "set" : "missing",
+    },
+  };
   return c.json({ ok: db.ok, env: c.env.APP_ENV, db, payments }, db.ok ? 200 : 503);
 });
 app.route("/api", api);
