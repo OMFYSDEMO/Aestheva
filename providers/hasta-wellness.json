@@ -1,38 +1,352 @@
 {
-  "_about": "Hasta Wellness, Aestheva's first venue. Facts below come from hastawellnessclinic.com (October 2026). Every \"TODO\" must be replaced before the venue can go live; scripts/provider-sql.mjs refuses to run while any remain.",
+  "_about": "Hasta Wellness, Aestheva's first venue. Venue facts from hastawellnessclinic.com; services, durations, prices and doctors from Dr Sooraj (October 2026). Assumptions awaiting confirmation: deposits (20% of price rounded to the nearest ₹100, minimum ₹200), 60-minute tooth brightening, both doctors on full clinic hours, doctors' surnames, qualifications and registration numbers.",
   "id": "hasta-wellness",
   "slug": "hasta-wellness-kazhakkoottam",
   "name": "Hasta Wellness",
   "type": "Clinic",
   "area": "Kazhakkoottam",
   "address": "1st floor, Anjali Arcade, near Nippon Toyota, Technopark Phase 3 Service Road, Kazhakkoottam, Thiruvananthapuram 695583",
-  "tagline": "Dental, skin, hair and signature wellness near Technopark Phase 3",
-  "about": "A consultation-led clinic bringing dental, skin, hair and wellness care together near Technopark Phase 3. Every pathway starts with an individual assessment, a clear explanation of options, costs and aftercare, and room for your questions. A venture of Haswel Care Private Limited, which also operates Aestheva.",
+  "tagline": "Dental, skin and hair care near Technopark Phase 3",
+  "about": "A doctor-led clinic bringing dental, skin and hair care together near Technopark Phase 3, Kazhakkoottam. Your doctor checks that a treatment suits you before it starts, and explains the options, costs and aftercare. A venture of Haswel Care Private Limited, which also operates Aestheva.",
   "hours_text": "Mon–Sat · 10:00–20:00 · Sun 10:00–14:00",
-  "amenities": ["Near Technopark Phase 3", "Dental, skin, hair and wellness under one roof", "Fibe healthcare finance enquiries for eligible dental treatment"],
+  "amenities": [
+    "Near Technopark Phase 3",
+    "Dental, skin and hair care under one roof",
+    "Fibe healthcare finance enquiries for eligible dental treatment"
+  ],
   "art": 5,
   "status": "draft",
   "verifications": [],
   "staff": [
-    { "id": "hasta-dental", "name": "TODO: dentist's name", "role": "Dental surgeon", "medical": true, "quals": ["TODO: e.g. BDS"], "registration": "TODO: Kerala State Dental Council registration no.", "langs": ["Malayalam", "English"], "bio": "",
-      "hours": { "mon-sat": "10:00-20:00", "sun": "10:00-14:00" } },
-    { "id": "hasta-skin", "name": "TODO: skin & hair clinician's name", "role": "TODO: e.g. Dermatologist or Cosmetologist", "medical": true, "quals": ["TODO"], "registration": "TODO: council registration no.", "langs": ["Malayalam", "English"], "bio": "",
-      "hours": { "mon-sat": "10:00-20:00", "sun": "10:00-14:00" } },
-    { "id": "hasta-wellness-team", "name": "TODO: EMS & weight management lead", "role": "TODO", "medical": false, "quals": ["TODO"], "registration": "", "langs": ["Malayalam", "English"], "bio": "",
-      "hours": { "mon-sat": "10:00-20:00", "sun": "10:00-14:00" } }
+    {
+      "id": "hasta-dr-sooraj",
+      "name": "Dr. Sooraj",
+      "role": "Doctor",
+      "medical": true,
+      "quals": [],
+      "registration": "",
+      "langs": [
+        "Malayalam",
+        "English"
+      ],
+      "bio": "",
+      "hours": {
+        "mon-sat": "10:00-20:00",
+        "sun": "10:00-14:00"
+      }
+    },
+    {
+      "id": "hasta-dr-akshara",
+      "name": "Dr. Akshara",
+      "role": "Doctor",
+      "medical": true,
+      "quals": [],
+      "registration": "",
+      "langs": [
+        "Malayalam",
+        "English"
+      ],
+      "bio": "",
+      "hours": {
+        "mon-sat": "10:00-20:00",
+        "sun": "10:00-14:00"
+      }
+    }
   ],
   "services": [
-    { "id": "hasta-dental-consult", "name": "Dental consultation · Smile Forward", "cat": "dental", "kind": "consult", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-dental"], "desc": "Dental health, smile goals and practical planning in one conversation. Oral health comes first; a plan before a commitment." },
-    { "id": "hasta-aligner-assess", "name": "Clear aligner assessment", "cat": "dental", "kind": "consult", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-dental"], "desc": "Dental and bite assessment to discuss whether removable aligners suit your teeth, bite and routine, compared with other options." },
-    { "id": "hasta-smile-correction", "name": "Smile correction consultation", "cat": "dental", "kind": "consult", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-dental"], "desc": "Talk through gaps, uneven edges, alignment or tooth-colour concerns, conservative options first, and receive an individual proposal." },
-    { "id": "hasta-acne-consult", "name": "Acne & breakout consultation", "cat": "skin", "kind": "consult", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-skin"], "desc": "Assessment of active acne and your routine, with laser or light options discussed only when appropriate." },
-    { "id": "hasta-scar-consult", "name": "Acne marks & scars consultation", "cat": "skin", "kind": "consult", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-skin"], "desc": "Distinguish colour changes from scarring and discuss suitable treatments, recovery and realistic expectations." },
-    { "id": "hasta-wart-assess", "name": "Wart & bump assessment", "cat": "skin", "kind": "consult", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-skin"], "desc": "Clinical identification first, then options for confirmed warts. Laser is considered for selected cases." },
-    { "id": "hasta-laser-consult", "name": "Laser hair reduction consultation", "cat": "medaes", "kind": "consult", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-skin"], "desc": "Private consultation for face, underarm, leg or body areas: skin tone and hair review, honest expectations and a written proposal." },
-    { "id": "hasta-bridal-consult", "name": "Bridal & event skin consultation", "cat": "skin", "kind": "consult", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-skin"], "desc": "Plan skin care around your wedding or event date, with a realistic preparation timeline and a personalised bundle." },
-    { "id": "hasta-hair-assess", "name": "Hair & scalp assessment · Root & Reset", "cat": "hair", "kind": "consult", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-skin"], "desc": "Review of shedding or thinning, scalp, nutrition, sleep and stress, with targeted tests only if indicated." },
-    { "id": "hasta-prp-consult", "name": "PRP consultation for hair loss", "cat": "hair", "kind": "consult", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-skin"], "desc": "Discuss whether platelet-rich plasma suits your diagnosed hair-loss concern, the procedure, sessions and alternatives." },
-    { "id": "hasta-ems-consult", "name": "EMS wellness consultation", "cat": "body", "kind": "TODO: beauty (non-medical) or consult (medical)", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-wellness-team"], "desc": "An introduction to electrical muscle stimulation and whether it fits your wellness goals. Suitability first." },
-    { "id": "hasta-weight-consult", "name": "Weight management consultation", "cat": "body", "kind": "TODO: beauty (non-medical) or consult (medical)", "dur": "TODO", "price": "TODO", "deposit": "TODO", "staff": ["hasta-wellness-team"], "desc": "A conversation about your weight, routine and goals before choosing a programme." }
+    {
+      "id": "hasta-scaling",
+      "name": "Scaling",
+      "cat": "dental",
+      "kind": "treatment",
+      "dur": 20,
+      "price": 2000,
+      "deposit": 400,
+      "staff": [
+        "hasta-dr-sooraj",
+        "hasta-dr-akshara"
+      ],
+      "desc": "Professional cleaning to remove plaque and tartar from the teeth."
+    },
+    {
+      "id": "hasta-composite-filling",
+      "name": "Composite filling",
+      "cat": "dental",
+      "kind": "treatment",
+      "dur": 30,
+      "price": 1200,
+      "deposit": 200,
+      "staff": [
+        "hasta-dr-sooraj",
+        "hasta-dr-akshara"
+      ],
+      "desc": "A tooth-coloured filling to restore a tooth."
+    },
+    {
+      "id": "hasta-fluoride-varnish",
+      "name": "Fluoride varnish",
+      "cat": "dental",
+      "kind": "treatment",
+      "dur": 20,
+      "price": 2500,
+      "deposit": 500,
+      "staff": [
+        "hasta-dr-sooraj",
+        "hasta-dr-akshara"
+      ],
+      "desc": "Fluoride varnish applied to the teeth to help protect against decay."
+    },
+    {
+      "id": "hasta-brightening-peroxide",
+      "name": "Tooth brightening (peroxide)",
+      "cat": "dental",
+      "kind": "treatment",
+      "dur": 60,
+      "price": 7500,
+      "deposit": 1500,
+      "staff": [
+        "hasta-dr-sooraj",
+        "hasta-dr-akshara"
+      ],
+      "desc": "In-clinic tooth brightening with a peroxide gel. The dentist first checks it suits your teeth."
+    },
+    {
+      "id": "hasta-brightening-laser",
+      "name": "Tooth brightening (laser)",
+      "cat": "dental",
+      "kind": "treatment",
+      "dur": 60,
+      "price": 9500,
+      "deposit": 1900,
+      "staff": [
+        "hasta-dr-sooraj",
+        "hasta-dr-akshara"
+      ],
+      "desc": "In-clinic tooth brightening activated with a dental laser. The dentist first checks it suits your teeth."
+    },
+    {
+      "id": "hasta-carbon-peel-face",
+      "name": "Carbon laser peel (face)",
+      "cat": "skin",
+      "kind": "treatment",
+      "dur": 30,
+      "price": 4000,
+      "deposit": 800,
+      "staff": [
+        "hasta-dr-sooraj",
+        "hasta-dr-akshara"
+      ],
+      "desc": "Carbon laser peel for the face."
+    },
+    {
+      "id": "hasta-carbon-peel-lips",
+      "name": "Carbon laser peel (lips)",
+      "cat": "skin",
+      "kind": "treatment",
+      "dur": 15,
+      "price": 1500,
+      "deposit": 300,
+      "staff": [
+        "hasta-dr-sooraj",
+        "hasta-dr-akshara"
+      ],
+      "desc": "Carbon laser peel for the lips."
+    },
+    {
+      "id": "hasta-carbon-dark-circles",
+      "name": "Carbon laser (dark circles)",
+      "cat": "skin",
+      "kind": "treatment",
+      "dur": 20,
+      "price": 2500,
+      "deposit": 500,
+      "staff": [
+        "hasta-dr-sooraj",
+        "hasta-dr-akshara"
+      ],
+      "desc": "Carbon laser treatment for the under-eye area."
+    },
+    {
+      "id": "hasta-carbon-peel-underarm",
+      "name": "Carbon laser peel (underarm or elbow)",
+      "cat": "skin",
+      "kind": "treatment",
+      "dur": 20,
+      "price": 2500,
+      "deposit": 500,
+      "staff": [
+        "hasta-dr-sooraj",
+        "hasta-dr-akshara"
+      ],
+      "desc": "Carbon laser peel for the underarms or elbows."
+    },
+    {
+      "id": "hasta-chem-peel-glow",
+      "name": "Chemical peel (glow)",
+      "cat": "skin",
+      "kind": "treatment",
+      "dur": 20,
+      "price": 1500,
+      "deposit": 300,
+      "staff": [
+        "hasta-dr-sooraj",
+        "hasta-dr-akshara"
+      ],
+      "desc": "A chemical peel for dull-looking skin."
+    },
+    {
+      "id": "hasta-chem-peel-acne",
+      "name": "Chemical peel (acne and scars)",
+      "cat": "skin",
+      "kind": "treatment",
+      "dur": 20,
+      "price": 1500,
+      "deposit": 300,
+      "staff": [
+        "hasta-dr-sooraj",
+        "hasta-dr-akshara"
+      ],
+      "desc": "A chemical peel for acne and acne marks."
+    },
+    {
+      "id": "hasta-chem-peel-pigment",
+      "name": "Chemical peel (pigmentation)",
+      "cat": "skin",
+      "kind": "treatment",
+      "dur": 15,
+      "price": 1500,
+      "deposit": 300,
+      "staff": [
+        "hasta-dr-sooraj",
+        "hasta-dr-akshara"
+      ],
+      "desc": "A chemical peel for uneven pigmentation."
+    },
+    {
+      "id": "hasta-lhr-lip-chin",
+      "name": "Laser hair reduction (upper lip and lower chin)",
+      "cat": "medaes",
+      "kind": "treatment",
+      "dur": 20,
+      "price": 1500,
+      "deposit": 300,
+      "staff": [
+        "hasta-dr-sooraj",
+        "hasta-dr-akshara"
+      ],
+      "desc": "One laser hair reduction session for the upper lip and lower chin."
+    },
+    {
+      "id": "hasta-lhr-full-face",
+      "name": "Laser hair reduction (full face)",
+      "cat": "medaes",
+      "kind": "treatment",
+      "dur": 30,
+      "price": 2300,
+      "deposit": 500,
+      "staff": [
+        "hasta-dr-sooraj",
+        "hasta-dr-akshara"
+      ],
+      "desc": "One laser hair reduction session for the full face."
+    },
+    {
+      "id": "hasta-lhr-upper-arms",
+      "name": "Laser hair reduction (upper arms)",
+      "cat": "medaes",
+      "kind": "treatment",
+      "dur": 30,
+      "price": 2300,
+      "deposit": 500,
+      "staff": [
+        "hasta-dr-sooraj",
+        "hasta-dr-akshara"
+      ],
+      "desc": "One laser hair reduction session for the upper arms."
+    },
+    {
+      "id": "hasta-meso-face",
+      "name": "Mesotherapy (face)",
+      "cat": "medaes",
+      "kind": "treatment",
+      "dur": 30,
+      "price": 2500,
+      "deposit": 500,
+      "staff": [
+        "hasta-dr-sooraj",
+        "hasta-dr-akshara"
+      ],
+      "desc": "One mesotherapy session for the face."
+    },
+    {
+      "id": "hasta-gfc-exo-face",
+      "name": "GFC Exo mesotherapy (face)",
+      "cat": "medaes",
+      "kind": "treatment",
+      "dur": 30,
+      "price": 4500,
+      "deposit": 900,
+      "staff": [
+        "hasta-dr-sooraj",
+        "hasta-dr-akshara"
+      ],
+      "desc": "One GFC Exo mesotherapy session for the face."
+    },
+    {
+      "id": "hasta-meso-neck",
+      "name": "Mesotherapy (neck)",
+      "cat": "medaes",
+      "kind": "treatment",
+      "dur": 30,
+      "price": 2500,
+      "deposit": 500,
+      "staff": [
+        "hasta-dr-sooraj",
+        "hasta-dr-akshara"
+      ],
+      "desc": "One mesotherapy session for the neck."
+    },
+    {
+      "id": "hasta-gfc-exo-hair",
+      "name": "GFC Exo mesotherapy (hair)",
+      "cat": "hair",
+      "kind": "treatment",
+      "dur": 60,
+      "price": 6500,
+      "deposit": 1300,
+      "staff": [
+        "hasta-dr-sooraj",
+        "hasta-dr-akshara"
+      ],
+      "desc": "One GFC Exo mesotherapy session for the scalp."
+    },
+    {
+      "id": "hasta-gfc-meso-hair",
+      "name": "GFC mesotherapy (hair)",
+      "cat": "hair",
+      "kind": "treatment",
+      "dur": 45,
+      "price": 5500,
+      "deposit": 1100,
+      "staff": [
+        "hasta-dr-sooraj",
+        "hasta-dr-akshara"
+      ],
+      "desc": "One GFC mesotherapy session for the scalp."
+    },
+    {
+      "id": "hasta-antihairloss-meso",
+      "name": "Anti-hair-loss mesotherapy (hair)",
+      "cat": "hair",
+      "kind": "treatment",
+      "dur": 30,
+      "price": 2500,
+      "deposit": 500,
+      "staff": [
+        "hasta-dr-sooraj",
+        "hasta-dr-akshara"
+      ],
+      "desc": "One anti-hair-loss mesotherapy session for the scalp."
+    }
   ]
 }
