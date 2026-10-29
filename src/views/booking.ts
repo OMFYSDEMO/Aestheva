@@ -51,11 +51,23 @@ export function managePage(d: {
     ? `<div class="confirm-hero"><div class="seal">${ic("check", 40)}</div><div class="eyebrow">Booking confirmed · ${esc(b.ref)}</div><h1 class="mt12" style="font-size:clamp(34px,5vw,52px)">See you on ${fmtDate(b.date)}.</h1><p class="muted mt12">Keep this page's link to view or cancel your booking. ${d.client.email ? `Your booking reference is ${esc(b.ref)}.` : ""}</p></div>`
     : `<div class="confirm-hero"><div class="eyebrow">Booking ${esc(b.ref)}</div><h1 class="mt12" style="font-size:clamp(32px,4.6vw,46px)">${b.status === "held" ? "Almost done" : b.status === "cancelled" ? "This booking is cancelled" : b.status === "expired" ? "This booking wasn't completed" : "Your appointment"}</h1><p class="mt12">${STATUS[b.status] ?? ""}</p></div>`;
 
+  const ended = b.status === "cancelled" || b.status === "expired";
+  const refunded = !!pay && (pay.status === "refunded" || pay.status === "partially_refunded");
   const refundLine = (() => {
     if (b.status !== "cancelled" || !pay) return "";
-    if (pay.status === "refunded") return `<div class="form-ok mt16">Your ${inr(pay.amount_paise)} deposit has been refunded. Refunds usually reach your account in 5 to 7 working days.</div>`;
+    if (refunded) return `<div class="form-ok mt16">A refund of ${inr(pay.amount_paise)} has been issued to your original payment method. Refunds usually reach your account within 5 to 7 working days.</div>`;
+    if (paid) return `<p class="small muted mt16">The ${inr(paid)} deposit was kept under the <a href="/policies/cancellation">cancellation policy</a>. If you asked for a review, we'll email you the outcome.</p>`;
     return "";
   })();
+  // A cancelled or lapsed booking owes nothing at the venue; say what happened to the deposit instead.
+  const summary = ended
+    ? `<div class="line"><span>Service price</span><span>${inr(b.price_paise)}</span></div>
+        ${paid ? `<div class="line"><span>Deposit paid</span><span>${inr(paid)}</span></div>` : ""}
+        ${refunded ? `<div class="line"><span>Deposit refunded</span><span>−${inr(pay!.amount_paise)}</span></div>` : ""}
+        <div class="line tot"><span>Nothing to pay at the venue</span><span>${inr(0)}</span></div>`
+    : `<div class="line"><span>Service price</span><span>${inr(b.price_paise)}</span></div>
+        <div class="line"><span>Deposit ${paid ? "paid" : b.deposit_paise ? "due" : ""}</span><span>${inr(b.deposit_paise)}</span></div>
+        <div class="line tot"><span>Pay at the venue</span><span>${inr(b.price_paise - b.deposit_paise)}</span></div>`;
 
   const held = b.status === "held" && d.resume ? `
     <div class="card mt16"><h2 style="font-size:24px">Pay the deposit to confirm</h2>
@@ -86,9 +98,7 @@ export function managePage(d: {
           <span class="small">${ic("user", 14)} ${esc(d.staff.name)}, ${esc(d.staff.role)}</span>
           <span class="small">${ic("pin", 14)} ${esc(d.provider.address)}</span></div></div>
       <div class="divider"></div>
-      <div class="summary"><div class="line"><span>Service price</span><span>${inr(b.price_paise)}</span></div>
-        <div class="line"><span>Deposit ${paid ? "paid" : b.deposit_paise ? "due" : ""}</span><span>${inr(b.deposit_paise)}</span></div>
-        <div class="line tot"><span>Pay at the venue</span><span>${inr(b.price_paise - b.deposit_paise)}</span></div></div>
+      <div class="summary">${summary}</div>
       ${refundLine}
     </div>
     ${isMedical(b) ? `<div class="mt16">${MED_NOTE}</div>` : ""}

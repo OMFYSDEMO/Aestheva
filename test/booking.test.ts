@@ -95,6 +95,12 @@ describe("booking with a Razorpay deposit", () => {
     const [p] = await sql("SELECT status FROM payments WHERE order_id = ?", first.payment.orderId);
     expect(p.status).toBe("refunded");
     expect(await sql("SELECT * FROM staff_slots WHERE booking_id = (SELECT id FROM bookings WHERE ref = ?)", first.ref)).toEqual([]);
+    const u = new URL(first.manageUrl);
+    const page = await req("GET", u.pathname + u.search);
+    expect(page.text).toContain("Deposit refunded");
+    expect(page.text).toContain("Nothing to pay at the venue");
+    expect(page.text).not.toContain("<span>Pay at the venue</span>");
+    expect(page.text).toContain("A refund of ₹500 has been issued");
   });
 
   it("needs the secret from the booking link to cancel", async () => {
