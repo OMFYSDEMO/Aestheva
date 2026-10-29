@@ -10,7 +10,10 @@ describe("previewing a draft venue", () => {
 
   it("hides the venue without the key", async () => {
     expect((await req("GET", "/p/ember-and-oud-grooming")).status).toBe(404);
-    expect((await req("GET", "/p/ember-and-oud-grooming?preview=wrong")).status).toBe(404);
+    const wrong = await req("GET", "/p/ember-and-oud-grooming?preview=wrong");
+    expect(wrong.status).toBe(404);
+    expect(wrong.text).toContain("This preview link isn&#39;t valid");
+    expect((await req("GET", `/p/ember-and-oud-grooming?preview=%20test-preview-key%20`)).status).toBe(200);
     expect((await req("GET", "/search")).text).not.toContain("Ember &amp; Oud Grooming");
     expect((await req("GET", "/sitemap.xml")).text).not.toContain("ember-and-oud-grooming");
     expect((await req("GET", `/api/slots?service=v31&from=${day(2)}&days=1`)).status).toBe(404);

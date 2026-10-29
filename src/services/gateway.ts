@@ -89,7 +89,8 @@ export function gatewayFor(env: Env): Gateway {
 
 /** True when a request carries the preview key, which lets draft venues be viewed and booked. */
 export function previewAllowed(env: Env, key: unknown): boolean {
-  return !!env.PREVIEW_KEY && typeof key === "string" && key.length > 0 && safeEqual(key, env.PREVIEW_KEY);
+  const want = env.PREVIEW_KEY?.trim();
+  return !!want && typeof key === "string" && key.trim().length > 0 && safeEqual(key.trim(), want);
 }
 
 /** Which payments are active: shown on /api/health and used for the test-mode notice. */

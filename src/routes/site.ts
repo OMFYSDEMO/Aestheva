@@ -60,6 +60,8 @@ site.get("/search", async (c) => {
 site.get("/p/:slug", async (c) => {
   const preview = previewAllowed(c.env, c.req.query("preview")) ? c.req.query("preview") : undefined;
   const db = c.env.DB, d = await providerBySlug(db, c.req.param("slug"), !!preview);
+  if (!d && c.req.query("preview") !== undefined && !preview)
+    return page(c, { title: "Preview link not valid · Aestheva", noindex: true }, notFoundPage("This preview link isn't valid. Check the whole link was copied."), 404);
   if (!d) return page(c, { title: "Not found · Aestheva", noindex: true }, notFoundPage("We couldn't find that venue."), 404);
   const [cats, next] = await Promise.all([categories(db), nextAvailable(db, d.services)]);
   return page(c, {
