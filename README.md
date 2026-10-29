@@ -118,7 +118,9 @@ Each venue's team signs in at `/clinic` to run their day on Aestheva:
 - **Bookings:** mark an appointment completed or a no-show once its time has come, or cancel it (any deposit is refunded in full).
 - **Clients, Services & hours, Payments:** client history, the venue's menu and hours (read-only; the team changes them on request), and a monthly summary of deposits, refunds, balances collected and commission.
 
-Logins are issued by the Aestheva team at `/ops/clinics`. Passwords are generated, shown once, and can be reset there; a reset or disabling a login ends its sessions. Sessions are signed with `OPS_KEY`. A clinic login only ever sees and changes its own venue.
+Logins are created by the Aestheva team at `/ops/clinics`. The person is emailed a one-time link (valid 3 days) to choose their own password; nobody at Aestheva sees it. The sign-in page has **Forgot password?**, which emails a reset link valid for 1 hour (at most three an hour, and the page never reveals whether an email has a login). Setting a password ends any other sessions for that login, and disabling a login ends them too. If an invitation can't be emailed, the team page shows the link once to share privately. Sessions are signed with `OPS_KEY`, passwords are hashed with PBKDF2-SHA256 (100,000 iterations, which needs the Workers Paid CPU allowance), and a clinic login only ever sees and changes its own venue.
+
+Emailing clinics (any address, not just the team inbox) needs **Workers Paid** and Email Sending switched on for the domain: in Cloudflare, **Compute → Email Service → Email Sending → Onboard Domain → bookaestheva.com**. That adds sending records on `cf-bounce.bookaestheva.com` and a DMARC record, and leaves Email Routing for hello@ untouched.
 
 ### Adding a venue
 

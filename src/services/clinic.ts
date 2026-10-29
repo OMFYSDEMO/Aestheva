@@ -6,13 +6,14 @@ import { HttpError, audit, hmacSha256Hex, isUniqueViolation, newId, newRef, newT
 import { addDays, dowOf, hoursUntil, isIsoDate, nowIst } from "../domain/time";
 import { slotsFor } from "../domain/availability";
 import { refundPayment, normalisePhone, type BookingRow, type PaymentRow } from "./bookings";
+import { sendEmail } from "./notify";
 import type { ServiceRow, StaffRow } from "./catalog";
 
 // ---------- logins ----------
 
 export interface ClinicUser { id: string; provider_id: string; name: string; email: string; password_hash: string; active: number; last_login_at: string | null; created_at: string }
 
-const PBKDF2_ITERATIONS = 5000;   // passwords are generated (about 95 bits), so a light hash keeps sign-in within Worker CPU limits
+const PBKDF2_ITERATIONS = 100_000;   // clinics choose their own passwords; this needs the Workers Paid CPU allowance
 const hex = (b: ArrayBuffer | Uint8Array) => Array.from(b instanceof Uint8Array ? b : new Uint8Array(b), (x) => x.toString(16).padStart(2, "0")).join("");
 const unhex = (h: string) => new Uint8Array((h.match(/../g) ?? []).map((x) => parseInt(x, 16)));
 
@@ -29,44 +30,107 @@ export async function checkPassword(password: string, stored: string) {
   if (alg !== "pbkdf2-sha256" || !hash) return false;
   return safeEqual(await pbkdf2(password, unhex(salt), Number(it)), hash);
 }
-/** 16 characters from an alphabet without look-alikes, grouped for reading aloud: e.g. "kq7m-x4tw-9fhp-2rnc". */
-export function generatePassword() {
-  const A = "abcdefghjkmnpqrstuvwxyz23456789";
-  const b = crypto.getRandomValues(new Uint8Array(16));
-  return Array.from(b, (x) => A[x % A.length]).join("").replace(/(.{4})(?=.)/g, "$1-");
-}
-
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+/** A new login can't sign in until its owner sets a password from the invitation link. */
 export async function createClinicUser(db: D1Database, providerId: string, name: string, email: string) {
   name = name.trim(); email = email.trim().toLowerCase();
   if (name.length < 2 || name.length > 80) throw new HttpError(400, "Please enter the person's name.");
   if (!EMAIL.test(email)) throw new HttpError(400, "Please enter a valid email address.");
   const p = await db.prepare("SELECT id FROM providers WHERE id = ?").bind(providerId).first();
   if (!p) throw new HttpError(404, "Unknown venue");
-  const password = generatePassword(), id = newId("pu");
+  const id = newId("pu"), unusable = `unset$${newToken()}`;
   try {
     await db.batch([
-      db.prepare("INSERT INTO provider_users (id, provider_id, name, email, password_hash) VALUES (?, ?, ?, ?, ?)").bind(id, providerId, name, email, await hashPassword(password)),
+      db.prepare("INSERT INTO provider_users (id, provider_id, name, email, password_hash) VALUES (?, ?, ?, ?, ?)").bind(id, providerId, name, email, unusable),
       audit(db, "ops", "clinic_user.created", "provider_user", id, { providerId, email }),
     ]);
   } catch (e) { if (isUniqueViolation(e, "provider_users")) throw new HttpError(409, "That email already has a login."); throw e; }
-  return { id, email, password };
-}
-export async function resetClinicPassword(db: D1Database, userId: string) {
-  const u = await db.prepare("SELECT id, email FROM provider_users WHERE id = ?").bind(userId).first<{ id: string; email: string }>();
-  if (!u) throw new HttpError(404, "Unknown login");
-  const password = generatePassword();
-  await db.batch([
-    db.prepare("UPDATE provider_users SET password_hash = ?, active = 1, updated_at = ? WHERE id = ?").bind(await hashPassword(password), nowIso(), u.id),
-    audit(db, "ops", "clinic_user.password_reset", "provider_user", u.id),
-  ]);
-  return { email: u.email, password };
+  return (await db.prepare("SELECT * FROM provider_users WHERE id = ?").bind(id).first<ClinicUser>())!;
 }
 export async function setClinicUserActive(db: D1Database, userId: string, active: boolean) {
   await db.batch([
     db.prepare("UPDATE provider_users SET active = ?, updated_at = ? WHERE id = ?").bind(active ? 1 : 0, nowIso(), userId),
     audit(db, "ops", active ? "clinic_user.enabled" : "clinic_user.disabled", "provider_user", userId),
   ]);
+}
+
+// ---------- one-time password links ----------
+
+export const LINK_HOURS = { invite: 72, reset: 1 } as const;
+export type LinkPurpose = keyof typeof LINK_HOURS;
+
+export async function issuePasswordLink(db: D1Database, userId: string, purpose: LinkPurpose, actor: string) {
+  const token = newToken() + newToken();
+  await db.batch([
+    db.prepare("INSERT INTO password_links (id, user_id, token_hash, purpose, expires_at) VALUES (?, ?, ?, ?, ?)")
+      .bind(newId("pl"), userId, await sha256Hex(token), purpose, new Date(Date.now() + LINK_HOURS[purpose] * 36e5).toISOString()),
+    audit(db, actor, `clinic_user.${purpose}_link`, "provider_user", userId),
+  ]);
+  return token;
+}
+
+/** The login a link belongs to, if the link is unused, unexpired and the login is active. */
+export async function userForLink(db: D1Database, token: string) {
+  if (!/^[A-Za-z0-9_-]{40,}$/.test(token)) return null;
+  const row = await db.prepare(`SELECT l.id AS link_id, l.purpose, u.* FROM password_links l JOIN provider_users u ON u.id = l.user_id
+    WHERE l.token_hash = ? AND l.used_at IS NULL AND l.expires_at > ? AND u.active = 1`).bind(await sha256Hex(token), nowIso()).first<ClinicUser & { link_id: string; purpose: LinkPurpose }>();
+  return row ?? null;
+}
+
+const COMMON = ["password", "qwerty", "123456", "aestheva", "letmein", "welcome", "hasta"];
+export function passwordProblem(pw: string, email: string) {
+  if (pw.length < 10) return "Use at least 10 characters. A short phrase is easiest to remember.";
+  if (pw.length > 128) return "That's too long. Use at most 128 characters.";
+  const low = pw.toLowerCase();
+  if (/^(.)\1+$/.test(pw)) return "Use a mix of characters, not one repeated.";
+  if (low.includes(email.split("@")[0].toLowerCase()) || COMMON.some((w) => low.includes(w) && low.length < w.length + 6)) return "That's too easy to guess. Try a short phrase only you would think of.";
+  return null;
+}
+
+/** Sets the password from a link. The link and any other open links for the login stop working; old sessions end. */
+export async function setPasswordWithLink(db: D1Database, token: string, password: string, confirm: string) {
+  const u = await userForLink(db, token);
+  if (!u) throw new HttpError(410, "This link has expired or has already been used.");
+  if (password !== confirm) throw new HttpError(400, "The two passwords don't match.");
+  const problem = passwordProblem(password, u.email);
+  if (problem) throw new HttpError(400, problem);
+  const ts = nowIso();
+  await db.batch([
+    db.prepare("UPDATE provider_users SET password_hash = ?, updated_at = ? WHERE id = ?").bind(await hashPassword(password), ts, u.id),
+    db.prepare("UPDATE password_links SET used_at = ? WHERE user_id = ? AND used_at IS NULL").bind(ts, u.id),
+    audit(db, `provider_user:${u.id}`, "clinic_user.password_set", "provider_user", u.id, { via: u.purpose }),
+  ]);
+  return u;
+}
+
+const escH = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+/** Emails a set-password link. Returns the email outcome; the caller decides whether to show the link instead. */
+export async function emailPasswordLink(env: Env, u: { name: string; email: string }, venue: string, url: string, purpose: LinkPurpose) {
+  const invite = purpose === "invite";
+  const subject = invite ? `Your Aestheva login for ${venue}` : "Reset your Aestheva password";
+  const lead = invite ? `You've been given a login to ${venue}'s clinic portal on Aestheva, where your team sees the calendar, bookings and clients.` : "Someone asked to reset the password for your Aestheva clinic login. If it wasn't you, ignore this email; your password stays the same.";
+  const until = invite ? `${LINK_HOURS.invite / 24} days` : "1 hour";
+  const text = `Hello ${u.name},\n\n${lead}\n\n${invite ? "Set your password" : "Choose a new password"} here (the link works once, for ${until}):\n${url}\n\nYour login email is ${u.email}. After that, sign in at ${new URL(url).origin}/clinic.\n\nAestheva`;
+  const html = `<div style="font-family:Arial,sans-serif;font-size:15px;color:#302A2E;line-height:1.55;max-width:520px">
+    <p style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#713F54;font-weight:bold;margin:0">Aestheva for clinics</p>
+    <h1 style="font-family:Georgia,serif;font-weight:normal;font-size:26px;margin:8px 0 14px">${invite ? `Welcome, ${escH(u.name)}` : "Reset your password"}</h1>
+    <p>${escH(lead)}</p>
+    <p style="margin:24px 0"><a href="${escH(url)}" style="background:#713F54;color:#fff;padding:12px 20px;border-radius:999px;text-decoration:none">${invite ? "Set your password" : "Choose a new password"}</a></p>
+    <p style="color:#6B5F65;font-size:13px">The link works once, for ${until}. Your login email is <b>${escH(u.email)}</b>.</p>
+    <p style="color:#8A7C83;font-size:12px">If the button doesn't work, copy this link into your browser:<br>${escH(url)}</p></div>`;
+  return sendEmail(env, u.email, { subject, text, html });
+}
+
+/** "Forgot password": always the same answer, so the page never reveals which emails have logins. */
+export async function requestPasswordReset(env: Env, email: string, siteUrl: string) {
+  const db = env.DB;
+  const u = await db.prepare("SELECT u.*, p.name AS venue FROM provider_users u JOIN providers p ON p.id = u.provider_id WHERE u.email = ? AND u.active = 1")
+    .bind(email.trim().toLowerCase()).first<ClinicUser & { venue: string }>();
+  if (!u) return;
+  const recent = await db.prepare("SELECT COUNT(*) AS n FROM password_links WHERE user_id = ? AND purpose = 'reset' AND created_at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 hour')").bind(u.id).first<{ n: number }>();
+  if ((recent?.n ?? 0) >= 3) return;
+  const token = await issuePasswordLink(db, u.id, "reset", "clinic");
+  await emailPasswordLink(env, u, u.venue, `${siteUrl}/clinic/set-password?t=${token}`, "reset");
 }
 
 /** Sessions are signed with OPS_KEY and tied to the password hash, so a reset or a disabled login ends them. */
@@ -316,4 +380,3 @@ export async function monthMoney(db: D1Database, providerId: string, month: stri
   };
 }
 
-export { POLICY };

@@ -7,7 +7,7 @@ import { categories } from "../services/catalog";
 import { getApplication, listApplications, updateApplication, venueDraft } from "../services/applications";
 import { layout } from "../views/layout";
 import { opsClinicsPage, opsDetailPage, opsListPage, opsLoginPage, type ClinicLoginRow } from "../views/ops";
-import { createClinicUser, resetClinicPassword, setClinicUserActive } from "../services/clinic";
+import { createClinicUser, emailPasswordLink, issuePasswordLink, setClinicUserActive, type ClinicUser } from "../services/clinic";
 import { HttpError } from "../db";
 import { sendTestEmail, teamInbox } from "../services/notify";
 
@@ -67,7 +67,8 @@ ops.get("/applications", async (c) => {
   const emailResult = e === "sent" ? { ok: true, to: teamInbox(c.env) } : e === "failed" ? { ok: false, to: teamInbox(c.env), code: c.req.query("code") ?? "" } : undefined;
   return page(c, "Applications", opsListPage({ ...(await listApplications(c.env.DB, status)), status, csrf: c.get("csrf"), emailResult }));
 });
-async function clinicsPage(c: C, extra: { issued?: { email: string; password: string; what: string }; error?: string } = {}, status = 200) {
+type Issued = { email: string; sent: boolean; code?: string; link?: string; what: string };
+async function clinicsPage(c: C, extra: { issued?: Issued; error?: string } = {}, status = 200) {
   const db = c.env.DB;
   const [providers, users] = await Promise.all([
     db.prepare("SELECT id, name, status FROM providers ORDER BY status = 'live' DESC, name").all<{ id: string; name: string; status: string }>(),
@@ -80,13 +81,21 @@ ops.post("/clinics", async (c) => {
   const f = await c.req.parseBody();
   try {
     const u = await createClinicUser(c.env.DB, String(f.provider ?? ""), String(f.name ?? ""), String(f.email ?? ""));
-    return clinicsPage(c, { issued: { email: u.email, password: u.password, what: "Login created" } });
+    return clinicsPage(c, { issued: await invite(c, u, "Login created") });
   } catch (e) { if (e instanceof HttpError && e.status < 500) return clinicsPage(c, { error: e.message }, e.status); throw e; }
 });
-ops.post("/clinics/:id/reset", async (c) => {
-  const r = await resetClinicPassword(c.env.DB, c.req.param("id"));
-  return clinicsPage(c, { issued: { ...r, what: "New password issued. The old one no longer works." } });
+ops.post("/clinics/:id/link", async (c) => {
+  const u = await c.env.DB.prepare("SELECT * FROM provider_users WHERE id = ?").bind(c.req.param("id")).first<ClinicUser>();
+  if (!u) throw new HttpError(404, "Unknown login");
+  return clinicsPage(c, { issued: await invite(c, u, "New set-password link") });
 });
+/** Emails the person a link to set their password; if the email can't be sent, the link is shown once instead. */
+async function invite(c: C, u: ClinicUser, what: string): Promise<Issued> {
+  const venue = (await c.env.DB.prepare("SELECT name FROM providers WHERE id = ?").bind(u.provider_id).first<{ name: string }>())?.name ?? "your clinic";
+  const link = `${c.env.SITE_URL || new URL(c.req.url).origin}/clinic/set-password?t=${await issuePasswordLink(c.env.DB, u.id, "invite", "ops")}`;
+  const r = await emailPasswordLink(c.env, u, venue, link, "invite");
+  return r.ok ? { email: u.email, sent: true, what } : { email: u.email, sent: false, code: r.code, link, what };
+}
 ops.post("/clinics/:id/active", async (c) => {
   const f = await c.req.parseBody();
   await setClinicUserActive(c.env.DB, c.req.param("id"), f.active === "1");

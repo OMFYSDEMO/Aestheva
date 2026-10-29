@@ -19,13 +19,19 @@ const csrfIn = (html: string) => /name="csrf" value="([0-9a-f]{64})"/.exec(html)
 // A Monday-to-Saturday date a few days ahead, when Dr. Meera Nair (s1) has online hours 10:00–17:00.
 const workday = () => { for (let n = 3; ; n++) if (dowOf(day(n)) !== 0) return day(n); };
 
+const linkIn = (text: string) => /https:\/\/aestheva\.test(\/clinic\/set-password\?t=[A-Za-z0-9_-]+)/.exec(text)![1];
+
 describe("clinic portal", () => {
   const rp = fakeRazorpay();
-  let opsCookie = "", cookie = "", csrf = "", password = "";
+  let opsCookie = "", cookie = "", csrf = "";
+  const password = "tea at technopark at four";
+  type Sent = { to: string; subject: string; text: string };
+  let sent: Sent[] = [], failWith: string | null = null;
   const date = workday();
 
   beforeAll(async () => {
     rp.install();
+    (env as { EMAIL: unknown }).EMAIL = { send: async (m: Sent) => { if (failWith) throw Object.assign(new Error("nope"), { code: failWith }); sent.push(m); return { messageId: "m" }; } };
     const login = await send("POST", "/ops/login", { key: "test-ops-key" });
     opsCookie = login.headers.get("set-cookie")!.split(";")[0];
   });
@@ -38,20 +44,39 @@ describe("clinic portal", () => {
     }
   });
 
-  it("lets the team issue a login, shown once, and the clinic sign in with it", async () => {
+  it("emails an invitation with a one-time link; the clinic sets its own password and signs in", async () => {
     const page = await send("GET", "/ops/clinics", undefined, opsCookie);
     expect(page.text).toContain("Lumière Skin &amp; Laser Clinic");
+    sent = [];
     const made = await send("POST", "/ops/clinics", { csrf: csrfIn(page.text), provider: "p1", name: "Front desk", email: "Desk@Lumiere.example" }, opsCookie);
-    password = /<code[^>]*>([a-z0-9-]{19})<\/code>/.exec(made.text)![1];
-    expect(made.text).toContain("desk@lumiere.example");
+    expect(made.text).toContain("emailed desk@lumiere.example a link");
+    expect(made.text).not.toContain("/clinic/set-password?t=");   // sent by email, so not shown
+    expect(sent).toHaveLength(1);
+    expect(sent[0].to).toBe("desk@lumiere.example");
+    expect(sent[0].subject).toBe("Your Aestheva login for Lumière Skin & Laser Clinic");
+    const link = linkIn(sent[0].text);
+    // Until the password is set, nothing signs in.
+    expect((await send("POST", "/clinic/login", { email: "desk@lumiere.example", password: "" })).status).toBe(401);
+    const form = await send("GET", link);
+    expect(form.status).toBe(200);
+    expect(form.text).toContain("Set your password");
+    expect(form.headers.get("referrer-policy")).toBe("no-referrer");
+    const t = new URL(`https://x${link}`).searchParams.get("t")!;
+    for (const [pw, msg] of [["short", "at least 10 characters"], ["desk-12345678", "too easy to guess"], ["password2026!", "too easy to guess"]] as const) {
+      const r = await send("POST", "/clinic/set-password", { t, password: pw, confirm: pw });
+      expect(r.status).toBe(400); expect(r.text).toContain(msg);
+    }
+    expect((await send("POST", "/clinic/set-password", { t, password: "monsoon over kovalam", confirm: "monsoon over kowdiar" })).text).toContain("don&#39;t match");
+    const ok = await send("POST", "/clinic/set-password", { t, password: password, confirm: password });
+    expect(ok.headers.get("location")).toBe("/clinic/login?set=1");
+    expect((await send("GET", link)).status).toBe(410);   // a link works once
     const [u] = await sql("SELECT password_hash FROM provider_users WHERE email = 'desk@lumiere.example'");
-    expect(u.password_hash).toMatch(/^pbkdf2-sha256\$\d+\$[0-9a-f]{32}\$[0-9a-f]{64}$/);
-    expect(u.password_hash).not.toContain(password);
+    expect(u.password_hash).toMatch(/^pbkdf2-sha256\$100000\$[0-9a-f]{32}\$[0-9a-f]{64}$/);
 
     expect((await send("POST", "/clinic/login", { email: "desk@lumiere.example", password: "wrong-pass" })).status).toBe(401);
-    const ok = await send("POST", "/clinic/login", { email: " DESK@lumiere.example ", password });
-    expect(ok.status).toBe(303);
-    const set = ok.headers.get("set-cookie")!;
+    const signed = await send("POST", "/clinic/login", { email: " DESK@lumiere.example ", password });
+    expect(signed.status).toBe(303);
+    const set = signed.headers.get("set-cookie")!;
     expect(set).toMatch(/HttpOnly/i); expect(set).toMatch(/SameSite=Strict/i); expect(set).toMatch(/Path=\/clinic/);
     cookie = set.split(";")[0];
     const today = await send("GET", "/clinic", undefined, cookie);
@@ -59,6 +84,17 @@ describe("clinic portal", () => {
     expect(today.text).toContain("Lumière Skin &amp; Laser Clinic");
     expect(today.headers.get("cache-control")).toBe("no-store");
     csrf = csrfIn(today.text);
+  });
+
+  it("shows the link once on the team page when the email can't be sent", async () => {
+    const page = await send("GET", "/ops/clinics", undefined, opsCookie);
+    failWith = "E_RECIPIENT_NOT_ALLOWED";
+    try {
+      const r = await send("POST", "/ops/clinics", { csrf: csrfIn(page.text), provider: "p1", name: "Owner", email: "owner@lumiere.example" }, opsCookie);
+      expect(r.text).toContain("the email didn't send (E_RECIPIENT_NOT_ALLOWED)");
+      expect(r.text).toMatch(/\/clinic\/set-password\?t=[A-Za-z0-9_-]{40,}/);
+      expect(r.text).toContain("Email Sending");
+    } finally { failWith = null; }
   });
 
   it("takes a phone booking outside online hours that then blocks online clients", async () => {
@@ -139,14 +175,32 @@ describe("clinic portal", () => {
     expect(bookings.text).not.toContain(other.json.ref);
   });
 
-  it("rejects forged forms, and a password reset ends existing sessions", async () => {
+  it("rejects forged forms, and resetting the password by email ends existing sessions", async () => {
     expect((await send("POST", "/clinic/new", { csrf: "0".repeat(64), service: "v1", staff: "s1", date, start: "900", name: "Forged", phone: "9847077777" }, cookie)).status).toBe(403);
-    const ops = await send("GET", "/ops/clinics", undefined, opsCookie);
-    const [u] = await sql("SELECT id FROM provider_users WHERE email = 'desk@lumiere.example'");
-    const reset = await send("POST", `/ops/clinics/${u.id}/reset`, { csrf: csrfIn(ops.text) }, opsCookie);
-    expect(reset.text).toContain("The old one no longer works");
+    sent = [];
+    const unknown = await send("POST", "/clinic/forgot", { email: "nobody@example.com" });
+    const known = await send("POST", "/clinic/forgot", { email: "desk@lumiere.example" });
+    expect(unknown.text).toContain("If that email has a clinic login");
+    expect(known.text).toContain("If that email has a clinic login");   // same answer either way
+    expect(sent.map((m) => m.to)).toEqual(["desk@lumiere.example"]);
+    expect(sent[0].subject).toBe("Reset your Aestheva password");
+    const t = new URL(`https://x${linkIn(sent[0].text)}`).searchParams.get("t")!;
+    await send("POST", "/clinic/set-password", { t, password: "a new kerala morning", confirm: "a new kerala morning" });
     expect((await send("GET", "/clinic", undefined, cookie)).status).toBe(303);
     expect((await send("POST", "/clinic/login", { email: "desk@lumiere.example", password })).status).toBe(401);
+    expect((await send("POST", "/clinic/login", { email: "desk@lumiere.example", password: "a new kerala morning" })).status).toBe(303);
+  });
+
+  it("refuses expired links and limits reset emails to three an hour", async () => {
+    sent = [];
+    await sql("DELETE FROM password_links WHERE purpose = 'reset'");   // the previous test's reset counts towards the hour
+    for (let i = 0; i < 4; i++) await send("POST", "/clinic/forgot", { email: "desk@lumiere.example" });
+    expect(sent).toHaveLength(3);
+    const t = new URL(`https://x${linkIn(sent[0].text)}`).searchParams.get("t")!;
+    await sql("UPDATE password_links SET expires_at = '2000-01-01T00:00:00Z' WHERE used_at IS NULL");
+    const r = await send("POST", "/clinic/set-password", { t, password: "too late for this", confirm: "too late for this" });
+    expect(r.status).toBe(410);
+    expect(r.text).toContain("This link has expired");
   });
 
   it("locks an email after five wrong passwords in 15 minutes", async () => {

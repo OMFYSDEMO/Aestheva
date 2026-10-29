@@ -7,12 +7,12 @@ import { HttpError, audit, hmacSha256Hex, safeEqual } from "../db";
 import { addDays, hoursUntil, isIsoDate, nowIst } from "../domain/time";
 import { categories } from "../services/catalog";
 import {
-  addBlock, cancelByClinic, checkPassword, clinicBooking, clinicClient, clinicClients, clinicStaff, createDirectBooking, dayView, listBookings,
+  addBlock, cancelByClinic, checkPassword, requestPasswordReset, setPasswordWithLink, userForLink, clinicBooking, clinicClient, clinicClients, clinicStaff, createDirectBooking, dayView, listBookings,
   markOutcome, monthMoney, overview, removeBlock, sessionFor, userFromSession, type ClinicUser,
 } from "../services/clinic";
 import { layout } from "../views/layout";
 import {
-  bookingCreatedPage, bookingDetailPage, bookingsPage, calendarPage, clientPage, clientsPage, clinicLoginPage, clinicShell, newBookingPage,
+  bookingCreatedPage, bookingDetailPage, bookingsPage, calendarPage, clientPage, clientsPage, clinicLoginPage, clinicShell, forgotPage, linkInvalidPage, newBookingPage, setPasswordPage,
   paymentsPage, servicesPage, signOutButton, todayPage, type Section,
 } from "../views/clinic";
 
@@ -38,7 +38,35 @@ const page = (c: C, title: string, section: Section, body: string, status = 200)
 
 clinic.get("/login", async (c) => {
   if (key(c) && (await userFromSession(c.env.DB, key(c), getCookie(c, COOKIE) ?? ""))) return c.redirect("/clinic", 303);
-  return bare(c, "Sign in", clinicLoginPage("", !!key(c)));
+  return bare(c, "Sign in", clinicLoginPage("", !!key(c), c.req.query("set") === "1" ? "Password saved. Sign in with your email and new password." : ""));
+});
+
+// Set-password links (invitations and resets) and "Forgot password". The token is the only credential here.
+const venueName = async (c: C, providerId: string) => (await c.env.DB.prepare("SELECT name FROM providers WHERE id = ?").bind(providerId).first<{ name: string }>())?.name ?? "Your clinic";
+clinic.get("/set-password", async (c) => {
+  c.header("referrer-policy", "no-referrer");
+  const token = c.req.query("t") ?? "", u = await userForLink(c.env.DB, token);
+  if (!u) return bare(c, "Link expired", linkInvalidPage(), 410);
+  return bare(c, "Set your password", setPasswordPage({ token, email: u.email, venue: await venueName(c, u.provider_id), invite: u.purpose === "invite" }));
+});
+clinic.post("/set-password", async (c) => {
+  c.header("referrer-policy", "no-referrer");
+  const f = await c.req.parseBody(), token = String(f.t ?? "");
+  try { await setPasswordWithLink(c.env.DB, token, String(f.password ?? ""), String(f.confirm ?? "")); }
+  catch (e) {
+    if (!(e instanceof HttpError) || e.status >= 500) throw e;
+    const u = await userForLink(c.env.DB, token);
+    if (!u) return bare(c, "Link expired", linkInvalidPage(), 410);
+    return bare(c, "Set your password", setPasswordPage({ token, email: u.email, venue: await venueName(c, u.provider_id), invite: u.purpose === "invite", error: e.message }), e.status);
+  }
+  return c.redirect("/clinic/login?set=1", 303);
+});
+clinic.get("/forgot", (c) => bare(c, "Forgot password", forgotPage()));
+clinic.post("/forgot", async (c) => {
+  const f = await c.req.parseBody();
+  // Send after responding, so the time taken never hints at whether the email has a login.
+  c.executionCtx.waitUntil(requestPasswordReset(c.env, String(f.email ?? ""), base(c)).catch((e) => console.error("reset failed", e)));
+  return bare(c, "Forgot password", forgotPage(true));
 });
 clinic.post("/login", async (c) => {
   const k = key(c), db = c.env.DB;

@@ -31,7 +31,8 @@ app.use("*", async (c, next) => {
   await next();
   if (c.env.APP_ENV === "production") c.header("strict-transport-security", "max-age=31536000; includeSubDomains");
   c.header("x-content-type-options", "nosniff");
-  c.header("referrer-policy", "strict-origin-when-cross-origin");
+  // A page can be stricter (set-password links send no referrer at all).
+  if (!c.res.headers.has("referrer-policy")) c.header("referrer-policy", "strict-origin-when-cross-origin");
   c.header("x-frame-options", "DENY");
 });
 

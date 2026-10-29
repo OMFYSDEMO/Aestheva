@@ -8,20 +8,25 @@ const when = (iso: string) => new Date(iso).toLocaleString("en-IN", { day: "nume
 const shell = (body: string) => `<div class="page"><div class="ops-bar"><div class="row wrap" style="gap:4px"><span class="eyebrow" style="margin-right:10px">Aestheva team</span><a class="btn btn-g btn-s" href="/ops/applications">Applications</a><a class="btn btn-g btn-s" href="/ops/clinics">Clinic logins</a></div><form method="post" action="/ops/logout"><button class="btn btn-g btn-s" type="submit">${ic("out", 15)} Sign out</button></form></div>${body}</div>`;
 
 export interface ClinicLoginRow { id: string; provider_id: string; name: string; email: string; active: number; last_login_at: string | null }
-export function opsClinicsPage(d: { providers: { id: string; name: string; status: string }[]; users: ClinicLoginRow[]; csrf: string; issued?: { email: string; password: string; what: string }; error?: string }) {
+export function opsClinicsPage(d: { providers: { id: string; name: string; status: string }[]; users: ClinicLoginRow[]; csrf: string; issued?: { email: string; sent: boolean; code?: string; link?: string; what: string }; error?: string }) {
   const tok = `<input type="hidden" name="csrf" value="${esc(d.csrf)}">`;
   return shell(`<h1 class="mt8" style="font-size:40px">Clinic logins</h1>
-    <p class="small muted mt8" style="max-width:680px">Each login opens that venue's clinic portal at <b>/clinic</b>: its calendar, bookings, clients and payments. Passwords are generated and shown once. Send them privately, for example by phone, never in a group chat.</p>
-    ${d.issued ? `<div class="card mt16" style="border-color:var(--sage-d)"><b>${esc(d.issued.what)}</b><dl class="kv mt12"><dt>Sign in at</dt><dd>/clinic</dd><dt>Email</dt><dd>${esc(d.issued.email)}</dd><dt>Password</dt><dd><code style="font-size:18px">${esc(d.issued.password)}</code></dd></dl><p class="xs muted mt8">This password won't be shown again. If it's lost, reset it here.</p></div>` : ""}
+    <p class="small muted mt8" style="max-width:680px">Each login opens that venue's clinic portal at <b>/clinic</b>: its calendar, bookings, clients and payments. The person gets an email with a one-time link to choose their own password. Nobody at Aestheva ever sees it.</p>
+    ${d.issued ? (d.issued.sent
+      ? `<div class="form-ok mt16" role="status"><b>${esc(d.issued.what)}.</b> We've emailed ${esc(d.issued.email)} a link to set their password. It works once, for 3 days.</div>`
+      : `<div class="card mt16" style="border-color:var(--warn)"><b>${esc(d.issued.what)}, but the email didn't send${d.issued.code ? ` (${esc(d.issued.code)})` : ""}.</b>
+          <p class="small mt8">Share this one-time link with ${esc(d.issued.email)} privately, for example in a direct WhatsApp message. It lets them set their password, works once and expires in 3 days. It won't be shown again.</p>
+          <p class="mt8"><code style="word-break:break-all;font-size:13px">${esc(d.issued.link ?? "")}</code></p>
+          ${d.issued.code === "E_RECIPIENT_NOT_ALLOWED" || d.issued.code === "E_SENDER_DOMAIN_NOT_AVAILABLE" ? `<p class="xs muted mt8">To email any address, Cloudflare needs Workers Paid and Email Sending switched on for bookaestheva.com (Email Service → Email Sending → Onboard Domain).</p>` : ""}</div>`) : ""}
     ${d.error ? `<div class="form-error mt16" role="alert">${esc(d.error)}</div>` : ""}
     ${d.providers.map((p) => { const us = d.users.filter((u) => u.provider_id === p.id); return `<div class="card mt16"><div class="row between wrap"><h2 style="font-size:24px">${esc(p.name)}</h2><span class="badge ${p.status === "live" ? "b-ok" : "b-plain"}">${esc(p.status)}</span></div>
-      ${us.length ? `<div class="tbl-wrap mt12"><table class="tbl"><tbody>${us.map((u) => `<tr><td><b>${esc(u.name)}</b><div class="xs muted">${esc(u.email)}</div></td><td class="small">${u.active ? (u.last_login_at ? `Last signed in ${when(u.last_login_at)}` : "Not signed in yet") : '<span class="badge b-plain">Disabled</span>'}</td>
-        <td style="text-align:right;white-space:nowrap"><form method="post" action="/ops/clinics/${esc(u.id)}/reset" style="display:inline">${tok}<button class="btn btn-o btn-x" type="submit">New password</button></form>
+      ${us.length ? `<div class="tbl-wrap mt12"><table class="tbl"><tbody>${us.map((u) => `<tr><td><b>${esc(u.name)}</b><div class="xs muted">${esc(u.email)}</div></td><td class="small">${u.active ? (u.last_login_at ? `Last signed in ${when(u.last_login_at)}` : "Invited, not signed in yet") : '<span class="badge b-plain">Disabled</span>'}</td>
+        <td style="text-align:right;white-space:nowrap"><form method="post" action="/ops/clinics/${esc(u.id)}/link" style="display:inline">${tok}<button class="btn btn-o btn-x" type="submit">Email a set-password link</button></form>
         <form method="post" action="/ops/clinics/${esc(u.id)}/active" style="display:inline">${tok}<input type="hidden" name="active" value="${u.active ? "0" : "1"}"><button class="btn btn-g btn-x" type="submit">${u.active ? "Disable" : "Enable"}</button></form></td></tr>`).join("")}</tbody></table></div>` : `<p class="small muted mt8">No logins yet.</p>`}
       <form method="post" action="/ops/clinics" class="row wrap mt12" style="gap:8px;align-items:flex-end">${tok}<input type="hidden" name="provider" value="${esc(p.id)}">
         <label class="f">Name<input class="in" name="name" required maxlength="80" placeholder="e.g. Front desk"></label>
         <label class="f">Email<input class="in" name="email" type="email" required placeholder="name@example.com"></label>
-        <button class="btn btn-p btn-s" type="submit">Create login</button></form></div>`; }).join("")}`);
+        <button class="btn btn-p btn-s" type="submit">Create login and send invitation</button></form></div>`; }).join("")}`);
 }
 
 export function opsLoginPage(error = "", configured = true) {

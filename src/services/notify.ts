@@ -1,6 +1,6 @@
-// Emails to the Aestheva team, sent with Cloudflare Email Service's `EMAIL` binding (see wrangler.jsonc).
-// Without a paid sending plan Cloudflare only delivers to addresses verified in Email Routing, so the recipient is
-// NOTIFY_EMAIL (the verified inbox that hello@ forwards to) and falls back to the support address.
+// Emails sent with Cloudflare Email Service's `EMAIL` binding (see wrangler.jsonc), from notifications@ with replies to hello@.
+// Team emails go to NOTIFY_EMAIL (falling back to the support address). Emails to anyone else, such as clinic invitations,
+// need Email Sending onboarded for the domain on the Workers Paid plan.
 import { COMPANY } from "../config";
 import type { Env } from "../env";
 import { audit } from "../db";
@@ -13,18 +13,19 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&
 export const teamInbox = (env: Env) => env.NOTIFY_EMAIL?.trim() || COMPANY.supportEmail;
 const sender = () => ({ name: "Aestheva", email: `notifications@${COMPANY.supportEmail.split("@")[1]}` });
 
-export async function sendTeamEmail(env: Env, m: { subject: string; text: string; html: string; replyTo?: { email: string; name: string } }): Promise<SendOutcome> {
-  const to = teamInbox(env);
+/** Sends one email. Never throws; the outcome carries Cloudflare's error code when it fails. */
+export async function sendEmail(env: Env, to: string, m: { subject: string; text: string; html: string; replyTo?: { email: string; name: string } }): Promise<SendOutcome> {
   if (!env.EMAIL) return { ok: false, code: "NO_BINDING", to };
   try {
-    await env.EMAIL.send({ from: sender(), to, subject: oneLine(m.subject), text: m.text, html: m.html, ...(m.replyTo ? { replyTo: m.replyTo } : {}) });
+    await env.EMAIL.send({ from: sender(), to, subject: oneLine(m.subject), text: m.text, html: m.html, replyTo: m.replyTo ?? { email: COMPANY.supportEmail, name: "Aestheva" } });
     return { ok: true, to };
   } catch (e) {
     const code = String((e as { code?: string })?.code ?? "SEND_FAILED");
-    console.error("team email failed", code, (e as Error)?.message);
+    console.error("email failed", code, (e as Error)?.message);
     return { ok: false, code, to };
   }
 }
+export const sendTeamEmail = (env: Env, m: Parameters<typeof sendEmail>[2]) => sendEmail(env, teamInbox(env), m);
 
 /** Tells the team a new application has arrived. Never throws: the application is already saved. */
 export async function notifyNewApplication(env: Env, ref: string, a: CleanApplication, siteUrl: string, catNames: string[]) {
