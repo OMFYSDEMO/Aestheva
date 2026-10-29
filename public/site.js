@@ -34,3 +34,20 @@ document.querySelectorAll('[data-near]').forEach((btn) => {
   });
 });
 document.querySelectorAll('form select[name=area]').forEach((sel) => sel.addEventListener('change', () => { const n = sel.form.querySelector('input[name=near]'); if (n && sel.value) n.value = ''; }));
+// "Join free" pop-up for businesses: appears once a visitor has looked around (20 seconds, or a good way down the page),
+// and stays away for two weeks after it's closed or used.
+(() => {
+  const pop = document.getElementById('join-pop');
+  if (!pop) return;
+  const KEY = 'ae-join-pop', WAIT = 14 * 864e5;
+  let seen = 0; try { seen = Number(localStorage.getItem(KEY)) || 0; } catch {}
+  if (Date.now() - seen < WAIT) return;
+  const remember = () => { try { localStorage.setItem(KEY, String(Date.now())); } catch {} };
+  let shown = false;
+  const show = () => { if (shown) return; shown = true; pop.hidden = false; requestAnimationFrame(() => pop.classList.add('in')); removeEventListener('scroll', onScroll); };
+  const onScroll = () => { if (scrollY > Math.min(1400, (document.documentElement.scrollHeight - innerHeight) * 0.4)) show(); };
+  setTimeout(show, 20000); addEventListener('scroll', onScroll, { passive: true });
+  pop.querySelectorAll('[data-join-close]').forEach((b) => b.addEventListener('click', () => { remember(); pop.classList.remove('in'); setTimeout(() => { pop.hidden = true; }, 250); }));
+  pop.querySelector('[data-join-go]')?.addEventListener('click', remember);
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && shown && !pop.hidden) pop.querySelector('[data-join-close]').click(); });
+})();

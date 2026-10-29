@@ -41,7 +41,8 @@ describe("public pages", () => {
 
   it("welcomes independent professionals as well as salons and clinics", async () => {
     const join = await req("GET", "/for-practitioners");
-    for (const w of ["beauticians, nail artists, makeup and bridal artists, tattoo and piercing artists", "Working on your own is fine", "Listing is free"]) expect(join.text).toContain(w);
+    for (const w of ["Beauticians, nail artists, makeup and bridal artists, tattoo and piercing artists", "Working solo?", "Listing on Aestheva is free"]) expect(join.text).toContain(w);
+    expect(join.text).not.toContain('id="join-pop"');   // no pop-up on the page it points to
     const apply = await req("GET", "/for-practitioners/apply");
     expect(apply.text).toContain('<option value="Independent practitioner" >Independent professional: beautician, nail, makeup or tattoo artist, therapist…</option>');
     expect(apply.text).toContain("Tattoo &amp; piercing");
@@ -49,6 +50,8 @@ describe("public pages", () => {
     const home = await req("GET", "/");
     expect(home.text).toContain("List your business");
     expect(home.text).not.toMatch(/For practitioners|Clinics you can book/);
+    expect(home.text).toContain('id="join-pop"'); expect(home.text).toContain("Your talent, fully booked.");
+    expect((await req("GET", "/p/lumiere-skin-and-laser-clinic")).text).not.toContain('id="join-pop"');   // never while someone is choosing where to book
   });
 
   it("understands everyday words for treatments", async () => {

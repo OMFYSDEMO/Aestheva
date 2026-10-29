@@ -694,3 +694,27 @@ html{overflow-x:clip}
 .story-two p{color:var(--charcoal);line-height:1.65}
 @media (max-width:1060px){.story-hero{grid-template-columns:1fr;gap:28px}.promise-grid{grid-template-columns:1fr 1fr}}
 @media (max-width:760px){.story-hero{padding-top:32px;padding-bottom:32px}.promise-grid,.story-two{grid-template-columns:1fr}.story-two>div{padding:22px}}
+
+/* List your business: full width */
+.who-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.who-grid>div{background:var(--white);border:1px solid var(--line-2);border-radius:var(--r);padding:22px}
+.who-grid svg{color:var(--mulberry);display:block;margin-bottom:12px}
+.who-grid b{font-size:16px}
+.who-grid p{font-size:14px;color:var(--muted);margin-top:6px}
+.band .who-grid>div{border-color:transparent}
+.join-steps{list-style:none;padding:0;margin:16px 0 0;display:flex;flex-direction:column;gap:14px}
+.join-steps li{display:flex;gap:14px;align-items:flex-start}
+.join-steps li>span{width:30px;height:30px;border-radius:50%;background:var(--mulberry);color:#fff;font-weight:700;display:grid;place-items:center;flex-shrink:0;font-size:14px}
+.join-steps p{font-size:14px;color:var(--muted);margin-top:2px}
+/* Join pop-up */
+.join-pop{position:fixed;right:20px;bottom:20px;z-index:60;width:min(360px,calc(100vw - 24px));background:var(--white);border:1.5px solid var(--charcoal);border-radius:var(--r-lg);padding:22px 22px 18px;box-shadow:0 18px 50px rgba(29,26,28,.22);transform:translateY(24px);opacity:0;transition:transform .25s ease,opacity .25s ease}
+.join-pop.in{transform:none;opacity:1}
+.join-pop::before{content:'';position:absolute;inset:0 0 auto 0;height:6px;border-radius:var(--r-lg) var(--r-lg) 0 0;background:linear-gradient(90deg,#F5A3B7,#FFB48F,#EDC06A,#8ED3C3,#A795E3)}
+.join-pop h2{font-size:24px;margin-top:6px}
+.join-pop p{font-size:14px;color:var(--muted);margin-top:8px}
+.join-pop ul{list-style:none;padding:0;margin:12px 0 16px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;font-weight:600}
+.join-pop li{display:flex;align-items:center;gap:5px}.join-pop li svg{color:var(--sage-d)}
+.join-pop-x{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;border:0;background:var(--canvas);display:grid;place-items:center;color:var(--charcoal)}
+@media (prefers-reduced-motion:reduce){.join-pop{transition:none}}
+@media (max-width:1060px){.who-grid{grid-template-columns:1fr 1fr}}
+@media (max-width:760px){.who-grid{grid-template-columns:1fr}.join-pop{right:12px;left:12px;bottom:12px;width:auto}}

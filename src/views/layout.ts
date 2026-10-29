@@ -12,6 +12,7 @@ export interface PageOpts {
   head?: string;
   ogImage?: string;           // absolute URL of a 1200x630 image
   app?: { label: string; right?: string };   // signed-in workspace: slim header and footer, no marketing navigation
+  joinPromo?: boolean;        // invite businesses to join with a small, dismissible pop-up
 }
 
 const FONTS = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap";
@@ -73,6 +74,14 @@ ${o.app ? `<footer class="footer app-foot"><p>Aestheva for business · Help: <a 
   <p>© ${new Date().getFullYear()} ${esc(COMPANY.legalName)} · <a href="mailto:${esc(COMPANY.supportEmail)}">${esc(COMPANY.supportEmail)}</a></p>
   <p class="mt8">Verification labels describe what was checked and its scope. They are not a guarantee of results.</p>
 </div></footer>`}
+${o.joinPromo ? `<aside class="join-pop" id="join-pop" aria-label="List your business on Aestheva" hidden>
+  <button class="join-pop-x" type="button" data-join-close aria-label="Close">${ic("x", 16)}</button>
+  <div class="eyebrow">For beauty &amp; wellness pros</div>
+  <h2>Your talent, fully booked.</h2>
+  <p>Nails, makeup, tattoos, hair, facials or a whole clinic? Let people across ${esc(COMPANY.launchCity)} find you, see your work and book your free slots.</p>
+  <ul><li>${ic("check", 14)} Free to list</li><li>${ic("check", 14)} Set up in about 30 minutes</li><li>${ic("check", 14)} Solo artists welcome</li></ul>
+  <div class="row wrap" style="gap:8px"><a class="btn btn-p btn-s" href="/for-practitioners" data-join-go>Join free ${ic("arrowR", 15)}</a><button class="btn btn-g btn-s" type="button" data-join-close>Maybe later</button></div>
+</aside>` : ""}
 <script src="/site.js" defer></script>
 ${(o.scripts ?? []).map((s) => `<script src="${esc(s)}" defer></script>`).join("\n")}
 </body>

@@ -129,38 +129,64 @@ export function aboutPage() {
 }
 
 export function practitionersPage(cats: { id: string; name: string }[] = []) {
-  return `<div class="page narrow prose">
-    <div class="eyebrow" style="color:var(--sage-d)">List your business</div>
-    <h1 class="mt8" style="font-size:clamp(36px,5vw,52px)">Whatever you do to help people look and feel good, there's room for you here.</h1>
-    <p class="lede mt16">Aestheva is for everyone in beauty, wellness and care in ${esc(COMPANY.launchCity)}: big salons and one-chair studios, clinics, and independent professionals building their own name. Clients find you, see your prices and your work, and book a time that fits your diary.</p>
-    <div class="row wrap mt24" style="gap:10px"><a class="btn btn-ok" href="/for-practitioners/apply">Apply online ${ic("arrowR", 16)}</a><span class="small muted">About five minutes. No documents needed yet.</span></div>
-    ${cats.length ? `<div class="join-tiles mt32"><h2 style="margin:0">Select your business to get started</h2><div class="tile-grid mt16">${cats.map((c) => `<a class="tile" href="/for-practitioners/apply?cat=${esc(c.id)}">${catTile(c.id, 22)}<b>${esc(c.name)}</b></a>`).join("")}</div></div>` : ""}
-    <h2>Who can join</h2>
-    <ul class="ticks">
-      <li>${ic("check", 15)} <span><b>Independent professionals</b>: beauticians, nail artists, makeup and bridal artists, tattoo and piercing artists, hair stylists, massage and wellness therapists.</span></li>
-      <li>${ic("check", 15)} <span><b>Salons and studios</b>: beauty parlours, unisex salons, nail bars, tattoo studios, barbers and grooming lounges.</span></li>
-      <li>${ic("check", 15)} <span><b>Wellness and Ayurveda centres</b>, spas and physiotherapy studios.</span></li>
-      <li>${ic("check", 15)} <span><b>Clinics</b>: skin, hair, dental and aesthetic care led by registered doctors and dentists.</span></li>
-    </ul>
-    <p class="small muted">Working on your own is fine. You'll be the only person on your profile, with your own hours, and you can add others later.</p>
-    <div class="promises mt24">
-      <div>${ic("users", 20)}<b>Your name, your work</b><p>Each person has their own profile line, with their training, experience and the languages they speak, so clients know who they're booking.</p></div>
-      <div>${ic("cal", 20)}<b>Your real availability</b><p>Clients only see the hours you actually work, and two people can never take the same slot or chair.</p></div>
-      <div>${ic("receipt", 20)}<b>Prices in full</b><p>Clients see the full price before they book, so there are no awkward surprises on the day.</p></div>
-      <div>${ic("shield", 20)}<b>Checked, fairly</b><p>We check what applies to your kind of work and say exactly what we checked. Medical care is held to medical standards; everyone else, to theirs.</p></div>
+  const who = [
+    ["users", "Independent professionals", "Beauticians, nail artists, makeup and bridal artists, tattoo and piercing artists, hair stylists, massage and wellness therapists."],
+    ["brush", "Salons and studios", "Beauty parlours, unisex salons, nail bars, tattoo studios, barbers and grooming lounges."],
+    ["leaf", "Wellness and Ayurveda", "Ayurveda and wellness centres, spas and physiotherapy studios."],
+    ["shield", "Clinics", "Skin, hair, dental and aesthetic care led by registered doctors and dentists."],
+  ];
+  const perks = [
+    ["users", "Your name, your work", "Each person has their own profile line, with their training, experience and the languages they speak."],
+    ["cal", "Your real availability", "Clients only see the hours you actually work, and two people can never take the same slot or chair."],
+    ["receipt", "Prices in full", "Clients see the full price before they book, so there are no awkward surprises on the day."],
+    ["shield", "Checked, fairly", "We check what applies to your kind of work. Medical care is held to medical standards; everyone else, to theirs."],
+  ];
+  const steps = [
+    ["Apply", "Your business details and the services you offer. About five minutes, no documents needed yet."],
+    ["Set up your listing", "Six short steps: your details, photos of your space or your work, who takes bookings, services and prices, a few documents, and our terms."],
+    ["We check by scope", "Registrations for medical care; a training certificate, portfolio or proof of work for beauty, wellness and body art; an ID or business proof for everyone."],
+    ["Go live", "Your profile, services and free times appear on Aestheva, and bookings arrive in your calendar."],
+  ];
+  return `<div class="page join" style="padding-top:0">
+  <section class="story-hero">
+    <div>
+      <div class="eyebrow" style="color:var(--sage-d)">List your business</div>
+      <h1 class="mt12">Whatever you do to help people look and feel good, there's room for you here.</h1>
+      <p class="lede mt16">Big salons and one-chair studios, clinics, and independent professionals building their own name. Clients across ${esc(COMPANY.launchCity)} find you, see your prices and your work, and book a time that fits your diary.</p>
+      <div class="row wrap mt24" style="gap:10px"><a class="btn btn-p" href="/for-practitioners/apply">Apply online ${ic("arrowR", 16)}</a><span class="small muted">About five minutes. No documents needed yet.</span></div>
     </div>
-    <h2>What it costs</h2>
-    <p>Listing is free. Aestheva takes a ${POLICY.commissionBp / 100}% commission only on completed bookings that clients make through the marketplace. Bookings you add yourself, for your regulars, phone calls or walk-ins, carry no commission.</p>
-    <h2>How joining works</h2>
-    <ol>
-      <li><b>Apply</b> with your business details and the services you offer. Five minutes.</li>
-      <li><b>Set up your listing</b> in six short steps: your details, photos of your space or your work, who takes bookings, services and prices, a few documents, and our terms.</li>
-      <li><b>We check by scope.</b> Council and clinical registrations for medical care; training certificates, a portfolio or proof of work for beauty, wellness and body art; and an ID or business proof for everyone. Your page shows exactly what we checked.</li>
-      <li><b>Go live.</b> Your profile, services and free times appear on Aestheva, and bookings arrive in your calendar.</li>
-    </ol>
-    <h2>Apply</h2>
-    <p>Tell us about yourself or your business and what you offer, and we'll be in touch, usually by phone, to help you get set up.</p>
-    <p class="mt16"><a class="btn btn-ok" href="/for-practitioners/apply">Apply online ${ic("arrowR", 16)}</a></p>
-    <p class="small muted mt16">Questions first? Email <a href="mailto:${esc(COMPANY.supportEmail)}">${esc(COMPANY.supportEmail)}</a>.</p>
+    <aside class="story-facts" aria-label="Joining at a glance">
+      <div><b>Listing</b><span>Free</span></div>
+      <div><b>Commission</b><span>${POLICY.commissionBp / 100}% only on completed bookings made through Aestheva. None on bookings you add yourself.</span></div>
+      <div><b>Set-up</b><span>About 30 minutes, at your own pace</span></div>
+      <div><b>Working solo?</b><span>Welcome. Add just yourself, with your own hours</span></div>
+    </aside>
+  </section>
+
+  ${cats.length ? `<section class="mt48"><div class="eyebrow">Get started</div><h2 class="mt8">Select your business to get started</h2>
+    <div class="tile-grid mt24">${cats.map((c) => `<a class="tile" href="/for-practitioners/apply?cat=${esc(c.id)}">${catTile(c.id, 22)}<b>${esc(c.name)}</b></a>`).join("")}</div></section>` : ""}
+
+  <section class="mt64"><div class="eyebrow">Who can join</div><h2 class="mt8">Everyone in beauty, wellness and care</h2>
+    <div class="who-grid mt24">${who.map(([i, t, b]) => `<div>${ic(i, 22)}<b>${t}</b><p>${b}</p></div>`).join("")}</div></section>
+
+  <section class="band mt64"><div class="eyebrow">What you get</div><h2 class="mt8">Built so the right clients find you</h2>
+    <div class="who-grid mt24">${perks.map(([i, t, b]) => `<div>${ic(i, 22)}<b>${t}</b><p>${b}</p></div>`).join("")}</div></section>
+
+  <section class="story-two mt64">
+    <div><div class="eyebrow">How joining works</div><h2 class="mt8">Four steps to your first booking</h2>
+      <ol class="join-steps mt16">${steps.map(([t, b], n) => `<li><span>${n + 1}</span><div><b>${t}</b><p>${b}</p></div></li>`).join("")}</ol></div>
+    <div><div class="eyebrow">What it costs</div><h2 class="mt8">Free to list. Fair when you're busy.</h2>
+      <p class="mt16">Listing on Aestheva is free. We take a ${POLICY.commissionBp / 100}% commission only on completed bookings that clients make through the marketplace.</p>
+      <p class="mt12">Bookings you add yourself, for your regulars, phone calls or walk-ins, carry no commission. If a client cancels or doesn't turn up, you pay nothing.</p>
+      <p class="mt12 small muted">Questions first? Email <a href="mailto:${esc(COMPANY.supportEmail)}">${esc(COMPANY.supportEmail)}</a>.</p></div>
+  </section>
+
+  <section class="story-band mt64">
+    <div class="story-in">
+      <h2>Your talent, fully booked.</h2>
+      <p class="mt12">Tell us about yourself or your business and what you offer. We'll be in touch, usually by phone, to help you get set up.</p>
+      <div class="story-cta mt24"><a class="btn btn-light" href="/for-practitioners/apply">Apply online ${ic("arrowR", 16)}</a></div>
+    </div>
+  </section>
   </div>`;
 }

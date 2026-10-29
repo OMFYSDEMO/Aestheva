@@ -30,7 +30,7 @@ site.get("/", async (c) => {
   return page(c, {
     title: "Book skin, dental & hair care in Trivandrum · Aestheva",
     description: "Find clinics near you in Thiruvananthapuram (Trivandrum), from Technopark to Kovalam. See full prices and verified doctors, and book a free time in a minute.",
-    canonical: base(c) + "/",
+    canonical: base(c) + "/", joinPromo: true,
   }, homePage({ providers, services, categories: cats, ratings: rt, next, today, joined: joined && (WAITLIST_CITIES as readonly string[]).includes(joined) ? joined : undefined }));
 });
 
@@ -65,7 +65,7 @@ site.get("/search", async (c) => {
   return page(c, {
     title: `${f.q ? f.q + " · " : f.cat ? catName(f.cat) + " · " : ""}${f.area || COMPANY.launchCity} · Aestheva`,
     description: `Book ${f.cat ? catName(f.cat).toLowerCase() : "aesthetic and wellness services"} in ${f.area || COMPANY.launchCity} with verified providers.`,
-    canonical: base(c) + "/search", nav: "explore", noindex: !!f.q,
+    canonical: base(c) + "/search", nav: "explore", noindex: !!f.q, joinPromo: true,
   }, searchPage({ f, results, outside: !f.area && !!near && !inServiceArea(near), categories: providers.length ? cats.filter((x) => services.some((s) => s.cat === x.id)) : cats, ratings: rt, next, today, anyLive: providers.length > 0 }));
 });
 
@@ -139,7 +139,7 @@ site.get("/policies/cancellation", (c) => page(c, { title: "Cancellation & refun
 site.get("/policies/terms", (c) => page(c, { title: "Terms of use · Aestheva", canonical: base(c) + "/policies/terms" }, termsPage()));
 site.get("/policies/privacy", (c) => page(c, { title: "Privacy · Aestheva", canonical: base(c) + "/policies/privacy" }, privacyPage()));
 site.get("/contact", (c) => page(c, { title: "Contact · Aestheva", canonical: base(c) + "/contact" }, contactPage()));
-site.get("/about", (c) => page(c, { title: "Our story · Aestheva", description: `Why we built Aestheva, who runs it, and what you can count on when you book care in ${COMPANY.launchCity}.`, canonical: base(c) + "/about", nav: "story" }, aboutPage()));
+site.get("/about", (c) => page(c, { title: "Our story · Aestheva", description: `Why we built Aestheva, who runs it, and what you can count on when you book care in ${COMPANY.launchCity}.`, canonical: base(c) + "/about", nav: "story", joinPromo: true }, aboutPage()));
 site.get("/for-practitioners", async (c) => page(c, { title: "List your business · Aestheva", description: `Salons, studios, clinics and independent professionals: list your beauty, wellness or care business on Aestheva in ${COMPANY.launchCity}.`, canonical: base(c) + "/for-practitioners", nav: "practitioners" }, practitionersPage(await categories(c.env.DB))));
 
 const applyMeta = (c: C) => ({ title: "Apply to join · Aestheva", description: `Apply to list your salon, studio, clinic or independent business on Aestheva in ${COMPANY.launchCity}.`, canonical: base(c) + "/for-practitioners/apply", nav: "practitioners" as const });
