@@ -100,3 +100,21 @@ export function linkPhones(text: string) {
 }
 
 export const mapsUrl = (q: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+
+export interface Photo { src: string; alt: string }
+/** A venue's photographs (see migrations/0003). Each src has -400/-800/-1500.webp and -og.jpg variants in public/. */
+export function photosOf(p: { photos_json?: string | null }): Photo[] {
+  try {
+    const x = JSON.parse(p.photos_json || "[]");
+    return Array.isArray(x) ? x.filter((ph) => typeof ph?.src === "string" && /^\/venues\/[a-z0-9-]+\/[a-z0-9-]+$/.test(ph.src)).map((ph) => ({ src: ph.src, alt: String(ph.alt ?? "") })) : [];
+  } catch { return []; }
+}
+export function photoImg(ph: Photo, sizes: string, opts: { eager?: boolean; decorative?: boolean } = {}) {
+  const set = [400, 800, 1500].map((w) => `${esc(ph.src)}-${w}.webp ${w}w`).join(", ");
+  return `<img src="${esc(ph.src)}-800.webp" srcset="${set}" sizes="${sizes}" alt="${opts.decorative ? "" : esc(ph.alt)}" ${opts.eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">`;
+}
+/** A venue's small square image: its first photo when it has one, otherwise its mark. */
+export function venueThumb(p: { name: string; id: string; art: number; photos_json?: string | null }, size: "s" | "m" | "l" = "m") {
+  const ph = photosOf(p)[0];
+  return ph ? `<div class="vmark vmark-${size} vthumb" aria-hidden="true">${photoImg(ph, { s: "42px", m: "72px", l: "104px" }[size], { decorative: true })}</div>` : venueMark(p.name, p.id, p.art, size);
+}

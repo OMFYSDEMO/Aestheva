@@ -3,7 +3,7 @@ import { fmtDate, fmtTime, istToUtc } from "../domain/time";
 import type { ProviderDetail } from "../services/catalog";
 import { isMedical } from "../services/catalog";
 import type { BookingRow, PaymentRow } from "../services/bookings";
-import { MED_NOTE, esc, ic, inr, mapsUrl, venueMark } from "./ui";
+import { MED_NOTE, esc, ic, inr, mapsUrl, venueThumb } from "./ui";
 
 const STEPS = ["Service", "Practitioner", "Date & time", "Your details", "Deposit"];
 
@@ -29,7 +29,7 @@ export function bookPage(d: ProviderDetail, preselect: string | null, payments: 
       <div id="bk-main" aria-live="polite">
         <noscript><div class="note n-plain">${ic("info", 16)}<div>Booking needs JavaScript to show live availability and take the deposit. Please enable it, or call the venue directly.</div></div></noscript>
       </div>
-      <aside class="sticky"><div class="card summary" id="bk-summary"><div class="row" style="gap:12px">${venueMark(p.name, p.id, p.art, "s")}<div class="col" style="gap:0"><b class="serif" style="font-size:21px">${esc(p.name)}</b><span class="xs muted">${esc(p.area)}, ${esc(p.city)}</span></div></div><div class="divider"></div><p class="small muted">Choose a treatment to see the price.</p></div></aside>
+      <aside class="sticky"><div class="card summary" id="bk-summary"><div class="row" style="gap:12px">${venueThumb(p, "s")}<div class="col" style="gap:0"><b class="serif" style="font-size:21px">${esc(p.name)}</b><span class="xs muted">${esc(p.area)}, ${esc(p.city)}</span></div></div><div class="divider"></div><p class="small muted">Choose a treatment to see the price.</p></div></aside>
     </div>
     <script type="application/json" id="bk-data">${json}</script>
     <template id="tpl-med">${MED_NOTE}</template>
@@ -43,7 +43,7 @@ const STATUS: Record<string, string> = {
 };
 
 export function managePage(d: {
-  booking: BookingRow; provider: { slug: string; name: string; area: string; city: string; address: string; art: number; id: string };
+  booking: BookingRow; provider: { slug: string; name: string; area: string; city: string; address: string; art: number; id: string; photos_json?: string };
   staff: { name: string; role: string }; client: { name: string; email: string }; payment: PaymentRow | null;
   token: string; terms: { hours: number; started: boolean; free: boolean }; message?: string; resume?: unknown;
 }) {
@@ -98,7 +98,7 @@ export function managePage(d: {
     ${d.message ? `<div class="form-ok" role="status">${esc(d.message)}</div>` : ""}
     ${hero}
     <div class="card">
-      <div class="row" style="gap:16px;align-items:flex-start">${venueMark(d.provider.name, d.provider.id, d.provider.art, "m")}
+      <div class="row" style="gap:16px;align-items:flex-start">${venueThumb(d.provider, "m")}
         <div class="grow col" style="gap:4px"><b class="serif" style="font-size:22px">${esc(b.service_name)}</b>
           <span class="small muted"><a href="/p/${esc(d.provider.slug)}">${esc(d.provider.name)}</a> · ${esc(d.provider.area)}</span>
           <span class="small">${ic("cal", 14)} ${fmtDate(b.date, true)} · ${fmtTime(b.start_min)} · ${b.dur_min} min</span>

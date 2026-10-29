@@ -10,6 +10,7 @@ export interface PageOpts {
   noindex?: boolean;
   scripts?: string[];         // extra script URLs, loaded deferred
   head?: string;
+  ogImage?: string;           // absolute URL of a 1200x630 image
 }
 
 const FONTS = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700&display=swap";
@@ -35,6 +36,7 @@ ${o.noindex || o.appEnv !== "production" ? '<meta name="robots" content="noindex
 <meta property="og:description" content="${esc(desc)}">
 ${o.canonical ? `<meta property="og:url" content="${esc(o.canonical)}">` : ""}
 <meta property="og:locale" content="en_IN">
+${o.ogImage ? `<meta property="og:image" content="${esc(o.ogImage)}">\n<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n<meta name="twitter:card" content="summary_large_image">` : ""}
 <meta name="theme-color" content="#713F54">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

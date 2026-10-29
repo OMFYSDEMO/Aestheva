@@ -246,7 +246,7 @@ export async function authorisedBooking(db: D1Database, ref: string, token: stri
 }
 export async function bookingView(db: D1Database, b: BookingRow) {
   const [prov, staff, client, pays] = await db.batch([
-    db.prepare("SELECT id, slug, name, area, city, address, art, type FROM providers WHERE id = ?").bind(b.provider_id),
+    db.prepare("SELECT id, slug, name, area, city, address, art, type, photos_json FROM providers WHERE id = ?").bind(b.provider_id),
     db.prepare("SELECT name, role FROM staff WHERE id = ?").bind(b.staff_id),
     db.prepare("SELECT name, phone, email FROM clients WHERE id = ?").bind(b.client_id),
     db.prepare("SELECT * FROM payments WHERE booking_id = ? ORDER BY created_at DESC").bind(b.id),
@@ -254,7 +254,7 @@ export async function bookingView(db: D1Database, b: BookingRow) {
   const payments = pays.results as PaymentRow[];
   return {
     booking: b,
-    provider: prov.results[0] as { id: string; slug: string; name: string; area: string; city: string; address: string; art: number; type: string },
+    provider: prov.results[0] as { id: string; slug: string; name: string; area: string; city: string; address: string; art: number; type: string; photos_json: string },
     staff: staff.results[0] as { name: string; role: string },
     client: client.results[0] as { name: string; phone: string; email: string },
     payment: payments.find((p) => p.status !== "created") ?? payments[0] ?? null,

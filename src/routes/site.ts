@@ -7,6 +7,7 @@ import { categories, liveProviders, liveServices, nextAvailable, providerBySlug,
 import { authorisedBooking, bookingView, cancelByClient, cancellationTerms, type PaymentRow } from "../services/bookings";
 import { gatewayFor, paymentMode, previewAllowed } from "../services/gateway";
 import { layout, type PageOpts } from "../views/layout";
+import { photosOf } from "../views/ui";
 import { homePage, matchServices, notFoundPage, providerPage, searchPage, type SearchQuery } from "../views/pages";
 import { bookPage, managePage } from "../views/booking";
 import { aboutPage, cancellationPage, contactPage, practitionersPage, privacyPage, termsPage } from "../views/static";
@@ -68,6 +69,7 @@ site.get("/p/:slug", async (c) => {
     title: `${d.provider.name} · ${d.provider.area}, ${d.provider.city} · Aestheva`,
     description: `${d.provider.tagline}. ${d.provider.type} in ${d.provider.area}, ${d.provider.city}. See services, prices and live availability, and book online.`,
     canonical: `${base(c)}/p/${d.provider.slug}`, nav: "explore", noindex: d.provider.status !== "live",
+    ogImage: photosOf(d.provider)[0] ? `${base(c)}${photosOf(d.provider)[0].src}-og.jpg` : undefined,
   }, providerPage({ ...d, categories: cats, next, today: nowIst().date, preview }));
 });
 

@@ -29,6 +29,17 @@ describe("public pages", () => {
     expect(cat.text).toContain("1</b> venue ");
   });
 
+  it("shows a venue's photo with responsive sizes and a social preview image", async () => {
+    await sql("UPDATE providers SET photos_json = ? WHERE slug = ?", JSON.stringify([{ src: "/venues/lumiere/front", alt: "The front of the clinic" }]), "lumiere-skin-and-laser-clinic");
+    const r = await req("GET", "/p/lumiere-skin-and-laser-clinic");
+    expect(r.text).toContain('srcset="/venues/lumiere/front-400.webp 400w, /venues/lumiere/front-800.webp 800w, /venues/lumiere/front-1500.webp 1500w"');
+    expect(r.text).toContain('alt="The front of the clinic"');
+    expect(r.text).toMatch(/og:image" content="[^"]+\/venues\/lumiere\/front-og\.jpg"/);
+    await sql("UPDATE providers SET photos_json = ? WHERE slug = ?", JSON.stringify([{ src: "javascript:alert(1)", alt: "x" }]), "lumiere-skin-and-laser-clinic");
+    expect((await req("GET", "/p/lumiere-skin-and-laser-clinic")).text).not.toContain("javascript:");
+    await sql("UPDATE providers SET photos_json = '[]' WHERE slug = ?", "lumiere-skin-and-laser-clinic");
+  });
+
   it("shows a provider with services, team, verification and booking links", async () => {
     const r = await req("GET", "/p/lumiere-skin-and-laser-clinic");
     expect(r.status).toBe(200);

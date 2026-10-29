@@ -4,6 +4,7 @@ import { freeStarts, slotsFor, type Hours } from "../domain/availability";
 export interface ProviderRow {
   id: string; slug: string; name: string; type: string; city: string; area: string; address: string; tagline: string; about: string;
   hours_text: string; amenities_json: string; art: number; status: string; live_since: string | null; razorpay_account_id: string | null;
+  photos_json: string;
 }
 export interface ServiceRow {
   id: string; provider_id: string; name: string; cat: string; kind: "consult" | "treatment" | "beauty"; dur_min: number;

@@ -2,7 +2,7 @@ import { AREAS, COMPANY, POLICY, WAITLIST_CITIES } from "../config";
 import { fmtTime, relDay } from "../domain/time";
 import type { ProviderDetail, ProviderRow, Rating, ServiceRow } from "../services/catalog";
 import { isMedical } from "../services/catalog";
-import { CAT_META, MED_NOTE, artBox, avatar, catIcon, esc, ic, inr, linkPhones, mapsUrl, stars, venueMark } from "./ui";
+import { CAT_META, MED_NOTE, artBox, avatar, catIcon, esc, ic, inr, linkPhones, mapsUrl, photoImg, photosOf, stars, venueMark, venueThumb } from "./ui";
 
 type Next = Map<string, { date: string; min: number }>;
 const quals = (t: { quals_json: string }): string[] => { try { const q = JSON.parse(t.quals_json || "[]"); return Array.isArray(q) ? q.map(String) : []; } catch { return []; } };
@@ -13,8 +13,10 @@ const minPrice = (svcs: ServiceRow[]) => Math.min(...svcs.map((s) => s.price_pai
 function venueCard(p: ProviderRow, svcs: ServiceRow[], rating: Rating | undefined, next: Next, today: string, catName: (id: string) => string) {
   const na = next.get(p.id);
   const cats = [...new Set(svcs.map((s) => s.cat))].map(catName);
-  return `<a class="vcard" href="/p/${esc(p.slug)}">
-    <div class="vcard-top">${venueMark(p.name, p.id, p.art)}<div class="col" style="gap:2px;min-width:0"><span class="eyebrow" style="color:var(--muted)">${esc(p.type)} · ${esc(p.area)}</span><h3>${esc(p.name)}</h3></div>${rating ? stars(rating.avg, rating.n) : '<span class="badge b-blush">New</span>'}</div>
+  const cover = photosOf(p)[0];
+  return `<a class="vcard${cover ? " has-cover" : ""}" href="/p/${esc(p.slug)}">
+    ${cover ? `<div class="vcard-cover">${photoImg(cover, "(max-width:760px) 100vw, 560px")}</div>` : ""}
+    <div class="vcard-top">${cover ? "" : venueMark(p.name, p.id, p.art)}<div class="col" style="gap:2px;min-width:0"><span class="eyebrow" style="color:var(--muted)">${esc(p.type)} · ${esc(p.area)}</span><h3>${esc(p.name)}</h3></div>${rating ? stars(rating.avg, rating.n) : '<span class="badge b-blush">New</span>'}</div>
     <p class="small muted">${esc(p.tagline)}</p>
     <div class="vcard-cats">${cats.map((c) => `<span>${esc(c)}</span>`).join("")}</div>
     <div class="vcard-foot"><span class="small">From <b>${inr(minPrice(svcs))}</b></span>${na ? `<span class="next-pill">${ic("clock", 14)} ${nextLabel(na, today)}</span>` : '<span class="small muted">Fully booked for 10 days</span>'}</div>
@@ -47,7 +49,7 @@ export function homePage(d: {
   const others = WAITLIST_CITIES.filter((c) => c !== COMPANY.launchCity);
   const liveCard = `<div class="live-card" aria-label="Next free times">
       <div class="row between"><span class="eyebrow">Next free times</span><span class="live-dot">Live</span></div>
-      <div class="mt12">${featured.slice(0, 4).map((p) => { const n = d.next.get(p.id); return `<a class="live-row" href="/p/${esc(p.slug)}">${venueMark(p.name, p.id, p.art, "s")}<div class="grow col" style="gap:0;min-width:0"><b>${esc(p.name)}</b><span class="xs muted">${esc(p.area)}</span></div><span class="live-time">${n ? nextLabel(n, d.today) : "Fully booked"}</span></a>`; }).join("")}</div>
+      <div class="mt12">${featured.slice(0, 4).map((p) => { const n = d.next.get(p.id); return `<a class="live-row" href="/p/${esc(p.slug)}">${venueThumb(p, "s")}<div class="grow col" style="gap:0;min-width:0"><b>${esc(p.name)}</b><span class="xs muted">${esc(p.area)}</span></div><span class="live-time">${n ? nextLabel(n, d.today) : "Fully booked"}</span></a>`; }).join("")}</div>
       <p class="xs muted mt12">Times update as people book. What you see is what's free.</p>
     </div>`;
   return `<div class="page" style="padding-top:0">
@@ -145,7 +147,7 @@ export function searchPage(d: {
   const list = d.results.map(({ p, svcs, verifications }) => {
     const r = d.ratings.get(p.id), na = d.next.get(p.id);
     return `<article class="rcard">
-      <a class="rcard-mark" href="/p/${esc(p.slug)}" tabindex="-1" aria-hidden="true">${venueMark(p.name, p.id, p.art, "l")}</a>
+      ${photosOf(p)[0] ? `<a class="rcard-photo" href="/p/${esc(p.slug)}" tabindex="-1" aria-hidden="true">${photoImg(photosOf(p)[0], "(max-width:760px) 100vw, 260px", { decorative: true })}</a>` : `<a class="rcard-mark" href="/p/${esc(p.slug)}" tabindex="-1" aria-hidden="true">${venueMark(p.name, p.id, p.art, "l")}</a>`}
       <div style="padding:18px 20px" class="col">
         <span class="eyebrow" style="color:var(--muted)">${esc(p.type)}</span>
         <h3><a href="/p/${esc(p.slug)}" style="color:inherit;text-decoration:none">${esc(p.name)}</a></h3><p class="small muted">${esc(p.tagline)}</p>
@@ -195,6 +197,7 @@ export function providerPage(d: ProviderDetail & { categories: { id: string; nam
   // Label each treatment only when a venue mixes medical and beauty services; otherwise the note above says it once.
   const mixed = medical && d.services.some((s) => !isMedical(s));
   const amen: string[] = JSON.parse(p.amenities_json || "[]");
+  const photos = photosOf(p);
   const na = d.next.get(p.id);
   const bookHref = (svc?: string) => `/book/${esc(p.slug)}${svc ? `?service=${esc(svc)}${pv ? "&amp;" + pv : ""}` : pv ? "?" + pv : ""}`;
   const spoken = [...new Set(d.staff.flatMap(langs))];
@@ -208,8 +211,9 @@ export function providerPage(d: ProviderDetail & { categories: { id: string; nam
   return `<div class="page">
     ${draftBanner}
     <a class="btn btn-g btn-s" href="/search" style="margin-left:-10px">${ic("chevL", 16)} All clinics</a>
-    <header class="v-head mt12">
-      ${venueMark(p.name, p.id, p.art, "l")}
+    ${photos.length ? `<div class="v-photos mt12${photos.length > 1 ? " multi" : ""}">${photos.slice(0, 3).map((ph, i) => `<figure>${photoImg(ph, i ? "(max-width:760px) 100vw, 420px" : "(max-width:1280px) 100vw, 1232px", { eager: i === 0 })}</figure>`).join("")}</div>` : ""}
+    <header class="v-head ${photos.length ? "mt24" : "mt12"}">
+      ${photos.length ? "" : venueMark(p.name, p.id, p.art, "l")}
       <div class="col" style="gap:6px;min-width:0">
         <div class="row wrap" style="gap:8px"><span class="eyebrow">${esc(p.type)} · ${esc(p.area)}</span>${medical ? `<span class="badge b-med">${ic("shield", 12)} Doctor-led</span>` : `<span class="badge b-beauty">${ic("leaf", 12)} Beauty &amp; wellness</span>`}</div>
         <h1>${esc(p.name)}</h1>
