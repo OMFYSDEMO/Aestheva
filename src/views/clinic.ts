@@ -4,8 +4,9 @@ import type { Appt, ClinicUser } from "../services/clinic";
 import type { ServiceRow, StaffRow } from "../services/catalog";
 import { avatar, esc, ic, inr } from "./ui";
 
-export type Section = "today" | "calendar" | "bookings" | "clients" | "services" | "payments" | "new";
+export type Section = "setup" | "today" | "calendar" | "bookings" | "clients" | "services" | "payments" | "new";
 const NAV: [Section, string, string, string][] = [
+  ["setup", "/clinic/setup", "edit", "Your listing"],
   ["today", "/clinic", "home", "Today"], ["calendar", "/clinic/calendar", "cal", "Calendar"], ["bookings", "/clinic/bookings", "list", "Bookings"],
   ["clients", "/clinic/clients", "users", "Clients"], ["services", "/clinic/services", "grid", "Services & hours"], ["payments", "/clinic/payments", "wallet", "Payments"],
 ];
@@ -237,8 +238,8 @@ export function clientPage(d: { c: { name: string; phone: string; email: string 
 export function servicesPage(d: { services: (ServiceRow & { staff: string[] })[]; staff: StaffRow[]; hours: { staff_id: string; dow: number; start_min: number; end_min: number }[]; catName: (id: string) => string }) {
   const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const name = (id: string) => d.staff.find((t) => t.id === id)?.name ?? id;
-  return `<div class="ws-head"><div><div class="eyebrow">What clients see</div><h2 class="mt8">Services &amp; hours</h2></div><a class="btn btn-o btn-s" href="mailto:${esc(COMPANY.supportEmail)}?subject=${encodeURIComponent("Change to our services or hours")}">${ic("mail", 15)} Ask for a change</a></div>
-    <p class="small muted" style="max-width:680px">For now the Aestheva team makes changes to prices, treatments and hours for you, usually the same day. Email us what to change.</p>
+  return `<div class="ws-head"><div><div class="eyebrow">What clients see</div><h2 class="mt8">Services &amp; hours</h2></div><a class="btn btn-o btn-s" href="/clinic/setup">${ic("edit", 15)} Edit your listing</a></div>
+    <p class="small muted" style="max-width:680px">Change treatments, prices, team and online hours under <a href="/clinic/setup">Your listing</a>. Changes appear on your page straight away.</p>
     <h3 class="mt24" style="font-size:22px">Online booking hours</h3>
     <div class="tbl-wrap mt12"><table class="tbl"><thead><tr><th>Practitioner</th>${[1, 2, 3, 4, 5, 6, 0].map((x) => `<th>${DOW[x]}</th>`).join("")}</tr></thead><tbody>
       ${d.staff.map((t) => `<tr><td><b>${esc(t.name)}</b><div class="xs muted">${esc(t.role)}</div></td>${[1, 2, 3, 4, 5, 6, 0].map((x) => { const h = d.hours.find((r) => r.staff_id === t.id && r.dow === x); return `<td class="small">${h ? `${fmtTime(h.start_min)}–${fmtTime(h.end_min)}` : '<span class="soft">—</span>'}</td>`; }).join("")}</tr>`).join("")}

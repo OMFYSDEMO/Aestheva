@@ -242,7 +242,7 @@ export function providerPage(d: ProviderDetail & { categories: { id: string; nam
           <div class="visit mt16">
             <div class="row" style="gap:12px;align-items:flex-start">${ic("pin", 20, 'style="color:var(--rose);flex-shrink:0;margin-top:2px"')}<div><b>Address</b><p class="small muted mt8">${esc(p.address)}</p></div></div>
             <div class="row" style="gap:12px;align-items:flex-start">${ic("clock", 20, 'style="color:var(--rose);flex-shrink:0;margin-top:2px"')}<div><b>Opening hours</b><p class="small muted mt8">${linkPhones(p.hours_text)}</p><p class="xs soft mt8">Online booking shows each practitioner's own hours.</p></div></div>
-            <a class="btn btn-o btn-s" href="${mapsUrl(`${p.name}, ${p.address}`)}" target="_blank" rel="noopener">${ic("nav", 15)} Get directions</a>
+            <div class="row wrap" style="gap:8px"><a class="btn btn-o btn-s" href="${mapsUrl(`${p.name}, ${p.address}`)}" target="_blank" rel="noopener">${ic("nav", 15)} Get directions</a>${p.phone ? `<a class="btn btn-o btn-s" href="tel:${esc(p.phone)}">${ic("phone", 15)} Call the clinic</a>` : ""}</div>
           </div>
         </section>
         <section id="sec-reviews" class="mt48"><div class="row between"><h2 class="sec-h">Reviews</h2>${d.rating ? stars(d.rating.avg, d.rating.n) : ""}</div>

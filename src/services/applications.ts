@@ -10,7 +10,7 @@ export type AppStatus = (typeof APP_STATUSES)[number];
 export interface ApplicationRow {
   id: string; ref: string; status: AppStatus; business_name: string; business_type: string; area: string; address: string; website: string;
   contact_name: string; contact_role: string; phone: string; email: string; categories_json: string; medical: number; team_size: number;
-  services_text: string; establishment_reg: string; practitioner_reg: string; gstin: string; heard_from: string; team_notes: string;
+  services_text: string; establishment_reg: string; practitioner_reg: string; gstin: string; heard_from: string; team_notes: string; provider_id: string | null;
   created_at: string; updated_at: string;
 }
 

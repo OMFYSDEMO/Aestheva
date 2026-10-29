@@ -6,7 +6,9 @@ import { audit, hmacSha256Hex, safeEqual } from "../db";
 import { categories } from "../services/catalog";
 import { getApplication, listApplications, updateApplication, venueDraft } from "../services/applications";
 import { layout } from "../views/layout";
-import { opsClinicsPage, opsDetailPage, opsListPage, opsLoginPage, type ClinicLoginRow } from "../views/ops";
+import { opsClinicsPage, opsDetailPage, opsListPage, opsLoginPage, opsVenuePage, opsVenuesPage, type ClinicLoginRow } from "../views/ops";
+import { STAGE, addVerification, approveApplication, checklist, listing, removeVerification, setVenueStage } from "../services/onboarding";
+import { photosOf } from "../views/ui";
 import { createClinicUser, emailPasswordLink, issuePasswordLink, setClinicUserActive, type ClinicUser } from "../services/clinic";
 import { HttpError } from "../db";
 import { sendTestEmail, teamInbox } from "../services/notify";
@@ -76,6 +78,53 @@ async function clinicsPage(c: C, extra: { issued?: Issued; error?: string } = {}
   ]);
   return page(c, "Clinic logins", opsClinicsPage({ providers: providers.results, users: users.results, csrf: c.get("csrf"), ...extra }), status);
 }
+ops.post("/applications/:ref/approve", async (c) => {
+  const db = c.env.DB, ref = c.req.param("ref");
+  const r = await approveApplication(c.env, ref, c.env.SITE_URL || new URL(c.req.url).origin);
+  const a = await getApplication(db, ref), cats = await categories(db);
+  return page(c, a.business_name, opsDetailPage(a, c.get("csrf"), venueDraft(a), (id) => cats.find((x) => x.id === id)?.name ?? id, false, r));
+});
+
+ops.get("/venues", async (c) => {
+  const db = c.env.DB;
+  const ps = (await db.prepare("SELECT id FROM providers ORDER BY created_at DESC").all<{ id: string }>()).results;
+  const logins = new Map((await db.prepare("SELECT provider_id, COUNT(*) AS n FROM provider_users WHERE active = 1 GROUP BY provider_id").all<{ provider_id: string; n: number }>()).results.map((r) => [r.provider_id, r.n]));
+  const rows = await Promise.all(ps.map(async ({ id }) => { const l = await listing(db, id); return { id, name: l.p.name, type: l.p.type, area: l.p.area, stage: STAGE(l.p), percent: checklist(l).percent, submitted_at: l.p.submitted_at, logins: logins.get(id) ?? 0 }; }));
+  return page(c, "Venues", opsVenuesPage({ rows }));
+});
+async function venuePage(c: C, id: string, extra: { message?: string; error?: string } = {}, status = 200) {
+  const db = c.env.DB;
+  if (!(await db.prepare("SELECT 1 FROM providers WHERE id = ?").bind(id).first())) throw new HttpError(404, "Unknown venue");
+  const l = await listing(db, id), ch = checklist(l);
+  const ver = (await db.prepare("SELECT id, label, scope, checked_on FROM verifications WHERE provider_id = ? ORDER BY sort").bind(id).all<{ id: number; label: string; scope: string; checked_on: string }>()).results;
+  const previewUrl = `/p/${l.p.slug}${l.p.status === "live" ? "" : `?preview=${encodeURIComponent(c.env.PREVIEW_KEY ?? "")}`}`;
+  return page(c, l.p.name, opsVenuePage({ p: l.p, stage: STAGE(l.p), steps: ch.steps, staff: l.staff, services: l.services, photos: photosOf(l.p), docs: l.docs, verifications: ver, previewUrl, csrf: c.get("csrf"), ...extra }), status);
+}
+const STAGE_DONE: Record<string, string> = { publish: "Published. The clinic has been emailed.", send_back: "Sent back. The clinic has been emailed your note.", pause: "Paused. The clinic has been emailed." };
+ops.get("/venues/:id", (c) => venuePage(c, c.req.param("id"), { message: STAGE_DONE[c.req.query("done") ?? ""] }));
+ops.post("/venues/:id/stage", async (c) => {
+  const f = await c.req.parseBody(), id = c.req.param("id"), action = String(f.action ?? "");
+  if (!["publish", "send_back", "pause"].includes(action)) throw new HttpError(400, "Unknown action");
+  try { await setVenueStage(c.env, id, action as "publish", String(f.note ?? ""), c.env.SITE_URL || new URL(c.req.url).origin); }
+  catch (e) { if (e instanceof HttpError && e.status < 500 && e.status !== 404) return venuePage(c, id, { error: e.message }, e.status); throw e; }
+  return c.redirect(`/ops/venues/${encodeURIComponent(id)}?done=${action}`, 303);
+});
+ops.post("/venues/:id/verifications", async (c) => {
+  const f = await c.req.parseBody(), id = c.req.param("id");
+  try { await addVerification(c.env.DB, id, String(f.label ?? ""), String(f.scope ?? ""), String(f.checked_on ?? "")); }
+  catch (e) { if (e instanceof HttpError && e.status < 500) return venuePage(c, id, { error: e.message }, e.status); throw e; }
+  return c.redirect(`/ops/venues/${encodeURIComponent(id)}`, 303);
+});
+ops.post("/venues/:id/verifications/:vid/remove", async (c) => { await removeVerification(c.env.DB, c.req.param("id"), Number(c.req.param("vid"))); return c.redirect(`/ops/venues/${encodeURIComponent(c.req.param("id"))}`, 303); });
+// Verification documents open only here, for signed-in team members, sandboxed and never cached.
+ops.get("/documents/:id", async (c) => {
+  const d = await c.env.DB.prepare("SELECT * FROM provider_documents WHERE id = ?").bind(c.req.param("id")).first<{ r2_key: string; content_type: string; filename: string }>();
+  const obj = d && c.env.MEDIA ? await c.env.MEDIA.get(d.r2_key) : null;
+  if (!d || !obj) throw new HttpError(404, "Document not found");
+  await audit(c.env.DB, "ops", "document.viewed", "document", c.req.param("id")).run();
+  return new Response(obj.body, { headers: { "content-type": d.content_type, "content-disposition": `inline; filename="${d.filename.replace(/"/g, "")}"`, "cache-control": "no-store", "x-content-type-options": "nosniff", "content-security-policy": "sandbox; default-src 'none'; img-src 'self'; style-src 'unsafe-inline'" } });
+});
+
 ops.get("/clinics", (c) => clinicsPage(c));
 ops.post("/clinics", async (c) => {
   const f = await c.req.parseBody();

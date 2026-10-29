@@ -53,6 +53,14 @@ app.get("/api/health", async (c) => {
   const email = { binding: !!c.env.EMAIL, NOTIFY_EMAIL: c.env.NOTIFY_EMAIL ? "set" : "missing (using the support address)" };
   return c.json({ ok: db.ok, env: c.env.APP_ENV, db, payments, email }, db.ok ? 200 : 503);
 });
+// Photos clinics upload in the portal. Only media/ is served; verification documents live under docs/ and never are.
+app.get("/media/:pid/:file", async (c) => {
+  const { pid, file } = c.req.param();
+  if (!c.env.MEDIA || !/^[a-z0-9-]+$/.test(pid) || !/^[a-z0-9]+-(400|800|1500)\.webp$|^[a-z0-9]+-og\.jpg$/.test(file)) return c.notFound();
+  const obj = await c.env.MEDIA.get(`media/${pid}/${file}`);
+  if (!obj) return c.notFound();
+  return new Response(obj.body, { headers: { "content-type": obj.httpMetadata?.contentType ?? "application/octet-stream", "cache-control": "public, max-age=31536000, immutable", etag: obj.httpEtag } });
+});
 app.route("/api", api);
 app.route("/hooks", hooks);
 app.route("/ops", ops);

@@ -41,3 +41,6 @@ export function audit(db: D1Database, actor: string, action: string, entity: str
   return db.prepare("INSERT INTO audit_log (actor, action, entity, entity_id, data_json) VALUES (?, ?, ?, ?, ?)")
     .bind(actor, action, entity, entityId, data === undefined ? null : JSON.stringify(data));
 }
+
+/** A small stable hash (FNV-1a), for picking a palette colour from an id. */
+export function hash32(s: string) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }

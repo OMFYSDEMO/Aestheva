@@ -9,6 +9,7 @@ export interface Env {
   RAZORPAY_WEBHOOK_SECRET?: string;
   PREVIEW_KEY?: string;             // secret: unlocks draft venues at /p/<slug>?preview=<key>
   OPS_KEY?: string;                 // secret: the team's password for /ops (applications review)
+  MEDIA?: R2Bucket;                 // venue photos and verification documents (wrangler.jsonc)
   EMAIL?: SendEmail;                // Cloudflare Email Service binding (wrangler.jsonc); absent in local dev
   NOTIFY_EMAIL?: string;            // secret: the verified inbox that receives team emails (defaults to the support address)
 }

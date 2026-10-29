@@ -102,11 +102,12 @@ export function linkPhones(text: string) {
 export const mapsUrl = (q: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 
 export interface Photo { src: string; alt: string }
-/** A venue's photographs (see migrations/0003). Each src has -400/-800/-1500.webp and -og.jpg variants in public/. */
+/** A venue's photographs (see migrations/0003). Each src has -400/-800/-1500.webp and -og.jpg variants: in public/ for
+ * /venues/..., or in the MEDIA bucket for /media/... (uploaded by clinics in the portal). */
 export function photosOf(p: { photos_json?: string | null }): Photo[] {
   try {
     const x = JSON.parse(p.photos_json || "[]");
-    return Array.isArray(x) ? x.filter((ph) => typeof ph?.src === "string" && /^\/venues\/[a-z0-9-]+\/[a-z0-9-]+$/.test(ph.src)).map((ph) => ({ src: ph.src, alt: String(ph.alt ?? "") })) : [];
+    return Array.isArray(x) ? x.filter((ph) => typeof ph?.src === "string" && /^\/(venues|media)\/[a-z0-9-]+\/[a-z0-9-]+$/.test(ph.src)).map((ph) => ({ src: ph.src, alt: String(ph.alt ?? "") })) : [];
   } catch { return []; }
 }
 export function photoImg(ph: Photo, sizes: string, opts: { eager?: boolean; decorative?: boolean } = {}) {

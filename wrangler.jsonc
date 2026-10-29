@@ -24,6 +24,8 @@
   // Keep values added in the dashboard when Git pushes redeploy. Secrets always survive; this also protects any
   // value accidentally saved as type Text instead of Secret.
   "keep_vars": true,
+  // Venue photos (served at /media/...) and private verification documents (docs/..., never served publicly).
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "aestheva-media" }],
   // Team emails (new applications). Delivers to addresses verified in Cloudflare Email Routing; see README.
   "send_email": [{ "name": "EMAIL" }],
   "vars": {
@@ -41,6 +43,7 @@
         { "binding": "DB", "database_name": "aestheva", "database_id": "d4250b41-2f5b-4dbc-9e58-dc7f1acb4fe8", "migrations_dir": "migrations" }
       ],
       "workers_dev": true,
+      "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "aestheva-media" }],
       "routes": [],
       "vars": { "APP_ENV": "development", "SITE_URL": "", "RAZORPAY_KEY_ID": "" }
     }
