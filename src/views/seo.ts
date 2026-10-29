@@ -55,3 +55,16 @@ export function business(base: string, d: ProviderDetail) {
 export function itemList(base: string, providers: ProviderRow[]) {
   return { "@context": "https://schema.org", "@type": "ItemList", itemListElement: providers.map((p, i) => ({ "@type": "ListItem", position: i + 1, url: `${base}/p/${p.slug}`, name: p.name })) };
 }
+
+export function faqPage(faqs: [string, string][]) {
+  return { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqs.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) };
+}
+
+/** A service guide as a schema.org Service with the live price range across Aestheva. */
+export function serviceOffer(base: string, t: { slug: string; name: string; what: string }, prices: number[]) {
+  return {
+    "@context": "https://schema.org", "@type": "Service", name: `${t.name} in ${COMPANY.launchCity}`, description: t.what, url: `${base}/trivandrum/${t.slug}`,
+    areaServed: { "@type": "City", name: COMPANY.launchCity }, broker: { "@id": `${base}/#org` },
+    offers: { "@type": "AggregateOffer", priceCurrency: "INR", lowPrice: rupees(Math.min(...prices)), highPrice: rupees(Math.max(...prices)), offerCount: prices.length },
+  };
+}

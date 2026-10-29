@@ -32,11 +32,31 @@ describe("public pages", () => {
     expect(cat.text).toContain("1</b> venue ");
   });
 
-  it("only suggests popular searches that a live clinic offers", async () => {
+  it("only suggests popular searches that a live business offers, each with its own guide", async () => {
     const r = await req("GET", "/");
-    const chips = [...r.text.matchAll(/class="chip" href="\/search\?q=([^"]+)"/g)].map((m) => decodeURIComponent(m[1]));
+    const chips = [...r.text.matchAll(/class="chip" href="\/trivandrum\/([a-z-]+)"/g)].map((m) => m[1]);
     expect(chips.length).toBeGreaterThan(0);
-    for (const q of chips) expect((await req("GET", `/search?q=${encodeURIComponent(q)}`)).text).not.toContain("No matches yet");
+    for (const slug of chips) {
+      const g = await req("GET", `/trivandrum/${slug}`);
+      expect(g.status).toBe(200); expect(g.text).toContain("Where to book"); expect(g.text).not.toContain("No one on Aestheva offers");
+    }
+  });
+
+  it("publishes service guides with live prices, answers and structured data", async () => {
+    const ld = (html: string) => [...html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)].map((m) => JSON.parse(m[1]));
+    const g = await req("GET", "/trivandrum/teeth-cleaning");
+    expect(g.text).toContain("Teeth cleaning in Trivandrum"); expect(g.text).toContain("Veda Smile Studio");
+    expect(g.text).toMatch(/<title>Teeth cleaning in Trivandrum · Price from ₹[\d,]+ · Aestheva<\/title>/);
+    const types = ld(g.text).map((x) => x["@type"]);
+    expect(types).toEqual(["BreadcrumbList", "FAQPage", "Service"]);
+    expect(ld(g.text)[2].offers).toMatchObject({ "@type": "AggregateOffer", priceCurrency: "INR" });
+    const medicalOnly = await req("GET", "/trivandrum/facial");   // beauty guides never list medical treatments
+    expect(medicalOnly.text).not.toContain("Lumière Skin &amp; Laser Clinic</span>");
+    expect((await req("GET", "/trivandrum/tattoo")).text).toContain("No one on Aestheva offers tattoo");
+    expect((await req("GET", "/trivandrum/nope")).status).toBe(404);
+    const index = await req("GET", "/trivandrum");
+    expect(index.text).toContain("Bookable now"); expect(index.text).toContain("Coming soon");
+    expect((await req("GET", "/sitemap.xml")).text).toContain("/trivandrum/teeth-cleaning");
   });
 
   it("welcomes independent professionals as well as salons and clinics", async () => {

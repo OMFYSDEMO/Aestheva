@@ -1,7 +1,10 @@
 import { Hono, type Context } from "hono";
 import type { Env } from "../env";
 import { AREAS, COMPANY, WAITLIST_CITIES, typeLabel } from "../config";
-import { breadcrumbs, business, itemList, organisation, website } from "../views/seo";
+import { breadcrumbs, business, faqPage, itemList, organisation, serviceOffer, website } from "../views/seo";
+import { TOPICS, topicBySlug, type Topic } from "../content/topics";
+import { topicIndexPage, topicPage, type TopicRow } from "../views/topics";
+import { isMedical, type ProviderRow, type ServiceRow } from "../services/catalog";
 import { CAT_META, photosOf } from "../views/ui";
 import { HttpError, isUniqueViolation } from "../db";
 import { nowIst } from "../domain/time";
@@ -172,13 +175,61 @@ site.post("/for-practitioners/apply", async (c) => {
   return page(c, { ...applyMeta(c), noindex: true }, applyThanksPage(ref, r.value.contact_name));
 });
 
+// ---------- service guides: /trivandrum/<service> ----------
+
+/** Live services matching a guide. Medical guides list only medical services, beauty guides only non-medical ones. */
+function topicMatches(t: Topic, providers: ProviderRow[], services: ServiceRow[], catName: (id: string) => string) {
+  const f: SearchQuery = { q: t.q, area: "", near: "", cat: "", kind: "all", sort: "rec" };
+  return providers.flatMap((p) => matchServices(services.filter((s) => s.provider_id === p.id), p, f, catName)
+    .filter((s) => (t.medical ? isMedical(s) : !isMedical(s))).map((s) => ({ p, s })))
+    .sort((a, b) => a.s.price_paise - b.s.price_paise);
+}
+async function topicData(db: D1Database) {
+  const [providers, services, cats] = await Promise.all([liveProviders(db), liveServices(db), categories(db)]);
+  const catName = (id: string) => cats.find((x) => x.id === id)?.name ?? id;
+  return TOPICS.map((t) => ({ t, rows: topicMatches(t, providers, services, catName) }));
+}
+
+site.get("/trivandrum", async (c) => {
+  const all = await topicData(c.env.DB);
+  const live = all.filter((x) => x.rows.length).map(({ t, rows }) => ({ t, n: rows.length, from: rows[0].s.price_paise }));
+  return page(c, {
+    title: "Beauty, wellness & care prices in Trivandrum · Aestheva",
+    description: `Guides to ${live.slice(0, 4).map((x) => x.t.name.toLowerCase()).join(", ")} and more in Thiruvananthapuram (Trivandrum), with full prices and online booking.`,
+    canonical: base(c) + "/trivandrum", nav: "explore",
+    jsonLd: [breadcrumbs(base(c), [["Home", "/"], ["Service guides", "/trivandrum"]])],
+  }, topicIndexPage({ live, soon: all.filter((x) => !x.rows.length).map((x) => x.t) }));
+});
+
+site.get("/trivandrum/:slug", async (c) => {
+  const t = topicBySlug(c.req.param("slug"));
+  if (!t) return page(c, { title: "Not found · Aestheva", noindex: true }, notFoundPage("We couldn't find that guide."), 404);
+  const db = c.env.DB, all = await topicData(db), b = base(c);
+  const found = all.find((x) => x.t.slug === t.slug)!.rows;
+  const next = await nextAvailable(db, found.map((r) => r.s));
+  const rows: TopicRow[] = found.map((r) => ({ ...r, next: next.get(r.p.id) }));
+  // Related guides: the same kind of care first, then anything else bookable.
+  const related = all.filter((x) => x.t.slug !== t.slug && x.rows.length).sort((a, z) => Number(z.t.cat === t.cat) - Number(a.t.cat === t.cat)).slice(0, 6).map((x) => x.t);
+  const prices = rows.map((r) => r.s.price_paise);
+  return page(c, {
+    title: rows.length ? `${t.name} in Trivandrum · Price from ₹${Math.round(Math.min(...prices) / 100).toLocaleString("en-IN")} · Aestheva` : `${t.name} in Trivandrum · Aestheva`,
+    description: rows.length
+      ? `${t.name}${t.alt ? ` (${t.alt})` : ""} in Thiruvananthapuram: compare ${rows.length} option${rows.length === 1 ? "" : "s"} with full prices from ₹${Math.round(Math.min(...prices) / 100).toLocaleString("en-IN")}, see free times and book online.`
+      : `${t.name} in Thiruvananthapuram (Trivandrum): what to expect and common questions. Booking opens as businesses join Aestheva.`,
+    canonical: `${b}/trivandrum/${t.slug}`, nav: "explore", noindex: !rows.length,
+    jsonLd: [breadcrumbs(b, [["Home", "/"], ["Service guides", "/trivandrum"], [t.name, `/trivandrum/${t.slug}`]]), faqPage(t.faqs),
+      ...(rows.length ? [serviceOffer(b, t, prices)] : [])],
+  }, topicPage({ t, rows, related, today: nowIst().date }));
+});
+
 site.get("/robots.txt", (c) => c.text(c.env.APP_ENV === "production" ? `User-agent: *\nAllow: /\nDisallow: /book/\nDisallow: /booking/\nDisallow: /ops/\nDisallow: /clinic/\nSitemap: ${base(c)}/sitemap.xml\n` : "User-agent: *\nDisallow: /\n"));
 site.get("/sitemap.xml", async (c) => {
   const db = c.env.DB, b = base(c);
-  const [ps, svcs] = await Promise.all([liveProviders(db), liveServices(db)]);
+  const [ps, svcs, guides] = await Promise.all([liveProviders(db), liveServices(db), topicData(db)]);
   const cats = [...new Set(svcs.map((s) => s.cat))];
   const xmlEsc = (u: string) => u.replace(/&/g, "&amp;");
   const urls: [string, string][] = [["/", "daily"], ["/search", "daily"], ...cats.map((id): [string, string] => [`/search?cat=${id}`, "weekly"]), ...ps.map((p): [string, string] => [`/p/${p.slug}`, "daily"]),
+    ["/trivandrum", "weekly"], ...guides.filter((g) => g.rows.length).map((g): [string, string] => [`/trivandrum/${g.t.slug}`, "weekly"]),
     ["/about", "monthly"], ["/for-practitioners", "monthly"], ["/for-practitioners/apply", "monthly"], ["/contact", "monthly"], ["/policies/cancellation", "yearly"], ["/policies/terms", "yearly"], ["/policies/privacy", "yearly"]];
   return c.body(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map(([u, f]) => `<url><loc>${xmlEsc(b + u)}</loc><changefreq>${f}</changefreq></url>`).join("")}</urlset>`, 200, { "content-type": "application/xml" });
 });

@@ -1,5 +1,6 @@
 import { COMPANY, LOCALITIES, POLICY, SERVICE_AREA, WAITLIST_CITIES, ZONES, typeLabel } from "../config";
 import { kmLabel } from "../domain/geo";
+import { TOPICS } from "../content/topics";
 import { fmtTime, relDay } from "../domain/time";
 import type { ProviderDetail, ProviderRow, Rating, ServiceRow } from "../services/catalog";
 import { isMedical } from "../services/catalog";
@@ -33,11 +34,11 @@ const STEPS = [
   ["pin", "Go along and pay there", "You get a confirmation with directions. Pay on the day, after your appointment. Plans change? Cancel free up to 24 hours before."],
 ];
 
-/** Popular needs, in the words people use. Only the ones someone live on Aestheva offers are shown. */
+/** Popular needs, in the words people use. Each links to its service guide; only those someone live offers are shown. */
 const POPULAR = [
-  ["Facial", "facial"], ["Nail art", "nail art"], ["Bridal makeup", "bridal makeup"], ["Tattoo", "tattoo"], ["Hair cut", "haircut"], ["Threading & waxing", "threading"],
-  ["Teeth cleaning", "teeth cleaning"], ["Teeth whitening", "teeth whitening"], ["Laser hair removal", "laser hair removal"], ["Hair fall treatment", "hair fall"],
-  ["Acne & scars", "acne"], ["Pigmentation", "pigmentation"], ["Massage", "massage"], ["Chemical peel", "chemical peel"],
+  ["Facial", "facial"], ["Nail art", "nail-art"], ["Bridal makeup", "bridal-makeup"], ["Tattoo", "tattoo"], ["Hair cut", "haircut"],
+  ["Teeth cleaning", "teeth-cleaning"], ["Teeth whitening", "teeth-whitening"], ["Laser hair removal", "laser-hair-removal"], ["Hair fall treatment", "hair-fall-treatment"],
+  ["Acne & scars", "acne-scar-treatment"], ["Pigmentation", "pigmentation-treatment"], ["Ayurvedic massage", "ayurvedic-massage"], ["Chemical peel", "chemical-peel"],
 ];
 
 // ---------- home ----------
@@ -55,7 +56,9 @@ export function homePage(d: {
   const names = [...new Set(d.services.map((s) => s.name))];
   const cats = d.categories.map((c) => ({ ...c, svcs: d.services.filter((s) => s.cat === c.id) })).filter((c) => c.svcs.length);
   const all: SearchQuery = { q: "", area: "", near: "", cat: "", kind: "all", sort: "rec" };
-  const popular = POPULAR.filter(([, q]) => live.some((p) => matchServices(byProv(p.id), p, { ...all, q }, catName).length)).slice(0, 7);
+  const guide = (slug: string) => TOPICS.find((t) => t.slug === slug)!;
+  const offers = (slug: string) => live.some((p) => matchServices(byProv(p.id), p, { ...all, q: guide(slug).q }, catName).some((s) => isMedical(s) === !!guide(slug).medical));
+  const popular = POPULAR.filter(([, slug]) => offers(slug)).slice(0, 7);
   const others = WAITLIST_CITIES.filter((c) => c !== COMPANY.launchCity);
   const areas = [...new Set(live.map((p) => p.area))];
   const anyDeposit = d.services.some((s) => s.deposit_paise > 0);
@@ -84,7 +87,7 @@ export function homePage(d: {
         <button class="btn btn-p" type="submit" style="padding:14px 26px">Find a time</button>
       </form>
       <div class="row wrap mt12" style="gap:10px;align-items:center">${nearBtn("btn btn-g btn-s near-link", "home-search")}<span class="xs muted" data-near-status role="status"></span></div>
-      ${popular.length ? `<div class="chips mt12"><span class="small muted" style="align-self:center">Popular:</span>${popular.map(([l, q]) => `<a class="chip" href="/search?q=${encodeURIComponent(q)}">${esc(l)}</a>`).join("")}</div>` : ""}`
+      ${popular.length ? `<div class="chips mt12"><span class="small muted" style="align-self:center">Popular:</span>${popular.map(([l, slug]) => `<a class="chip" href="/trivandrum/${slug}">${esc(l)}</a>`).join("")}<a class="chip chip-more" href="/trivandrum">All guides ${ic("arrowR", 13)}</a></div>` : ""}`
       : `<h1 class="mt16">Beauty, wellness and care in ${esc(SERVICE_AREA.short)}, <em>booked in a minute</em>.</h1>
       <p class="lede mt16">Salons, clinics, studios and independent professionals, with the price, the person and a genuinely free time on one page. We're checking our first listings now, and bookings open as each one goes live.</p>
       <div id="notify" class="mt24" style="max-width:540px">

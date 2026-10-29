@@ -720,3 +720,17 @@ html{overflow-x:clip}
 @media (max-width:760px){.who-grid{grid-template-columns:1fr}.join-pop{right:12px;left:12px;bottom:12px;width:auto}}
 .filter-h{font-family:var(--sans);font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--charcoal)}
 #bk-main{min-height:70vh}
+/* Service guides */
+.nowrap{white-space:nowrap}
+.topic-rows{display:flex;flex-direction:column;border:1px solid var(--line-2);border-radius:var(--r);background:var(--white);overflow:hidden}
+.topic-row{display:flex;align-items:center;gap:16px;padding:12px 16px}
+.topic-row+.topic-row{border-top:1px solid var(--line)}
+.topic-row:hover{background:var(--canvas)}
+.faq{display:flex;flex-direction:column;gap:10px;max-width:860px}
+.faq details{background:var(--white);border:1px solid var(--line-2);border-radius:var(--r);padding:14px 18px}
+.faq summary{cursor:pointer;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:'+';font-size:20px;line-height:1;color:var(--mulberry)}
+.faq details[open] summary::after{content:'–'}
+.faq details p{margin-top:10px;color:var(--muted);font-size:14.5px}
+@media (max-width:760px){.topic-row{flex-wrap:wrap;gap:8px 12px}.topic-row>a{flex-basis:100%}}
