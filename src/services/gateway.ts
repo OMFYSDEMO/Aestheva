@@ -31,6 +31,9 @@ export class RazorpayGateway implements Gateway {
     let json: any; try { json = JSON.parse(text); } catch { json = { raw: text }; }
     if (!res.ok) {
       const desc = json?.error?.description || json?.error?.code || `HTTP ${res.status}`;
+      console.error("razorpay error", { path, status: res.status, desc });
+      // Wrong or mismatched keys: the client can't fix it, so say so plainly; the detail is in the Worker logs.
+      if (res.status === 401) throw new HttpError(503, "Online payments are temporarily unavailable. Please try again shortly.", { path, status: res.status });
       throw new HttpError(502, `Razorpay: ${desc}`, { path, status: res.status });
     }
     return json as T;
@@ -77,7 +80,9 @@ export function setGatewayForTests(g: Gateway | null) { override = g; }
 const simulated = new SimulatedGateway();
 export function gatewayFor(env: Env): Gateway {
   if (override) return override;
-  if (env.RAZORPAY_KEY_ID && env.RAZORPAY_KEY_SECRET) return new RazorpayGateway(env.RAZORPAY_KEY_ID, env.RAZORPAY_KEY_SECRET);
+  // Trim: keys pasted into the dashboard often carry a stray space or line break.
+  const id = env.RAZORPAY_KEY_ID?.trim(), secret = env.RAZORPAY_KEY_SECRET?.trim();
+  if (id && secret) return new RazorpayGateway(id, secret);
   if (env.APP_ENV === "production") throw new HttpError(503, "Online payments are not configured yet");
   return simulated;
 }
@@ -95,6 +100,7 @@ export function paymentMode(env: Env): "live" | "test" | "simulated" | "off" {
 
 /** Webhook signature = HMAC-SHA256(raw body, webhook secret), hex, in the X-Razorpay-Signature header. */
 export async function verifyWebhook(env: Env, rawBody: string, signature: string | null): Promise<boolean> {
-  if (!env.RAZORPAY_WEBHOOK_SECRET || !signature) return false;
-  return safeEqual(await hmacSha256Hex(env.RAZORPAY_WEBHOOK_SECRET, rawBody), signature);
+  const secret = env.RAZORPAY_WEBHOOK_SECRET?.trim();
+  if (!secret || !signature) return false;
+  return safeEqual(await hmacSha256Hex(secret, rawBody), signature);
 }

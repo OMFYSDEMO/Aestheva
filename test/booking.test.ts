@@ -138,6 +138,17 @@ describe("unpaid holds", () => {
   });
 });
 
+describe("when Razorpay rejects the keys", () => {
+  it("releases the slot and tells the client payments are unavailable", async () => {
+    const { RazorpayGateway, setGatewayForTests } = await import("../src/services/gateway");
+    setGatewayForTests(new RazorpayGateway("rzp_test_key", "wrong", (async () => new Response(JSON.stringify({ error: { code: "BAD_REQUEST_ERROR", description: "Authentication failed" } }), { status: 401 })) as typeof fetch));
+    const r = await req("POST", "/api/bookings", { ...ABHYANGA, staffId: "s5", date: day(8), start: 600 });
+    expect(r.status).toBe(503);
+    expect(r.json.error).toMatch(/temporarily unavailable/);
+    expect((await req("GET", `/api/slots?service=v7&staff=s5&from=${day(8)}&days=1`)).json.days[0].slots.map((s: any) => s.min)).toContain(600);
+  });
+});
+
 describe("booking rules", () => {
   beforeAll(() => fakeRazorpay().install());
 
