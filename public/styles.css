@@ -675,3 +675,22 @@ html{overflow-x:clip}
 .footer:not(.app-foot) .footer-brand .serif,.footer:not(.app-foot) .footer-brand>div:first-child{color:#F4D7E3!important}
 .footer:not(.app-foot) .footer-base{border-top-color:rgba(255,255,255,.14);color:#B9A8B2}
 @media (max-width:760px){.tile-grid{grid-template-columns:1fr 1fr}.tile{gap:10px;padding:6px 10px 6px 6px}.tile b{font-size:14px}.ctile{width:38px;height:38px}.band{padding-top:40px;padding-bottom:40px}.join-tiles{padding:20px}.topnav a.nav-cta{padding:8px 10px}}
+
+/* Our story: full-width layout */
+.story-hero{display:grid;grid-template-columns:1.5fr 1fr;gap:48px;align-items:center;background:linear-gradient(180deg,var(--canvas),var(--porcelain));margin:0 calc(50% - 50vw);padding:64px calc(50vw - 50%) 48px}
+.story-hero .lede{max-width:680px}
+.story-hero p:not(.lede){max-width:680px;color:var(--muted)}
+.story-facts{background:var(--white);border:1px solid var(--line-2);border-radius:var(--r-lg);padding:8px 22px}
+.story-facts div{display:grid;grid-template-columns:90px 1fr;gap:12px;padding:14px 0;font-size:14px}
+.story-facts div+div{border-top:1px solid var(--line)}
+.story-facts b{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--mulberry);padding-top:2px}
+.promise-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.promise-grid>div{background:var(--white);border:1px solid var(--line-2);border-radius:var(--r);padding:22px}
+.promise-grid svg{color:var(--mulberry);display:block;margin-bottom:12px}
+.promise-grid b{font-size:16px}
+.promise-grid p{font-size:14px;color:var(--muted);margin-top:6px}
+.story-two{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.story-two>div{background:var(--band);border-radius:var(--r-lg);padding:32px}
+.story-two p{color:var(--charcoal);line-height:1.65}
+@media (max-width:1060px){.story-hero{grid-template-columns:1fr;gap:28px}.promise-grid{grid-template-columns:1fr 1fr}}
+@media (max-width:760px){.story-hero{padding-top:32px;padding-bottom:32px}.promise-grid,.story-two{grid-template-columns:1fr}.story-two>div{padding:22px}}

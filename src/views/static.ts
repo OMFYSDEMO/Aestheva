@@ -73,31 +73,58 @@ export function contactPage() {
 }
 
 export function aboutPage() {
-  return `<div class="page narrow prose story">
-    <div class="eyebrow">Our story</div>
-    <h1 class="mt8">Care should fit the rhythm of your life.</h1>
-    <p class="lede mt16">In ${esc(COMPANY.launchCity)}, a lot of good care is still booked the slow way: a phone call squeezed into a busy day, a callback that doesn't come, a price you only learn at the counter, and a name you hear for the first time in the chair.</p>
-    <p>Aestheva is our answer to that. It's one place to book skin, hair, dental and wellness care where you can see, before you commit, what a treatment costs, who will treat you and their qualifications, and the times they're genuinely free. Then you hold your appointment in about a minute, from wherever your day has taken you.</p>
-
-    <h2>Who we are</h2>
-    <p>Aestheva is run by ${esc(COMPANY.legalName)}, from Kazhakkoottam, beside Technopark Phase 3. Haswel also runs Hasta Wellness, a clinic that is one of the first venues on Aestheva. We'd rather you heard that from us: Hasta's profile says so, and it's listed under the same rules as every other venue.</p>
-
-    <h2>What you can count on</h2>
-    <div class="promises">
-      <div>${ic("receipt", 20)}<b>Prices in full</b><p>Every treatment shows its full price and how long it takes. No “call for rates”.</p></div>
-      <div>${ic("users", 20)}<b>Names, not just brands</b><p>The people who look after you are named, with their training, and registration numbers for medical care.</p></div>
-      <div>${ic("shield", 20)}<b>Medical stays medical</b><p>Medical treatments are labelled as such and begin with your doctor checking they suit you. Beauty and wellness are labelled separately.</p></div>
-      <div>${ic("check", 20)}<b>We say what we checked</b><p>Verification lists exactly what we looked at and when. It never promises results.</p></div>
-      <div>${ic("cal", 20)}<b>Your time, respected</b><p>A deposit holds your place. Cancel ${POLICY.freeCancelHours} hours or more ahead and it comes back in full.</p></div>
+  const promises = [
+    ["receipt", "Prices in full", "Every service shows its full price and how long it takes. No “call for rates”."],
+    ["users", "Names, not just brands", "The people who look after you are named, with their training, and registration numbers for medical care."],
+    ["shield", "Medical stays medical", "Medical treatments are labelled as such and start with a doctor checking they suit you. Everything else is labelled separately."],
+    ["check", "We say what we checked", "Every listing shows exactly what we verified and when. We never promise results."],
+    ["cal", "Your time, respected", `Only genuinely free times are shown, and you can cancel free up to ${POLICY.freeCancelHours} hours before.`],
+    ["heart", "Everyone welcome", "Big salons, one-chair studios, clinics and independent artists, all listed under the same fair rules."],
+  ];
+  return `<div class="page story" style="padding-top:0">
+  <section class="story-hero">
+    <div>
+      <div class="eyebrow">Our story</div>
+      <h1 class="mt12">Care should fit the rhythm of your life.</h1>
+      <p class="lede mt16">In ${esc(COMPANY.launchCity)}, a lot of good care is still booked the slow way: a phone call squeezed into a busy day, a callback that doesn't come, a price you only learn at the counter, and a name you hear for the first time in the chair.</p>
+      <p class="mt16">Aestheva is our answer to that. One place to book beauty, wellness and care, from a facial or nail art to a tattoo or a dental check-up, where you see the full price, who'll look after you and the times they're genuinely free before you commit. Then you book in about a minute, from wherever your day has taken you.</p>
+      <div class="story-cta mt24"><a class="btn btn-p" href="/search">Find something near you</a><a class="btn btn-o" href="/for-practitioners">List your business</a></div>
     </div>
+    <aside class="story-facts" aria-label="Aestheva at a glance">
+      <div><b>Made in</b><span>Kazhakkoottam, beside Technopark Phase 3</span></div>
+      <div><b>Run by</b><span>${esc(COMPANY.legalName)}</span></div>
+      <div><b>Covering</b><span>${esc(COMPANY.launchCity)} and the towns around it, from Varkala to Neyyattinkara</span></div>
+      <div><b>For</b><span>Salons, studios, clinics and independent professionals</span></div>
+      <div><b>Next</b><span>Kochi, Kozhikode and Thrissur</span></div>
+    </aside>
+  </section>
 
-    <h2>Why ${esc(COMPANY.launchCity)} first</h2>
-    <p>Because it's home. We know the drive from Kazhakkoottam to Kowdiar at six in the evening, and how much a free Saturday afternoon is worth. Starting here lets us get to know everyone we list and grow carefully, one neighbourhood at a time, before Kochi, Kozhikode and Thrissur.</p>
+  <section class="mt64">
+    <div class="eyebrow">What you can count on</div>
+    <h2 class="mt8">Six promises, on every listing</h2>
+    <div class="promise-grid mt24">${promises.map(([i, t, b]) => `<div>${ic(i, 22)}<b>${t}</b><p>${b}</p></div>`).join("")}</div>
+  </section>
 
-    <div class="story-cta mt32">
-      <a class="btn btn-p" href="/search">Explore treatments</a>
-      <a class="btn btn-o" href="/for-practitioners">List your business</a>
+  <section class="story-two mt64">
+    <div>
+      <div class="eyebrow">Who we are</div>
+      <h2 class="mt8">A local team, open about who we are</h2>
+      <p class="mt16">Aestheva is run by ${esc(COMPANY.legalName)}, from Kazhakkoottam, beside Technopark Phase 3. Haswel also runs Hasta Wellness, a clinic that is one of the first places on Aestheva. We'd rather you heard that from us: Hasta's page says so, and it's listed under exactly the same rules as everyone else.</p>
     </div>
+    <div>
+      <div class="eyebrow">Why ${esc(COMPANY.launchCity)} first</div>
+      <h2 class="mt8">Because it's home</h2>
+      <p class="mt16">We know the drive from Kazhakkoottam to Kowdiar at six in the evening, and how much a free Saturday afternoon is worth. Starting here lets us get to know everyone we list and grow carefully, one neighbourhood at a time, before Kochi, Kozhikode and Thrissur.</p>
+    </div>
+  </section>
+
+  <section class="story-band mt64">
+    <div class="story-in">
+      <h2>Ready when you are.</h2>
+      <p class="mt12">Find a free time near you, or bring your business to Aestheva. Listing is free.</p>
+      <div class="story-cta mt24"><a class="btn btn-light" href="/search">Find something near you ${ic("arrowR", 16)}</a><a class="btn btn-o" href="/for-practitioners" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.5)">List your business</a></div>
+    </div>
+  </section>
   </div>`;
 }
 
