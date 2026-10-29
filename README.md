@@ -44,4 +44,20 @@ To use real bookings, export a JSON file with the same shape as `dashboard/sampl
 
 ## Decisions so far
 
-- **Payments:** Stripe or Razorpay, not yet chosen. The prototype takes a deposit at booking and the platform keeps a 10% commission on completed marketplace bookings, so the gateway must split each payment between Aestheva and the provider. Razorpay Route is built for that kind of split settlement in India, with UPI. Confirm Stripe Connect's availability for an Indian company before choosing it.
+- **Payment gateway: Razorpay.** Chosen for UPI, cards and split settlements to providers in India.
+- **Tech stack and hosting:** not decided yet.
+
+## How Razorpay fits the prototype's payment rules
+
+The prototype's payments are simulated. These are the rules it already follows, and the Razorpay feature that would carry each one.
+
+| Prototype rule | Razorpay |
+|----------------|----------|
+| The client pays a deposit online when booking. The balance is paid at the venue. | Create an Order for the deposit, take payment with Checkout (UPI and card), and confirm it from the `payment.captured` webhook. |
+| Each provider is paid its share of deposits. | Onboard every provider as a Route linked account, with their own KYC and bank details. |
+| Aestheva keeps 10% of the full price on completed marketplace bookings. Direct bookings carry no commission. | Transfer each deposit to the provider minus the commission, and keep the transfer on hold until the appointment is marked completed. |
+| Settlements are paid weekly, on Mondays. | Release held transfers on the settlement run. Linked-account settlements then follow Razorpay's schedule. |
+| Free cancellation 24 hours or more before. A provider cancellation refunds in full. Late cancellations go to an operations review. | Refund the payment. If the transfer was already released, reverse it before refunding. |
+| An approved refund is taken from the provider's next settlement only when the provider is at fault. | Reverse the provider's transfer when they are at fault. Otherwise Aestheva bears the refund. |
+
+**Open question: commission on bookings without a deposit.** Three sample services take no deposit: threading at ₹250, a haircut at ₹600 and a beard sculpt at ₹400. Commission cannot be deducted from a payment that never passes through Razorpay. The options are a minimum deposit on every marketplace booking, or invoicing those providers for commission each week.
