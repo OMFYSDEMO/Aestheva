@@ -5,6 +5,7 @@ import { isMedical } from "../services/catalog";
 import { MED_NOTE, artBox, avatar, esc, ic, inr, kindBadge, stars } from "./ui";
 
 type Next = Map<string, { date: string; min: number }>;
+const quals = (t: { quals_json: string }): string[] => { try { const q = JSON.parse(t.quals_json || "[]"); return Array.isArray(q) ? q.map(String) : []; } catch { return []; } };
 const nextLabel = (n: { date: string; min: number } | undefined, today: string) => n ? `${relDay(n.date, today)}, ${fmtTime(n.min)}` : "";
 const minPrice = (svcs: ServiceRow[]) => Math.min(...svcs.map((s) => s.price_paise));
 
@@ -192,7 +193,7 @@ export function providerPage(d: ProviderDetail & { categories: { id: string; nam
             <div class="row" style="gap:14px"><b style="font-size:16px;white-space:nowrap">${inr(s.price_paise)}</b><a class="btn btn-p btn-s" href="/book/${esc(p.slug)}?service=${esc(s.id)}${pv ? "&amp;" + pv : ""}" aria-label="Book ${esc(s.name)}">Book</a></div></div>`).join("")}`).join("")}
         </section>
         <section id="sec-team" class="mt48"><h2 style="font-size:28px">Team</h2><p class="small muted mt8">Qualifications are shown as provided and checked within the scope listed.</p>
-          <div class="grid g2 mt16">${d.staff.map((t) => `<div class="team-card">${avatar(t.name, 52, t.id)}<div class="col" style="gap:2px"><b>${esc(t.name)}</b><span class="small muted">${esc(t.role)}</span><span class="xs" style="color:${t.medical ? "var(--mulberry)" : "var(--sage-d)"};font-weight:600">${t.medical ? "Registered medical practitioner" : "Certified professional (non-medical)"}</span>${t.registration ? `<span class="xs muted">${esc(t.registration)}</span>` : ""}</div></div>`).join("")}</div>
+          <div class="grid g2 mt16">${d.staff.map((t) => `<div class="team-card">${avatar(t.name, 52, t.id)}<div class="col" style="gap:2px"><b>${esc(t.name)}</b><span class="small muted">${esc(t.role)}</span><span class="xs" style="color:${t.medical ? "var(--mulberry)" : "var(--sage-d)"};font-weight:600">${t.medical ? "Registered practitioner" : "Certified professional (non-medical)"}</span>${quals(t).length ? `<span class="xs">${esc(quals(t).join(", "))}</span>` : ""}${t.registration ? `<span class="xs muted">${esc(t.registration)}</span>` : ""}</div></div>`).join("")}</div>
         </section>
         <section id="sec-reviews" class="mt48"><div class="row between"><h2 style="font-size:28px">Reviews</h2>${d.rating ? stars(d.rating.avg, d.rating.n) : ""}</div>
           <p class="xs soft mt8">Reviews come from Aestheva bookings and describe individual experiences, not typical results.</p>

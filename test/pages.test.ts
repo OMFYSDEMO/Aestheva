@@ -30,7 +30,8 @@ describe("public pages", () => {
   it("shows a provider with services, team, verification and booking links", async () => {
     const r = await req("GET", "/p/lumiere-skin-and-laser-clinic");
     expect(r.status).toBe(200);
-    for (const s of ["Dermatology consultation", "Dr. Meera Nair", "Clinical establishment registration checked", "/book/lumiere-skin-and-laser-clinic?service=v1", "Next available"]) expect(r.text).toContain(s);
+    for (const s of ["Dermatology consultation", "Dr. Meera Nair", "Clinical establishment registration checked", "/book/lumiere-skin-and-laser-clinic?service=v1", "Next available",
+      "Registered practitioner", "MD Dermatology, Venereology &amp; Leprosy", "TCMC Reg. No. 48XXX (sample)"]) expect(r.text).toContain(s);
   });
 
   it("says verification is in progress when nothing has been checked yet", async () => {
