@@ -1,5 +1,5 @@
 {
-  "_about": "Hasta Wellness, Aestheva's first venue. Venue facts from hastawellnessclinic.com; services, durations, prices and doctors from Dr Sooraj (October 2026). Assumptions awaiting confirmation: deposits (20% of price rounded to the nearest ₹100, minimum ₹200), 60-minute tooth brightening, Dr Sooraj on full clinic hours (Dr Akshara's hours confirmed), Dr Sooraj's full name, qualifications and registration number; whether Dr Akshara (dental qualifications) should offer the skin and hair services.",
+  "_about": "Hasta Wellness, Aestheva's first venue. Venue facts from hastawellnessclinic.com; services, durations, prices and doctors from Dr Sooraj (October 2026). Assumptions awaiting confirmation: deposits (20% of price rounded to the nearest ₹100, minimum ₹200), 60-minute tooth brightening, Dr Sooraj on full clinic hours (Dr Akshara's hours confirmed), confirmation that both doctors' qualifications cover the skin and hair services listed.",
   "id": "hasta-wellness",
   "slug": "hasta-wellness-kazhakkoottam",
   "name": "Hasta Wellness",
@@ -20,11 +20,15 @@
   "staff": [
     {
       "id": "hasta-dr-sooraj",
-      "name": "Dr. Sooraj",
+      "name": "Dr. Sooraj S",
       "role": "Doctor",
       "medical": true,
-      "quals": [],
-      "registration": "",
+      "quals": [
+        "BDS",
+        "PGDCC",
+        "DPMU"
+      ],
+      "registration": "Reg. No. 29737",
       "langs": [
         "Malayalam",
         "English"
