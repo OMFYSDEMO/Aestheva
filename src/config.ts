@@ -18,7 +18,49 @@ export const POLICY = {
   commissionBp: 1000,      // 10% of the full price on completed marketplace bookings
 } as const;
 
-export const AREAS = ["Kazhakkoottam", "Kowdiar", "Pattom", "Vellayambalam"] as const;
+/** Where Aestheva works for now: Thiruvananthapuram and the towns around it. */
+export const SERVICE_AREA = { name: "Thiruvananthapuram", short: "Trivandrum", lat: 8.4875, lng: 76.952, radiusKm: 40 } as const;
+
+/** Localities people search from and clinics are listed in, with approximate centre points (straight-line distances are rounded). */
+export const LOCALITIES = [
+  { name: "Thampanoor", zone: "City centre", lat: 8.4875, lng: 76.952 },
+  { name: "East Fort", zone: "City centre", lat: 8.4826, lng: 76.9438 },
+  { name: "Palayam", zone: "City centre", lat: 8.504, lng: 76.9505 },
+  { name: "Vazhuthacaud", zone: "City centre", lat: 8.4977, lng: 76.9609 },
+  { name: "Pettah", zone: "City centre", lat: 8.4936, lng: 76.929 },
+  { name: "Chackai", zone: "City centre", lat: 8.49, lng: 76.922 },
+  { name: "Karamana", zone: "City centre", lat: 8.4789, lng: 76.9667 },
+  { name: "Poojappura", zone: "City centre", lat: 8.4904, lng: 76.9757 },
+  { name: "Pattom", zone: "Pattom, Kowdiar & around", lat: 8.5196, lng: 76.9421 },
+  { name: "Kowdiar", zone: "Pattom, Kowdiar & around", lat: 8.5216, lng: 76.9617 },
+  { name: "Vellayambalam", zone: "Pattom, Kowdiar & around", lat: 8.5096, lng: 76.9606 },
+  { name: "Sasthamangalam", zone: "Pattom, Kowdiar & around", lat: 8.5126, lng: 76.9718 },
+  { name: "Kesavadasapuram", zone: "Pattom, Kowdiar & around", lat: 8.5293, lng: 76.9396 },
+  { name: "Kumarapuram", zone: "Pattom, Kowdiar & around", lat: 8.5154, lng: 76.9312 },
+  { name: "Medical College", zone: "Pattom, Kowdiar & around", lat: 8.5233, lng: 76.9278 },
+  { name: "Ulloor", zone: "Pattom, Kowdiar & around", lat: 8.5367, lng: 76.9311 },
+  { name: "Nalanchira", zone: "Pattom, Kowdiar & around", lat: 8.545, lng: 76.943 },
+  { name: "Peroorkada", zone: "Pattom, Kowdiar & around", lat: 8.5446, lng: 76.9702 },
+  { name: "Vattiyoorkavu", zone: "Pattom, Kowdiar & around", lat: 8.5244, lng: 76.993 },
+  { name: "Mannanthala", zone: "Pattom, Kowdiar & around", lat: 8.556, lng: 76.948 },
+  { name: "Sreekaryam", zone: "Technopark side", lat: 8.5466, lng: 76.917 },
+  { name: "Kariavattom", zone: "Technopark side", lat: 8.5644, lng: 76.888 },
+  { name: "Technopark", zone: "Technopark side", lat: 8.5581, lng: 76.8816 },
+  { name: "Kazhakkoottam", zone: "Technopark side", lat: 8.5677, lng: 76.8728 },
+  { name: "Kaniyapuram", zone: "Technopark side", lat: 8.5893, lng: 76.8545 },
+  { name: "Pothencode", zone: "Technopark side", lat: 8.623, lng: 76.907 },
+  { name: "Thiruvallam", zone: "South & the coast", lat: 8.439, lng: 76.96 },
+  { name: "Kovalam", zone: "South & the coast", lat: 8.4004, lng: 76.9787 },
+  { name: "Vizhinjam", zone: "South & the coast", lat: 8.3796, lng: 76.9969 },
+  { name: "Balaramapuram", zone: "South & the coast", lat: 8.4231, lng: 77.0465 },
+  { name: "Neyyattinkara", zone: "South & the coast", lat: 8.4, lng: 77.086 },
+  { name: "Nedumangad", zone: "Towns nearby", lat: 8.6031, lng: 77.0025 },
+  { name: "Kattakada", zone: "Towns nearby", lat: 8.5065, lng: 77.0815 },
+  { name: "Attingal", zone: "Towns nearby", lat: 8.6966, lng: 76.8146 },
+  { name: "Varkala", zone: "Towns nearby", lat: 8.7379, lng: 76.7163 },
+] as const;
+export const AREAS: readonly string[] = LOCALITIES.map((l) => l.name);
+export const ZONES = [...new Set(LOCALITIES.map((l) => l.zone))];
 
 /** Kinds of business that can list on Aestheva (matches scripts/provider-sql.mjs). */
 export const VENUE_TYPES = ["Clinic", "Salon & studio", "Wellness centre", "Independent practitioner"] as const;

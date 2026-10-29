@@ -1,13 +1,17 @@
-import { AREAS, COMPANY, POLICY, WAITLIST_CITIES } from "../config";
+import { COMPANY, LOCALITIES, POLICY, SERVICE_AREA, WAITLIST_CITIES, ZONES } from "../config";
+import { kmLabel } from "../domain/geo";
 import { fmtTime, relDay } from "../domain/time";
 import type { ProviderDetail, ProviderRow, Rating, ServiceRow } from "../services/catalog";
 import { isMedical } from "../services/catalog";
-import { CAT_META, MED_NOTE, artBox, avatar, catIcon, esc, ic, inr, linkPhones, mapsUrl, photoImg, photosOf, stars, venueMark, venueThumb } from "./ui";
+import { CAT_META, MED_NOTE, avatar, catIcon, esc, ic, inr, linkPhones, mapsUrl, photoImg, photosOf, stars, venueMark, venueThumb } from "./ui";
 
 type Next = Map<string, { date: string; min: number }>;
 const quals = (t: { quals_json: string }): string[] => { try { const q = JSON.parse(t.quals_json || "[]"); return Array.isArray(q) ? q.map(String) : []; } catch { return []; } };
 const nextLabel = (n: { date: string; min: number } | undefined, today: string) => n ? `${relDay(n.date, today)}, ${fmtTime(n.min)}` : "";
 const minPrice = (svcs: ServiceRow[]) => Math.min(...svcs.map((s) => s.price_paise));
+/** Locality picker, grouped the way people describe the city. */
+const areaOptions = (sel: string, all: string) => `<option value="">${all}</option>${ZONES.map((z) => `<optgroup label="${esc(z)}">${LOCALITIES.filter((l) => l.zone === z).map((l) => `<option ${sel === l.name ? "selected" : ""}>${esc(l.name)}</option>`).join("")}</optgroup>`).join("")}`;
+const nearBtn = (cls: string, form = "") => `<button class="${cls}" type="button" data-near="${form}" hidden>${ic("nav", 15)} Use my location</button>`;
 
 /** Venue card for the home page: mark, name, what it offers, from-price and its next free time. */
 function venueCard(p: ProviderRow, svcs: ServiceRow[], rating: Rating | undefined, next: Next, today: string, catName: (id: string) => string) {
@@ -23,11 +27,16 @@ function venueCard(p: ProviderRow, svcs: ServiceRow[], rating: Rating | undefine
   </a>`;
 }
 
-const BEATS = [
-  ["Choose", "Every treatment shows how long it takes and what it costs. No calling around to ask for rates."],
-  ["Know who", "Each practitioner is named, with qualifications and registration number. Medical care is marked apart from beauty and wellness."],
-  ["Hold your time", `Where there's a deposit, it holds the time and counts towards your bill. Plans change: cancel free up to ${POLICY.freeCancelHours} hours before.`],
-  ["Arrive", "For medical treatments, your doctor first checks the treatment is right for you, and says so if something else would suit you better."],
+const STEPS = [
+  ["search", "Search what you need", "Type it in your own words, like “teeth cleaning” or “hair fall”, and choose your area. You'll see every clinic near you that offers it, with the full price."],
+  ["cal", "Pick a free time", "Only genuinely free times are shown, with the doctor or therapist who'll see you. Booking takes about a minute."],
+  ["pin", "Visit and pay there", "You get a confirmation with directions. Pay at the clinic after your visit. Plans change? Cancel free up to 24 hours before."],
+];
+
+/** Popular needs, in the words people use. Only the ones a live clinic offers are shown. */
+const POPULAR = [
+  ["Teeth cleaning", "teeth cleaning"], ["Teeth whitening", "teeth whitening"], ["Laser hair removal", "laser hair removal"], ["Hair fall treatment", "hair fall"],
+  ["Acne & scars", "acne"], ["Pigmentation", "pigmentation"], ["Dental filling", "filling"], ["Chemical peel", "chemical peel"], ["Facial", "facial"],
 ];
 
 // ---------- home ----------
@@ -44,28 +53,39 @@ export function homePage(d: {
   const featured = [...live].sort((a, b) => soon(a.id).localeCompare(soon(b.id))).slice(0, 6);
   const names = [...new Set(d.services.map((s) => s.name))];
   const cats = d.categories.map((c) => ({ ...c, svcs: d.services.filter((s) => s.cat === c.id) })).filter((c) => c.svcs.length);
-  // Suggestions: the first treatment of each category on offer, so every link finds something.
-  const popular = cats.map((c) => c.svcs[0].name).slice(0, 5);
+  const all: SearchQuery = { q: "", area: "", near: "", cat: "", kind: "all", sort: "rec" };
+  const popular = POPULAR.filter(([, q]) => live.some((p) => matchServices(byProv(p.id), p, { ...all, q }, catName).length)).slice(0, 6);
   const others = WAITLIST_CITIES.filter((c) => c !== COMPANY.launchCity);
+  const areas = [...new Set(live.map((p) => p.area))];
+  const anyDeposit = d.services.some((s) => s.deposit_paise > 0);
+  const promises = [
+    ["shield", "Verified doctors and clinics", "Registration numbers shown and checked"],
+    ["receipt", "Full prices before you book", "No calling around to ask for rates"],
+    ["wallet", anyDeposit ? "Small deposit, rest at the clinic" : "Nothing to pay online", anyDeposit ? `Free cancellation up to ${POLICY.freeCancelHours} hours before` : "Pay at the clinic after your visit"],
+    ["clock", "Real free times", "Book in a minute, day or night"],
+  ];
   const liveCard = `<div class="live-card" aria-label="Next free times">
-      <div class="row between"><span class="eyebrow">Next free times</span><span class="live-dot">Live</span></div>
-      <div class="mt12">${featured.slice(0, 4).map((p) => { const n = d.next.get(p.id); return `<a class="live-row" href="/p/${esc(p.slug)}">${venueThumb(p, "s")}<div class="grow col" style="gap:0;min-width:0"><b>${esc(p.name)}</b><span class="xs muted">${esc(p.area)}</span></div><span class="live-time">${n ? nextLabel(n, d.today) : "Fully booked"}</span></a>`; }).join("")}</div>
-      <p class="xs muted mt12">Times update as people book. What you see is what's free.</p>
+      <div class="row between"><span class="eyebrow">Free times near you</span><span class="live-dot">Live</span></div>
+      <div class="mt12">${featured.slice(0, 4).map((p) => { const n = d.next.get(p.id); return `<a class="live-row" href="/p/${esc(p.slug)}">${venueThumb(p, "s")}<div class="grow col" style="gap:0;min-width:0"><b>${esc(p.name)}</b><span class="xs muted">${esc(p.area)} · ${esc([...new Set(byProv(p.id).map((s) => catName(s.cat)))].slice(0, 2).join(", "))}</span></div><span class="live-time">${n ? nextLabel(n, d.today) : "Fully booked"}</span></a>`; }).join("")}</div>
+      <p class="xs muted mt12">Times update as people book. What you see is genuinely free.</p>
+      <a class="btn btn-o btn-s mt12" href="/search">See all clinics and times</a>
     </div>`;
   return `<div class="page" style="padding-top:0">
   <section class="hero"><div class="hero-grid">
     <div>
-      <div class="eyebrow">${esc(COMPANY.launchCity)} · ${open ? "Now booking" : "Opening soon"}</div>
-      <h1 class="mt16">Good care, <em>in step</em> with your day.</h1>
-      ${open ? `<p class="lede mt16">Book verified doctors and clinics for skin, hair and dental care in ${esc(COMPANY.launchCity)}. See the full price, who will treat you and the times that are genuinely free, then hold your appointment in a minute.</p>
-      <form class="searchbar" action="/search" method="get" role="search">
-        <div class="seg">${ic("search", 18, 'style="color:var(--rose)"')}<div class="grow"><label for="hq">Treatment or clinic</label><input id="hq" name="q" list="svc-list" placeholder="Search treatments or clinics" autocomplete="off"></div></div>
-        <datalist id="svc-list">${cats.map((c) => `<option value="${esc(c.name)}">`).join("")}${names.map((n) => `<option value="${esc(n)}">`).join("")}</datalist>
-        <div class="seg" style="flex:.75">${ic("pin", 18, 'style="color:var(--rose)"')}<div class="grow"><label for="ha">Area</label><select id="ha" name="area"><option value="">All of ${esc(COMPANY.launchCity)}</option>${AREAS.map((a) => `<option>${a}</option>`).join("")}</select></div></div>
-        <button class="btn btn-p" type="submit" style="padding:14px 26px">Search</button>
+      <div class="eyebrow">${esc(COMPANY.launchCity)} (${esc(SERVICE_AREA.short)}) · ${open ? "Now booking" : "Opening soon"}</div>
+      ${open ? `<h1 class="mt16">Book skin, dental and hair care <em>near you</em> in ${esc(SERVICE_AREA.short)}.</h1>
+      <p class="lede mt16">Search what you need, see the full price and the doctor who'll treat you, and book a free time in a minute. ${anyDeposit ? "Hold it with a small deposit." : "Nothing to pay online."}</p>
+      <form class="searchbar" id="home-search" action="/search" method="get" role="search">
+        <div class="seg">${ic("search", 18, 'style="color:var(--rose)"')}<div class="grow"><label for="hq">What are you looking for?</label><input id="hq" name="q" list="svc-list" placeholder="Teeth cleaning, hair fall, acne…" autocomplete="off"></div></div>
+        <datalist id="svc-list">${POPULAR.map(([l]) => `<option value="${esc(l)}">`).join("")}${cats.map((c) => `<option value="${esc(c.name)}">`).join("")}${names.map((n) => `<option value="${esc(n)}">`).join("")}</datalist>
+        <div class="seg" style="flex:.8">${ic("pin", 18, 'style="color:var(--rose)"')}<div class="grow"><label for="ha">Where?</label><select id="ha" name="area">${areaOptions("", `All of ${SERVICE_AREA.short}`)}</select></div></div>
+        <button class="btn btn-p" type="submit" style="padding:14px 26px">Find a time</button>
       </form>
-      ${popular.length ? `<div class="chips mt16"><span class="small muted" style="align-self:center">Try:</span>${popular.map((t) => `<a class="chip" href="/search?q=${encodeURIComponent(t)}">${esc(t)}</a>`).join("")}</div>` : ""}`
-      : `<p class="lede mt16">Verified doctors and clinics for skin, hair and dental care in ${esc(COMPANY.launchCity)}, with the price, the practitioner and a genuinely free time on one page. We're checking our first clinics now, and bookings open as each one goes live.</p>
+      <div class="row wrap mt12" style="gap:10px;align-items:center">${nearBtn("btn btn-g btn-s near-link", "home-search")}<span class="xs muted" data-near-status role="status"></span></div>
+      ${popular.length ? `<div class="chips mt12"><span class="small muted" style="align-self:center">Popular:</span>${popular.map(([l, q]) => `<a class="chip" href="/search?q=${encodeURIComponent(q)}">${esc(l)}</a>`).join("")}</div>` : ""}`
+      : `<h1 class="mt16">Skin, dental and hair care in ${esc(SERVICE_AREA.short)}, <em>booked in a minute</em>.</h1>
+      <p class="lede mt16">Verified doctors and clinics, with the price, the practitioner and a genuinely free time on one page. We're checking our first clinics now, and bookings open as each one goes live.</p>
       <div id="notify" class="mt24" style="max-width:540px">
         ${d.joined === COMPANY.launchCity ? `<p class="form-ok" role="status">Thank you. We'll email you when bookings open in ${esc(COMPANY.launchCity)}.</p>` : `
         <form class="row wrap" method="post" action="/waitlist" style="gap:10px">
@@ -76,35 +96,35 @@ export function homePage(d: {
         <p class="small muted mt16">Run a clinic, salon or wellness centre? <a href="/for-practitioners">Join Aestheva</a></p>
       </div>`}
     </div>
-    ${open ? `<div class="hero-visual">${artBox("hero-aestheva", 0, "hero-art")}${liveCard}</div>` : artBox("hero-aestheva", 0, "hero-art")}
+    ${open ? `<div class="hero-side">${liveCard}</div>` : ""}
   </div></section>
 
-  ${open ? `<section><div class="section-head"><div><div class="eyebrow">Treatments</div><h2 class="mt8">What would you like to book?</h2></div><a class="btn btn-o btn-s" href="/search">See everything</a></div>
+  ${open ? `<section class="promise-strip" aria-label="Why book with Aestheva">${promises.map(([i, t, b]) => `<div>${ic(i, 20)}<div><b>${t}</b><span>${b}</span></div></div>`).join("")}</section>
+
+  <section class="mt48"><div class="section-head"><div><div class="eyebrow">Treatments</div><h2 class="mt8">What would you like to book?</h2></div><a class="btn btn-o btn-s" href="/search">See all treatments</a></div>
     <div class="grid g4 cat2-grid">${cats.map((c) => `<a class="cat2" href="/search?cat=${c.id}"><span class="cat2-ic">${catIcon(c.id, 22)}</span><b>${esc(c.name)}</b><span class="small muted">${esc(CAT_META[c.id]?.line ?? "")}</span><span class="xs cat2-n">${c.svcs.length} treatment${c.svcs.length === 1 ? "" : "s"} · from ${inr(minPrice(c.svcs))}</span></a>`).join("")}</div>
   </section>
 
   <section class="mt64"><div class="section-head"><div><div class="eyebrow">Now booking</div><h2 class="mt8">Clinics you can book today</h2></div></div>
     <div class="grid g3 vgrid${featured.length === 1 ? " vgrid-one" : ""}">${featured.map((p) => venueCard(p, byProv(p.id), d.ratings.get(p.id), d.next, d.today, catName)).join("")}</div>
-  </section>` : ""}
+  </section>
 
   <section class="mt64 beats-wrap">
-    <div class="eyebrow">How it works</div><h2 class="mt8" style="max-width:620px">Four steps from searching to sitting in the chair.</h2>
-    <ol class="beats mt32">${BEATS.map(([t, b], i) => `<li class="beat"><span class="beat-n">0${i + 1}</span><h3>${t}</h3><p class="small muted mt8">${b}</p></li>`).join("")}</ol>
+    <div class="eyebrow">How it works</div><h2 class="mt8" style="max-width:620px">Booked in three steps, without a single phone call.</h2>
+    <ol class="steps3 mt32">${STEPS.map(([i, t, b], n) => `<li><span class="steps3-ic">${ic(i, 20)}</span><div><span class="xs muted">Step ${n + 1}</span><h3>${t}</h3><p class="small muted mt8">${b}</p></div></li>`).join("")}</ol>
+    <div class="mt32"><a class="btn btn-p" href="/search">Find a treatment near you ${ic("arrowR", 16)}</a></div>
   </section>
 
-  <section class="mt64 story-band">
-    <div class="story-in">
-      <div class="eyebrow" style="color:#E9C9D4">Made in Kazhakkoottam</div>
-      <h2 class="mt12">Built for a city that keeps long days.</h2>
-      <p class="mt16">Technopark shifts, school runs, the evening drive home along the bypass. Booking care in ${esc(COMPANY.launchCity)} should take a minute, not an afternoon of phone calls, and you should know exactly who you're seeing before you leave home.</p>
-      <p class="mt12">So we're starting close to home, and adding the city's clinics and practitioners one neighbourhood at a time.</p>
-      <a class="btn btn-light mt24" href="/about">Read our story ${ic("arrowR", 16)}</a>
-    </div>
-  </section>
+  <section class="mt64 area-band">
+    <div class="eyebrow">Where we are</div>
+    <h2 class="mt8">${esc(SERVICE_AREA.short)} and the towns around it</h2>
+    <p class="muted mt12" style="max-width:640px">We list clinics across ${esc(COMPANY.launchCity)}, from the city centre to Technopark, Kovalam, Neyyattinkara, Nedumangad and Attingal. Choose your area and we'll show the nearest clinics first. ${areas.length ? `Clinics are live in ${esc(areas.join(", "))} now, with more joining each week.` : ""}</p>
+    <div class="area-zones mt24">${ZONES.map((z) => `<div><b class="small">${esc(z)}</b><div class="chips mt8">${LOCALITIES.filter((l) => l.zone === z).map((l) => `<a class="chip chip-s" href="/search?area=${encodeURIComponent(l.name)}">${esc(l.name)}</a>`).join("")}</div></div>`).join("")}</div>
+  </section>` : ""}
 
   <section class="mt64 grid g2" style="align-items:stretch">
-    <div class="sage-card"><div class="eyebrow" style="color:var(--sage-d)">For clinics &amp; practitioners</div><h3 class="mt8">Bring your practice to Aestheva</h3><p class="small mt8" style="color:#33463A">A verified profile, your real availability and deposits taken at booking, so the people who book are the people who come.</p><div class="row wrap mt16" style="gap:8px"><a class="btn btn-ok btn-s" href="/for-practitioners/apply">Apply online</a><a class="btn btn-o btn-s" href="/for-practitioners">How joining works</a></div></div>
-    <div class="card" id="waitlist"><div class="eyebrow">Coming next</div><h3 class="mt8">Kochi · Kozhikode · Thrissur</h3><p class="small muted mt8">We're growing city by city. Leave your email and we'll tell you when we open in yours.</p>
+    <div class="sage-card"><div class="eyebrow" style="color:var(--sage-d)">For clinics &amp; practitioners</div><h3 class="mt8">Bring your practice to Aestheva</h3><p class="small mt8" style="color:#33463A">A verified profile, your real availability and bookings straight into your calendar. Set up takes about 30 minutes.</p><div class="row wrap mt16" style="gap:8px"><a class="btn btn-ok btn-s" href="/for-practitioners/apply">Apply online</a><a class="btn btn-o btn-s" href="/for-practitioners">How joining works</a></div></div>
+    <div class="card" id="waitlist"><div class="eyebrow">Coming next</div><h3 class="mt8">Kochi · Kozhikode · Thrissur</h3><p class="small muted mt8">Not in ${esc(SERVICE_AREA.short)}? Leave your email and we'll tell you when we open in your city.</p>
       ${d.joined && d.joined !== COMPANY.launchCity ? `<p class="form-ok mt16" role="status">You're on the ${esc(d.joined)} waitlist. We'll email you when we open there.</p>` : ""}
       <form class="row wrap mt16" method="post" action="/waitlist" style="gap:10px">
         <label class="sr" for="wl-city">City</label><select class="in" id="wl-city" name="city" style="width:auto">${others.map((c) => `<option>${c}</option>`).join("")}</select>
@@ -112,21 +132,39 @@ export function homePage(d: {
         <button class="btn btn-o btn-s" type="submit">Join the waitlist</button>
       </form></div>
   </section>
+  <p class="small muted mt32" style="text-align:center">Made in Kazhakkoottam by a team that got tired of phoning around for appointments. <a href="/about">Read our story</a></p>
   </div>`;
 }
 
 // ---------- search ----------
 
-export interface SearchQuery { q: string; area: string; cat: string; kind: "all" | "medical" | "beauty"; sort: "rec" | "price" | "rating" }
+export interface SearchQuery { q: string; area: string; near: string; cat: string; kind: "all" | "medical" | "beauty"; sort: "rec" | "price" | "rating" | "near" }
+
+/** Everyday words people type, and the words clinics use for the same thing. */
+const SYNONYMS: [RegExp, string[]][] = [
+  [/\b(teeth|tooth|dental) clean(ing)?\b|\bcleaning\b/, ["scaling"]],
+  [/\bwhiten(ing)?\b|\bbleach(ing)?\b/, ["brightening"]],
+  [/\bhair removal\b|\bunwanted hair\b|\blaser hair\b/, ["laser hair reduction"]],
+  [/\bhair ?fall\b|\bhair loss\b|\bbald(ness)?\b|\bthinning\b/, ["hair loss", "mesotherapy (hair)"]],
+  [/\bpimples?\b|\bacne\b|\bscars?\b/, ["acne"]],
+  [/\bdark spots?\b|\bmelasma\b|\btan\b|\bpigment/, ["pigmentation"]],
+  [/\bfacials?\b/, ["facial", "peel (face)", "mesotherapy (face)"]],
+  [/\bcavity\b|\bcavities\b|\bdecay\b/, ["filling"]],
+  [/\bunder ?eye\b/, ["dark circles"]],
+];
+export function searchTerms(q: string) {
+  const t = q.trim().toLowerCase();
+  return t ? [t, ...SYNONYMS.filter(([re]) => re.test(t)).flatMap(([, alts]) => alts)] : [];
+}
 
 export function matchServices(svcs: ServiceRow[], p: ProviderRow, f: SearchQuery, catName: (id: string) => string) {
-  const q = f.q.trim().toLowerCase();
+  const terms = searchTerms(f.q);
   let list = svcs;
-  if (q) {
-    const provHit = `${p.name} ${p.tagline} ${p.type}`.toLowerCase().includes(q);
+  if (terms.length) {
+    const provHit = `${p.name} ${p.tagline} ${p.type}`.toLowerCase().includes(terms[0]);
     if (!provHit) list = list.filter((s) => {
       const hay = `${s.name} ${catName(s.cat)} ${s.description}`.toLowerCase();
-      return hay.includes(q) || q.split(/\s+/).every((w) => hay.includes(w));
+      return terms.some((q) => hay.includes(q) || q.split(/\s+/).every((w) => hay.includes(w)));
     });
   }
   if (f.cat) list = list.filter((s) => s.cat === f.cat);
@@ -136,22 +174,23 @@ export function matchServices(svcs: ServiceRow[], p: ProviderRow, f: SearchQuery
 }
 
 export function searchPage(d: {
-  f: SearchQuery; results: { p: ProviderRow; svcs: ServiceRow[]; verifications: number }[]; categories: { id: string; name: string }[];
-  ratings: Map<string, Rating>; next: Next; today: string; anyLive: boolean;
+  f: SearchQuery; results: { p: ProviderRow; svcs: ServiceRow[]; verifications: number; km?: number }[]; categories: { id: string; name: string }[];
+  ratings: Map<string, Rating>; next: Next; today: string; anyLive: boolean; outside?: boolean;
 }) {
   const { f } = d;
   const catName = (id: string) => d.categories.find((c) => c.id === id)?.name ?? id;
   const title = f.q ? `“${esc(f.q)}”` : f.cat ? esc(catName(f.cat)) : "Explore treatments";
-  const qs = (patch: Partial<SearchQuery>) => { const u = new URLSearchParams(); const m = { ...f, ...patch }; for (const [k, v] of Object.entries(m)) if (v && !(k === "kind" && v === "all") && !(k === "sort" && v === "rec")) u.set(k, v); const s = u.toString(); return s ? "/search?" + s : "/search"; };
+  const qs = (patch: Partial<SearchQuery>) => { const u = new URLSearchParams(); const m = { ...f, ...patch }; for (const [k, v] of Object.entries(m)) if (v && !(k === "kind" && v === "all") && !(k === "sort" && (v === "rec" || v === "near"))) u.set(k, v); const s = u.toString(); return s ? "/search?" + s : "/search"; };
+  const fromLabel = f.area ? esc(f.area) : f.near ? "you" : "";
   const radio = (name: string, val: string, label: string, cur: string) => `<label class="check"><input type="radio" name="${name}" value="${val}" ${cur === val ? "checked" : ""}> ${label}</label>`;
-  const list = d.results.map(({ p, svcs, verifications }) => {
+  const list = d.results.map(({ p, svcs, verifications, km }) => {
     const r = d.ratings.get(p.id), na = d.next.get(p.id);
     return `<article class="rcard">
       ${photosOf(p)[0] ? `<a class="rcard-photo" href="/p/${esc(p.slug)}" tabindex="-1" aria-hidden="true">${photoImg(photosOf(p)[0], "(max-width:760px) 100vw, 260px", { decorative: true })}</a>` : `<a class="rcard-mark" href="/p/${esc(p.slug)}" tabindex="-1" aria-hidden="true">${venueMark(p.name, p.id, p.art, "l")}</a>`}
       <div style="padding:18px 20px" class="col">
         <span class="eyebrow" style="color:var(--muted)">${esc(p.type)}</span>
         <h3><a href="/p/${esc(p.slug)}" style="color:inherit;text-decoration:none">${esc(p.name)}</a></h3><p class="small muted">${esc(p.tagline)}</p>
-        <div class="row wrap small muted" style="gap:14px">${r ? stars(r.avg, r.n) : "<span>No reviews yet</span>"}<span class="row" style="gap:4px">${ic("pin", 14)} ${esc(p.area)}</span>${verifications ? `<span class="row" style="gap:4px;color:var(--sage-d)">${ic("shield", 14)} ${verifications} checks by scope</span>` : ""}</div>
+        <div class="row wrap small muted" style="gap:14px">${r ? stars(r.avg, r.n) : "<span>No reviews yet</span>"}<span class="row" style="gap:4px">${ic("pin", 14)} ${esc(p.area)}${km !== undefined && fromLabel ? ` · <b style="color:var(--charcoal);font-weight:600">${kmLabel(km)}</b>` : ""}</span>${verifications ? `<span class="row" style="gap:4px;color:var(--sage-d)">${ic("shield", 14)} ${verifications} checks by scope</span>` : ""}</div>
         <div class="mt8">${svcs.slice(0, 3).map((s) => `<div class="svc-line"><span>${esc(s.name)} ${isMedical(s) ? '<span class="badge b-med" style="padding:1px 7px;font-size:10.5px">Medical</span>' : ""}</span><span class="muted" style="white-space:nowrap">${s.dur_min} min · <b style="color:var(--charcoal)">${inr(s.price_paise)}</b></span></div>`).join("")}${svcs.length > 3 ? `<div class="xs muted mt8">+ ${svcs.length - 3} more matching</div>` : ""}</div>
         <div class="row between wrap mt8"><span class="small" style="color:var(--sage-d);font-weight:600">${na ? ic("clock", 14) + " Next available: " + nextLabel(na, d.today) : "No availability in the next 10 days"}</span>
           <a class="btn btn-p btn-s" href="/p/${esc(p.slug)}">See treatments &amp; times</a></div>
@@ -159,23 +198,24 @@ export function searchPage(d: {
   }).join("");
   return `<div class="page">
     <div class="row between wrap" style="gap:16px">
-      <div><div class="eyebrow">${esc(COMPANY.launchCity)}${f.area ? " · " + esc(f.area) : ""}</div><h1 class="mt8" style="font-size:clamp(30px,3.6vw,40px)">${title}</h1></div>
+      <div><div class="eyebrow">${esc(COMPANY.launchCity)}${f.area ? " · " + esc(f.area) : f.near ? " · Near you" : ""}</div><h1 class="mt8" style="font-size:clamp(30px,3.6vw,40px)">${title}</h1>${fromLabel ? `<p class="small muted mt8">Nearest to ${fromLabel} first. Distances are straight-line and approximate.</p>` : ""}</div>
       <button class="btn btn-o btn-s filter-toggle" type="button" data-toggle="filters" aria-expanded="false" aria-controls="filters">${ic("filter", 16)} Filters</button>
     </div>
     <div class="chips mt16 scroll-x" style="flex-wrap:nowrap">${d.categories.map((c) => `<a class="chip chip-ic ${f.cat === c.id ? "on" : ""}" href="${qs({ cat: f.cat === c.id ? "" : c.id })}">${catIcon(c.id, 15)} ${esc(c.name)}</a>`).join("")}</div>
     <div class="results-layout mt24">
       <form class="filters" id="filters" method="get" action="/search" data-autosubmit role="search" aria-label="Filters">
         <div><h4><label for="sq">Search</label></h4><input class="in" id="sq" name="q" value="${esc(f.q)}" placeholder="Treatment or venue"></div>
-        <div><h4><label for="sa">Location</label></h4><select class="in" id="sa" name="area"><option value="">All Trivandrum</option>${AREAS.map((a) => `<option ${f.area === a ? "selected" : ""}>${a}</option>`).join("")}</select></div>
+        <div><h4><label for="sa">Where are you?</label></h4><select class="in" id="sa" name="area">${areaOptions(f.area, f.near ? "Near me" : "All of Trivandrum")}</select><input type="hidden" name="near" value="${esc(f.near)}">${nearBtn("btn btn-o btn-s mt8")}<p class="xs muted mt8" data-near-status role="status"></p></div>
         <div><h4><label for="sc">Category</label></h4><select class="in" id="sc" name="cat"><option value="">All categories</option>${d.categories.map((c) => `<option value="${c.id}" ${f.cat === c.id ? "selected" : ""}>${esc(c.name)}</option>`).join("")}</select></div>
         <fieldset style="border:0;padding:0;margin:0"><legend><h4>Service type</h4></legend>${radio("kind", "all", "All services", f.kind)}${radio("kind", "medical", "Medical consultations &amp; treatments", f.kind)}${radio("kind", "beauty", "Beauty &amp; wellness (non-medical)", f.kind)}</fieldset>
-        <div><h4><label for="ss">Sort by</label></h4><select class="in" id="ss" name="sort"><option value="rec" ${f.sort === "rec" ? "selected" : ""}>Recommended</option><option value="price" ${f.sort === "price" ? "selected" : ""}>Lowest price</option><option value="rating" ${f.sort === "rating" ? "selected" : ""}>Top rated</option></select></div>
+        <div><h4><label for="ss">Sort by</label></h4><select class="in" id="ss" name="sort"><option value="rec" ${f.sort === "rec" ? "selected" : ""}>Recommended</option><option value="price" ${f.sort === "price" ? "selected" : ""}>Lowest price</option><option value="rating" ${f.sort === "rating" ? "selected" : ""}>Top rated</option>${fromLabel ? `<option value="near" ${f.sort === "near" ? "selected" : ""}>Nearest first</option>` : ""}</select></div>
         <div class="row wrap" style="gap:8px"><button class="btn btn-p btn-s" type="submit">Apply</button><a class="btn btn-o btn-s" href="/search">Clear all</a></div>
       </form>
       <div>
+        ${d.outside ? `<div class="note n-plain" style="margin-bottom:14px">${ic("info", 16)}<div><b>You seem to be outside ${esc(SERVICE_AREA.name)}.</b> We only list clinics in and around ${esc(SERVICE_AREA.short)} for now. <a href="/#waitlist">Tell me when you open near me</a></div></div>` : ""}
         <div class="row between small muted" style="margin-bottom:14px"><span><b style="color:var(--charcoal)">${d.results.length}</b> venue${d.results.length === 1 ? "" : "s"} · ${d.results.reduce((a, x) => a + x.svcs.length, 0)} matching services</span>${f.kind === "medical" ? '<span class="badge b-med">Medical only</span>' : ""}</div>
         ${d.results.length ? `<div class="col" style="gap:16px">${list}</div>` :
-          d.anyLive ? `<div class="card" style="text-align:center;padding:48px 24px"><h2 style="font-size:26px">No matches yet</h2><p class="muted mt8">Try another treatment, neighbourhood or service type.</p><a class="btn btn-p mt16" href="/search">Clear filters</a></div>`
+          d.anyLive ? `<div class="card" style="text-align:center;padding:48px 24px"><h2 style="font-size:26px">No matches yet</h2><p class="muted mt8">Try a simpler word, like “teeth”, “hair” or “skin”, or another service type.</p><a class="btn btn-p mt16" href="/search">Clear filters</a></div>`
           : `<div class="card" style="text-align:center;padding:48px 24px"><h2 style="font-size:26px">Opening soon</h2><p class="muted mt8">We're verifying our first venues in ${esc(COMPANY.launchCity)}. Bookings open as each one goes live.</p><a class="btn btn-o mt16" href="/for-practitioners">Run a clinic or salon? Join us</a></div>`}
       </div>
     </div></div>`;

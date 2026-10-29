@@ -10,7 +10,8 @@
 // Prices and deposits in the file are rupees; the database stores paise.
 import fs from 'node:fs';
 
-const AREAS = ['Kazhakkoottam', 'Kowdiar', 'Pattom', 'Vellayambalam'];
+// The localities list lives in src/config.ts; read the names from there so the two never drift.
+const AREAS = [...fs.readFileSync(new URL('../src/config.ts', import.meta.url), 'utf8').matchAll(/\{ name: "([^"]+)", zone:/g)].map((m) => m[1]);
 const TYPES = ['Clinic', 'Salon & studio', 'Wellness centre', 'Independent practitioner'];
 const CATS = ['skin', 'medaes', 'hair', 'ayur', 'nails', 'body', 'dental', 'groom'];
 const KINDS = ['consult', 'treatment', 'beauty'];

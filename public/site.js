@@ -14,3 +14,23 @@ document.getElementById('apply-errors')?.focus();
   const cal = document.querySelector('.cal2'), mark = cal && (cal.querySelector('.cal2-now') || cal.querySelector('.cal2-appt, .cal2-on'));
   if (mark) cal.scrollTop = Math.max(0, mark.offsetTop - 120);
 })();
+// "Near me": ask for the browser's location once, rounded to about a kilometre, and search from there.
+document.querySelectorAll('[data-near]').forEach((btn) => {
+  if (!navigator.geolocation) return;
+  const form = btn.dataset.near ? document.getElementById(btn.dataset.near) : btn.closest('form');
+  if (!form) return;
+  btn.hidden = false;
+  const status = btn.parentElement.querySelector('[data-near-status]') || form.querySelector('[data-near-status]');
+  const say = (t) => { if (status) status.textContent = t; };
+  btn.addEventListener('click', () => {
+    say('Finding where you are…'); btn.disabled = true;
+    navigator.geolocation.getCurrentPosition((pos) => {
+      let near = form.querySelector('input[name=near]');
+      if (!near) { near = document.createElement('input'); near.type = 'hidden'; near.name = 'near'; form.appendChild(near); }
+      near.value = pos.coords.latitude.toFixed(2) + ',' + pos.coords.longitude.toFixed(2);
+      const area = form.querySelector('select[name=area]'); if (area) area.value = '';
+      form.submit();
+    }, () => { btn.disabled = false; say('We couldn’t get your location. Choose your area from the list instead.'); }, { timeout: 10000, maximumAge: 600000 });
+  });
+});
+document.querySelectorAll('form select[name=area]').forEach((sel) => sel.addEventListener('change', () => { const n = sel.form.querySelector('input[name=near]'); if (n && sel.value) n.value = ''; }));

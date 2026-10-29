@@ -3,6 +3,7 @@ import type { Env } from "../env";
 import { AREAS, COMPANY, WAITLIST_CITIES } from "../config";
 import { HttpError, isUniqueViolation } from "../db";
 import { nowIst } from "../domain/time";
+import { inServiceArea, km, locality, parseNear } from "../domain/geo";
 import { categories, liveProviders, liveServices, nextAvailable, providerBySlug, ratings } from "../services/catalog";
 import { authorisedBooking, bookingView, cancelByClient, cancellationTerms, type PaymentRow } from "../services/bookings";
 import { gatewayFor, paymentMode, previewAllowed } from "../services/gateway";
@@ -27,8 +28,8 @@ site.get("/", async (c) => {
   const next = await nextAvailable(db, services);
   const joined = c.req.query("joined");
   return page(c, {
-    title: "Aestheva · Verified skin, hair & wellness care in Thiruvananthapuram",
-    description: "Find and book verified clinics, salons, Ayurveda centres and practitioners in Thiruvananthapuram. Medical and beauty services clearly labelled.",
+    title: "Book skin, dental & hair care in Trivandrum · Aestheva",
+    description: "Find clinics near you in Thiruvananthapuram (Trivandrum), from Technopark to Kovalam. See full prices and verified doctors, and book a free time in a minute.",
     canonical: base(c) + "/",
   }, homePage({ providers, services, categories: cats, ratings: rt, next, today, joined: joined && (WAITLIST_CITIES as readonly string[]).includes(joined) ? joined : undefined }));
 });
@@ -36,29 +37,36 @@ site.get("/", async (c) => {
 site.get("/search", async (c) => {
   const db = c.env.DB, today = nowIst().date;
   const q = c.req.query();
+  const near = parseNear(q.near);
   const f: SearchQuery = {
-    q: String(q.q ?? "").slice(0, 80), area: AREAS.includes(q.area as never) ? q.area : "", cat: String(q.cat ?? ""),
-    kind: q.kind === "medical" || q.kind === "beauty" ? q.kind : "all", sort: q.sort === "price" || q.sort === "rating" ? q.sort : "rec",
+    q: String(q.q ?? "").slice(0, 80), area: AREAS.includes(q.area) ? q.area : "", near: near ? `${near.lat},${near.lng}` : "", cat: String(q.cat ?? ""),
+    kind: q.kind === "medical" || q.kind === "beauty" ? q.kind : "all", sort: q.sort === "price" || q.sort === "rating" || q.sort === "near" ? q.sort : "rec",
   };
+  // Searching from a locality or "near me" ranks every venue by distance instead of hiding the ones next door.
+  if (f.area) f.near = "";   // choosing a locality replaces an earlier "near me"
+  const from = f.area ? locality(f.area) : near;
+  if (from && f.sort === "rec") f.sort = "near";
+  if (!from && f.sort === "near") f.sort = "rec";
   const [providers, services, cats, rt, ver] = await Promise.all([liveProviders(db), liveServices(db), categories(db), ratings(db),
     db.prepare("SELECT provider_id, COUNT(*) AS n FROM verifications GROUP BY provider_id").all<{ provider_id: string; n: number }>()]);
   if (f.cat && !cats.some((x) => x.id === f.cat)) f.cat = "";
   const catName = (id: string) => cats.find((x) => x.id === id)?.name ?? id;
   const vcount = new Map(ver.results.map((r) => [r.provider_id, r.n]));
+  const distance = (area: string) => { const at = locality(area); return from && at ? km(from, at) : undefined; };
   let results = providers
-    .filter((p) => !f.area || p.area === f.area)
-    .map((p) => ({ p, svcs: matchServices(services.filter((s) => s.provider_id === p.id), p, f, catName), verifications: vcount.get(p.id) ?? 0 }))
+    .map((p) => ({ p, svcs: matchServices(services.filter((s) => s.provider_id === p.id), p, f, catName), verifications: vcount.get(p.id) ?? 0, km: distance(p.area) }))
     .filter((x) => x.svcs.length);
   const next = await nextAvailable(db, results.flatMap((x) => x.svcs));
   const score = (id: string) => (rt.get(id)?.avg ?? 0) * (rt.get(id)?.n ?? 0);
   if (f.sort === "price") results.sort((a, b) => Math.min(...a.svcs.map((s) => s.price_paise)) - Math.min(...b.svcs.map((s) => s.price_paise)));
   else if (f.sort === "rating") results.sort((a, b) => (rt.get(b.p.id)?.avg ?? 0) - (rt.get(a.p.id)?.avg ?? 0));
+  else if (f.sort === "near") results.sort((a, b) => (a.km ?? 999) - (b.km ?? 999));
   else results.sort((a, b) => score(b.p.id) - score(a.p.id));
   return page(c, {
     title: `${f.q ? f.q + " · " : f.cat ? catName(f.cat) + " · " : ""}${f.area || COMPANY.launchCity} · Aestheva`,
     description: `Book ${f.cat ? catName(f.cat).toLowerCase() : "aesthetic and wellness services"} in ${f.area || COMPANY.launchCity} with verified providers.`,
     canonical: base(c) + "/search", nav: "explore", noindex: !!f.q,
-  }, searchPage({ f, results, categories: providers.length ? cats.filter((x) => services.some((s) => s.cat === x.id)) : cats, ratings: rt, next, today, anyLive: providers.length > 0 }));
+  }, searchPage({ f, results, outside: !f.area && !!near && !inServiceArea(near), categories: providers.length ? cats.filter((x) => services.some((s) => s.cat === x.id)) : cats, ratings: rt, next, today, anyLive: providers.length > 0 }));
 });
 
 site.get("/p/:slug", async (c) => {

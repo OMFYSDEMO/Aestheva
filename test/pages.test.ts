@@ -9,12 +9,15 @@ describe("public pages", () => {
   it("renders the home page with categories and featured venues", async () => {
     const r = await req("GET", "/");
     expect(r.status).toBe(200);
-    expect(r.text).toContain("<em>in step</em> with your day");
+    expect(r.text).toContain("Book skin, dental and hair care <em>near you</em> in Trivandrum.");
     expect(r.text).toContain('href="/p/lumiere-skin-and-laser-clinic"');
     expect(r.text).toContain("Haswel Care Private Limited");
-    expect(r.text).toContain("Thiruvananthapuram · Now booking");
-    expect(r.text).toContain("Next free times");
-    expect(r.text).toContain("Try:");
+    expect(r.text).toContain("Thiruvananthapuram (Trivandrum) · Now booking");
+    expect(r.text).toContain("Free times near you");
+    expect(r.text).toContain("Use my location");
+    expect(r.text).toContain('<optgroup label="Technopark side">');
+    expect(r.text).toContain('href="/search?area=Attingal"');
+    expect(r.text).not.toContain("hero-art");
     expect(r.text).not.toContain(" 0 treatments");
   });
 
@@ -22,11 +25,46 @@ describe("public pages", () => {
     const q = await req("GET", "/search?q=shirodhara");
     expect(q.text).toContain("Saanvi Ayur Wellness");
     expect(q.text).not.toContain("Ember &amp; Oud Grooming");
-    const med = await req("GET", "/search?kind=medical&area=Pattom");
-    expect(med.text).toContain("<b style=\"color:var(--charcoal)\">0</b> venues");
+    const beauty = await req("GET", "/search?q=shirodhara&kind=medical");
+    expect(beauty.text).toContain("<b style=\"color:var(--charcoal)\">0</b> venues");
     const cat = await req("GET", "/search?cat=dental");
     expect(cat.text).toContain("Veda Smile Studio");
     expect(cat.text).toContain("1</b> venue ");
+  });
+
+  it("only suggests popular searches that a live clinic offers", async () => {
+    const r = await req("GET", "/");
+    const chips = [...r.text.matchAll(/class="chip" href="\/search\?q=([^"]+)"/g)].map((m) => decodeURIComponent(m[1]));
+    expect(chips.length).toBeGreaterThan(0);
+    for (const q of chips) expect((await req("GET", `/search?q=${encodeURIComponent(q)}`)).text).not.toContain("No matches yet");
+  });
+
+  it("understands everyday words for treatments", async () => {
+    const [dental] = await sql("SELECT name FROM services WHERE provider_id = 'p7' AND name LIKE '%Scaling%' LIMIT 1");
+    if (dental) expect((await req("GET", "/search?q=teeth+cleaning")).text).toContain("Veda Smile Studio");
+    expect((await req("GET", "/search?q=xyzzy")).text).toContain("No matches yet");
+  });
+
+  it("ranks clinics by distance from a chosen area, without hiding the others", async () => {
+    const r = await req("GET", "/search?area=Kazhakkoottam");
+    expect(r.text).toContain("Nearest to Kazhakkoottam first.");
+    const order = ["Dr. Kavya Raghunath", "Lumière Skin &amp; Laser Clinic"].map((n) => r.text.indexOf(n));
+    expect(order[0]).toBeGreaterThan(0); expect(order[0]).toBeLessThan(order[1]);   // Kazhakkoottam venue before Kowdiar
+    expect(r.text).toContain("under 1 km");
+    expect(r.text).toMatch(/Kowdiar · <b[^>]*>about [\d.]+ km<\/b>/);
+    expect(r.text).toContain("8</b> venues");
+    expect((await req("GET", "/search?area=Nowhere")).text).not.toContain("Nearest to");
+  });
+
+  it("searches near the visitor's rounded location, and says when they're outside the city", async () => {
+    const r = await req("GET", "/search?near=8.5677,76.8728");
+    expect(r.text).toContain("Nearest to you first.");
+    expect(r.text).toContain('name="near" value="8.57,76.87"');   // rounded to about a kilometre
+    expect(r.text).not.toContain("You seem to be outside");
+    const far = await req("GET", "/search?near=9.93,76.26");
+    expect(far.text).toContain("You seem to be outside Thiruvananthapuram.");
+    expect((await req("GET", "/search?near=8.5677,76.8728&area=Pattom")).text).toContain("Nearest to Pattom first.");   // a chosen area wins
+    expect((await req("GET", "/search?near=javascript:1")).text).not.toContain("Nearest to");
   });
 
   it("shows a venue's photo with responsive sizes and a social preview image", async () => {

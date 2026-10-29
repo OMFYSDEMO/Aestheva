@@ -615,3 +615,24 @@ details.card[open] summary::before{content:'–'}
 .preview-bar{background:var(--charcoal);color:#fff;padding:10px 16px;display:flex;gap:12px;justify-content:center;align-items:center;flex-wrap:wrap;font-size:14px}
 .preview-bar a{color:#fff}
 @media (max-width:1060px){.setup-grid{grid-template-columns:minmax(0,1fr)}}
+
+/* Home: search-first hero (no artwork), promises, steps and service area */
+.hero-side{display:flex;flex-direction:column;justify-content:center}
+.hero-side .live-card::before{display:none}
+.hero-side .ticks li{align-items:flex-start}
+.near-link{margin-left:-10px}
+.promise-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+.promise-strip>div{display:flex;gap:12px;align-items:flex-start;padding:18px 20px}
+.promise-strip>div+div{border-left:1px solid var(--line)}
+.promise-strip svg{color:var(--sage-d);flex-shrink:0;margin-top:2px}
+.promise-strip b{display:block;font-size:14.5px}
+.promise-strip span{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+.steps3{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.steps3 li{display:flex;gap:14px;align-items:flex-start;background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px}
+.steps3-ic{width:42px;height:42px;border-radius:50%;background:var(--blush);color:var(--mulberry);display:grid;place-items:center;flex-shrink:0}
+.steps3 h3{font-size:19px;margin-top:2px}
+.area-band{background:var(--white);border:1px solid var(--line);border-radius:var(--r-lg);padding:32px}
+.area-zones{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px 28px}
+.chip-s{font-size:13px;padding:5px 12px}
+@media (max-width:1060px){.promise-strip{grid-template-columns:repeat(2,1fr)}.promise-strip>div:nth-child(3){border-left:0}.promise-strip>div:nth-child(n+3){border-top:1px solid var(--line)}.steps3{grid-template-columns:1fr}}
+@media (max-width:760px){.promise-strip{grid-template-columns:1fr}.promise-strip>div+div{border-left:0;border-top:1px solid var(--line)}.area-band{padding:22px}.hero-side{margin-top:4px}}
