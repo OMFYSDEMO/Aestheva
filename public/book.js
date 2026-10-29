@@ -108,7 +108,7 @@
       const groups = (D.categories || []).map((c) => [c.name, D.services.filter((x) => x.cat === c.id)]).filter(([, xs]) => xs.length);
       const known = new Set((D.categories || []).map((c) => c.id)), rest = D.services.filter((x) => !known.has(x.cat));
       if (rest.length || !groups.length) groups.push([groups.length ? 'Other' : '', rest.length ? rest : D.services]);
-      html = `<h2>Choose a treatment</h2><p class="muted mt8">Prices are in full. ${D.services.some((x) => x.deposit) ? 'Where there\'s a deposit, it counts towards your bill.' : ''}</p>${D.services.some(isMed) ? `<div class="mt16">${MED_NOTE}</div>` : ''}<div role="radiogroup" aria-label="Treatments">${groups.map(([name, xs]) => `${name && groups.length > 1 ? `<p class="grp-h">${esc(name)}</p>` : '<div class="mt16"></div>'}<div class="col" style="gap:10px">${xs.map(opt).join('')}</div>`).join('')}</div>${nav(!!s)}`;
+      html = `<h2>Choose a service</h2><p class="muted mt8">Prices are in full. ${D.services.some((x) => x.deposit) ? 'Where there\'s a deposit, it counts towards your bill.' : ''}</p>${D.services.some(isMed) ? `<div class="mt16">${MED_NOTE}</div>` : ''}<div role="radiogroup" aria-label="Treatments">${groups.map(([name, xs]) => `${name && groups.length > 1 ? `<p class="grp-h">${esc(name)}</p>` : '<div class="mt16"></div>'}<div class="col" style="gap:10px">${xs.map(opt).join('')}</div>`).join('')}</div>${nav(!!s)}`;
     }
     if (F.step === 2) {
       html = `<h2>Who would you like?</h2><p class="muted mt8">${esc(s.name)} is offered by ${s.staff.length} team members.</p><div class="col mt16" style="gap:10px" role="radiogroup" aria-label="Who">

@@ -32,7 +32,7 @@ export function bookPage(d: ProviderDetail, preselect: string | null, payments: 
       <div id="bk-main" aria-live="polite">
         <noscript><div class="note n-plain">${ic("info", 16)}<div>Booking needs JavaScript to show live availability${takesDeposits ? " and take the deposit" : ""}. Please enable it, or call the venue directly.</div></div></noscript>
       </div>
-      <aside class="sticky"><div class="card summary" id="bk-summary"><div class="row" style="gap:12px">${venueThumb(p, "s")}<div class="col" style="gap:0"><b class="serif" style="font-size:21px">${esc(p.name)}</b><span class="xs muted">${esc(p.area)}, ${esc(p.city)}</span></div></div><div class="divider"></div><p class="small muted">Choose a treatment to see the price.</p></div></aside>
+      <aside class="sticky"><div class="card summary" id="bk-summary"><div class="row" style="gap:12px">${venueThumb(p, "s")}<div class="col" style="gap:0"><b class="serif" style="font-size:21px">${esc(p.name)}</b><span class="xs muted">${esc(p.area)}, ${esc(p.city)}</span></div></div><div class="divider"></div><p class="small muted">Choose a service to see the price.</p></div></aside>
     </div>
     <script type="application/json" id="bk-data">${json}</script>
     <template id="tpl-med">${MED_NOTE}</template>
