@@ -10,6 +10,8 @@ import { layout, type PageOpts } from "../views/layout";
 import { photosOf } from "../views/ui";
 import { homePage, matchServices, notFoundPage, providerPage, searchPage, type SearchQuery } from "../views/pages";
 import { bookPage, managePage } from "../views/booking";
+import { applyPage, applyThanksPage } from "../views/apply";
+import { createApplication, validateApplication, type ApplicationForm } from "../services/applications";
 import { aboutPage, cancellationPage, contactPage, practitionersPage, privacyPage, termsPage } from "../views/static";
 
 type C = Context<{ Bindings: Env }>;
@@ -131,10 +133,27 @@ site.get("/contact", (c) => page(c, { title: "Contact · Aestheva", canonical: b
 site.get("/about", (c) => page(c, { title: "Our story · Aestheva", description: `Why we built Aestheva, who runs it, and what you can count on when you book care in ${COMPANY.launchCity}.`, canonical: base(c) + "/about", nav: "story" }, aboutPage()));
 site.get("/for-practitioners", (c) => page(c, { title: "For practitioners & clinics · Aestheva", canonical: base(c) + "/for-practitioners", nav: "practitioners" }, practitionersPage()));
 
-site.get("/robots.txt", (c) => c.text(c.env.APP_ENV === "production" ? `User-agent: *\nAllow: /\nDisallow: /book/\nDisallow: /booking/\nSitemap: ${base(c)}/sitemap.xml\n` : "User-agent: *\nDisallow: /\n"));
+const applyMeta = (c: C) => ({ title: "Apply to join · Aestheva", description: `Apply to list your clinic, salon or practice on Aestheva in ${COMPANY.launchCity}.`, canonical: base(c) + "/for-practitioners/apply", nav: "practitioners" as const });
+site.get("/for-practitioners/apply", async (c) => page(c, applyMeta(c), applyPage({ values: {}, errors: {}, categories: await categories(c.env.DB), started: Date.now() })));
+site.post("/for-practitioners/apply", async (c) => {
+  const form = (await c.req.parseBody({ all: true })) as ApplicationForm;
+  const cats = await categories(c.env.DB);
+  // Bots: the hidden field is filled in, or the form came back faster than a person could fill it. Thank them and store nothing.
+  const started = Number(form.t);
+  if (String(form.company_website ?? "") !== "" || !(started > 0) || Date.now() - started < 3000) {
+    console.log("application ignored as automated");
+    return page(c, { ...applyMeta(c), noindex: true }, applyThanksPage(`AP-${crypto.randomUUID().slice(0, 6).toUpperCase()}`, ""));
+  }
+  const r = validateApplication(form, cats.map((x) => x.id));
+  if (!r.ok) return page(c, { ...applyMeta(c), noindex: true }, applyPage({ values: form, errors: r.errors, categories: cats, started }), 400);
+  const { ref } = await createApplication(c.env, r.value, c.req.header("cf-connecting-ip") ?? "");
+  return page(c, { ...applyMeta(c), noindex: true }, applyThanksPage(ref, r.value.contact_name));
+});
+
+site.get("/robots.txt", (c) => c.text(c.env.APP_ENV === "production" ? `User-agent: *\nAllow: /\nDisallow: /book/\nDisallow: /booking/\nDisallow: /ops/\nSitemap: ${base(c)}/sitemap.xml\n` : "User-agent: *\nDisallow: /\n"));
 site.get("/sitemap.xml", async (c) => {
   const ps = await liveProviders(c.env.DB), b = base(c);
-  const urls = ["/", "/search", "/about", "/for-practitioners", "/policies/cancellation", "/contact", ...ps.map((p) => `/p/${p.slug}`)];
+  const urls = ["/", "/search", "/about", "/for-practitioners", "/for-practitioners/apply", "/policies/cancellation", "/contact", ...ps.map((p) => `/p/${p.slug}`)];
   return c.body(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map((u) => `<url><loc>${b}${u}</loc></url>`).join("")}</urlset>`, 200, { "content-type": "application/xml" });
 });
 

@@ -38,8 +38,9 @@ describe("payment mode", () => {
   it("reports Razorpay test mode and the webhook on the health check", async () => {
     const r = await req("GET", "/api/health");
     expect(r.json.payments).toEqual({ mode: "test", webhook: true, secrets: {
-      RAZORPAY_KEY_ID: "set (test key)", RAZORPAY_KEY_SECRET: "set", RAZORPAY_WEBHOOK_SECRET: "set", PREVIEW_KEY: "set" } });
+      RAZORPAY_KEY_ID: "set (test key)", RAZORPAY_KEY_SECRET: "set", RAZORPAY_WEBHOOK_SECRET: "set", PREVIEW_KEY: "set", OPS_KEY: "set" } });
     expect(r.text).not.toContain("test_key_secret");
+    expect(r.text).not.toContain("test-ops-key");
   });
 
   it("tells clients when payments are in test mode", async () => {

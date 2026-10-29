@@ -90,6 +90,12 @@ The same `?preview=` link works for any draft venue, so a new venue can be check
 
 Switching to real payments later: complete Razorpay's account activation, generate Live mode keys and a Live mode webhook, and replace the three Razorpay secrets. The health check then shows `"mode":"live"` and the test-mode notice disappears.
 
+### Applications from clinics and practitioners
+
+Clinics, salons, wellness centres and independent practitioners apply at `/for-practitioners/apply`. Each application gets a reference (AP-XXXXXX) and is stored in the `applications` table. Hidden-field and timing checks drop most automated spam, and one connection can send at most five an hour.
+
+The team reviews them at `/ops/applications`. Sign-in uses a Worker secret called `OPS_KEY` (Settings → Variables and Secrets, type Secret): choose a long password and share it only with the team. Until it is set, the team pages say they aren't switched on. Each application page has a status (new, reviewing, approved, declined), private team notes, and a draft venue file to start from once you approve it.
+
 ### Adding a venue
 
 Until the operations console exists, each venue is a file in `providers/`, such as `providers/hasta-wellness.json`. Fill in every `TODO`, then:

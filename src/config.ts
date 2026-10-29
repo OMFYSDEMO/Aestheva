@@ -20,5 +20,8 @@ export const POLICY = {
 
 export const AREAS = ["Kazhakkoottam", "Kowdiar", "Pattom", "Vellayambalam"] as const;
 
+/** Kinds of business that can list on Aestheva (matches scripts/provider-sql.mjs). */
+export const VENUE_TYPES = ["Clinic", "Salon & studio", "Wellness centre", "Independent practitioner"] as const;
+
 /** Cities people can ask to hear about. The launch city is offered while it has no live venues. */
 export const WAITLIST_CITIES = ["Thiruvananthapuram", "Kochi", "Kozhikode", "Thrissur", "Bengaluru", "Chennai", "Mumbai"] as const;

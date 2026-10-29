@@ -3,6 +3,7 @@ import type { Env } from "./env";
 import { HttpError } from "./db";
 import api from "./routes/api";
 import hooks from "./routes/hooks";
+import ops from "./routes/ops";
 import site from "./routes/site";
 import { expireHolds } from "./services/bookings";
 import { paymentMode } from "./services/gateway";
@@ -44,12 +45,14 @@ app.get("/api/health", async (c) => {
       RAZORPAY_KEY_SECRET: c.env.RAZORPAY_KEY_SECRET ? "set" : "missing",
       RAZORPAY_WEBHOOK_SECRET: c.env.RAZORPAY_WEBHOOK_SECRET ? "set" : "missing",
       PREVIEW_KEY: c.env.PREVIEW_KEY ? "set" : "missing",
+      OPS_KEY: c.env.OPS_KEY ? "set" : "missing",
     },
   };
   return c.json({ ok: db.ok, env: c.env.APP_ENV, db, payments }, db.ok ? 200 : 503);
 });
 app.route("/api", api);
 app.route("/hooks", hooks);
+app.route("/ops", ops);
 app.route("/", site);
 app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));
 app.notFound((c) => c.html(layout({ title: "Not found · Aestheva", appEnv: c.env.APP_ENV, noindex: true }, notFoundPage()), 404));

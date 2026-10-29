@@ -8,4 +8,5 @@ export interface Env {
   RAZORPAY_KEY_SECRET?: string;
   RAZORPAY_WEBHOOK_SECRET?: string;
   PREVIEW_KEY?: string;             // secret: unlocks draft venues at /p/<slug>?preview=<key>
+  OPS_KEY?: string;                 // secret: the team's password for /ops (applications review)
 }

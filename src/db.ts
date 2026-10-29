@@ -7,9 +7,9 @@ export const newId = (prefix: string) => `${prefix}_${crypto.randomUUID().replac
 
 // Booking references avoid look-alike characters (0/O, 1/I/L).
 const REF_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
-export function newRef(): string {
+export function newRef(prefix = "AE"): string {
   const b = crypto.getRandomValues(new Uint8Array(6));
-  return "AE-" + Array.from(b, (x) => REF_ALPHABET[x % REF_ALPHABET.length]).join("");
+  return prefix + "-" + Array.from(b, (x) => REF_ALPHABET[x % REF_ALPHABET.length]).join("");
 }
 export function newToken(): string {
   const b = crypto.getRandomValues(new Uint8Array(24));

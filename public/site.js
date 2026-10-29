@@ -7,3 +7,5 @@ document.addEventListener('click', (e) => {
 document.querySelectorAll('form[data-autosubmit] select, form[data-autosubmit] input[type=radio], form[data-autosubmit] input[type=checkbox]').forEach((el) => {
   el.addEventListener('change', () => el.form.requestSubmit ? el.form.requestSubmit() : el.form.submit());
 });
+// Application form: move focus to the list of answers to fix, so screen readers announce it.
+document.getElementById('apply-errors')?.focus();

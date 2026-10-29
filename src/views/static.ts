@@ -50,6 +50,8 @@ export function privacyPage() {
     <p>We don't ask for your medical history. Please don't put health details in the booking note; your practitioner will discuss them with you in person.</p>
     <h2>Who sees it</h2>
     <p>The venue you book sees your name, contact details, appointment and note, so it can provide the service. Razorpay processes your payment. We don't sell your data.</p>
+    <h2>If you apply to list your practice</h2>
+    <p>We collect the business and contact details you give us, the services you describe and any registration numbers you share. We use them to review your application, contact you about it and, if you join, set up your profile. We keep a one-way hash of your connection's address for a short time to stop automated spam; we don't store the address itself.</p>
     <h2>Your choices</h2>
     <p>To see or delete your data, contact ${fact(COMPANY.supportEmail, "Support email")}.</p>
   </div>`;
@@ -104,6 +106,7 @@ export function practitionersPage() {
     <div class="eyebrow" style="color:var(--sage-d)">For clinics &amp; practitioners</div>
     <h1 class="mt8" style="font-size:clamp(36px,5vw,52px)">Fill your diary with people who turn up.</h1>
     <p class="lede mt16">Aestheva brings clients in ${esc(COMPANY.launchCity)} to your door having already seen your prices, your team and a time that suits your rota, with a deposit paid to hold it.</p>
+    <div class="row wrap mt24" style="gap:10px"><a class="btn btn-ok" href="/for-practitioners/apply">Apply online ${ic("arrowR", 16)}</a><span class="small muted">About five minutes. No documents needed yet.</span></div>
     <div class="promises mt24">
       <div>${ic("wallet", 20)}<b>Deposits at booking</b><p>Clients pay a deposit online to hold the time, so a missed appointment isn't a lost afternoon.</p></div>
       <div>${ic("cal", 20)}<b>Your real availability</b><p>Clients only see the hours each practitioner actually works, and two people can never take the same slot or machine.</p></div>
@@ -120,6 +123,8 @@ export function practitionersPage() {
       <li><b>Go live.</b> Your profile, services and live availability appear on Aestheva.</li>
     </ol>
     <h2>Apply</h2>
-    <p>Online applications open soon. Until then, write to <a href="mailto:${esc(COMPANY.supportEmail)}?subject=${encodeURIComponent("Listing my practice on Aestheva")}">${esc(COMPANY.supportEmail)}</a> with your venue name, area and the services you offer, and we'll be in touch.</p>
+    <p>Clinics, salons, wellness centres and independent practitioners can all apply. Tell us about your practice and the services you offer, and we'll be in touch to talk through the next steps.</p>
+    <p class="mt16"><a class="btn btn-ok" href="/for-practitioners/apply">Apply online ${ic("arrowR", 16)}</a></p>
+    <p class="small muted mt16">Questions first? Email <a href="mailto:${esc(COMPANY.supportEmail)}">${esc(COMPANY.supportEmail)}</a>.</p>
   </div>`;
 }

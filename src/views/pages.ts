@@ -103,7 +103,7 @@ export function homePage(d: {
   </section>
 
   <section class="mt64 grid g2" style="align-items:stretch">
-    <div class="sage-card"><div class="eyebrow" style="color:var(--sage-d)">For clinics &amp; practitioners</div><h3 class="mt8">Bring your practice to Aestheva</h3><p class="small mt8" style="color:#33463A">A verified profile, your real availability and deposits taken at booking, so the people who book are the people who come.</p><a class="btn btn-ok btn-s mt16" href="/for-practitioners">How joining works</a></div>
+    <div class="sage-card"><div class="eyebrow" style="color:var(--sage-d)">For clinics &amp; practitioners</div><h3 class="mt8">Bring your practice to Aestheva</h3><p class="small mt8" style="color:#33463A">A verified profile, your real availability and deposits taken at booking, so the people who book are the people who come.</p><div class="row wrap mt16" style="gap:8px"><a class="btn btn-ok btn-s" href="/for-practitioners/apply">Apply online</a><a class="btn btn-o btn-s" href="/for-practitioners">How joining works</a></div></div>
     <div class="card" id="waitlist"><div class="eyebrow">Coming next</div><h3 class="mt8">Kochi · Kozhikode · Thrissur</h3><p class="small muted mt8">We're growing city by city. Leave your email and we'll tell you when we open in yours.</p>
       ${d.joined && d.joined !== COMPANY.launchCity ? `<p class="form-ok mt16" role="status">You're on the ${esc(d.joined)} waitlist. We'll email you when we open there.</p>` : ""}
       <form class="row wrap mt16" method="post" action="/waitlist" style="gap:10px">

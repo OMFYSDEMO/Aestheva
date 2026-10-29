@@ -65,7 +65,7 @@ ${body}
     <p class="mt12 xs">Made in Kazhakkoottam. Kochi, Kozhikode and Thrissur next.</p>
   </div>
   <nav aria-label="Explore"><h2>Explore</h2><a href="/search">All treatments</a><a href="/search?cat=dental">Smile &amp; dental</a><a href="/search?cat=skin">Skin</a><a href="/search?cat=hair">Hair &amp; scalp</a></nav>
-  <nav aria-label="Aestheva"><h2>Aestheva</h2><a href="/about">Our story</a><a href="/for-practitioners">For practitioners</a><a href="/contact">Contact</a></nav>
+  <nav aria-label="Aestheva"><h2>Aestheva</h2><a href="/about">Our story</a><a href="/for-practitioners">For practitioners</a><a href="/for-practitioners/apply">Apply to join</a><a href="/contact">Contact</a></nav>
   <nav aria-label="Policies"><h2>Policies</h2><a href="/policies/cancellation">Cancellation &amp; refunds</a><a href="/policies/terms">Terms of use</a><a href="/policies/privacy">Privacy</a></nav>
 </div>
 <div class="footer-base">

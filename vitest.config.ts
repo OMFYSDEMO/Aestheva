@@ -17,6 +17,7 @@ export default defineConfig(async () => {
             RAZORPAY_KEY_SECRET: "test_key_secret",
             RAZORPAY_WEBHOOK_SECRET: "test_webhook_secret",
             PREVIEW_KEY: "test-preview-key",
+            OPS_KEY: "test-ops-key",
           },
         },
       }),
