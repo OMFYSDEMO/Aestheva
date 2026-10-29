@@ -21,6 +21,9 @@
     { "pattern": "www.bookaestheva.com", "custom_domain": true }
   ],
   "workers_dev": false,
+  // Keep values added in the dashboard when Git pushes redeploy. Secrets always survive; this also protects any
+  // value accidentally saved as type Text instead of Secret.
+  "keep_vars": true,
   // Team emails (new applications). Delivers to addresses verified in Cloudflare Email Routing; see README.
   "send_email": [{ "name": "EMAIL" }],
   "vars": {
