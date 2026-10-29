@@ -1,5 +1,5 @@
 {
-  "_about": "Hasta Wellness, Aestheva's first venue. Venue facts from hastawellnessclinic.com; services, durations, prices and doctors from Dr Sooraj (October 2026). Confirmed by the owner: deposits are 20% of the price rounded to the nearest ₹100, minimum ₹300; tooth brightening takes 60 minutes; the clinic has one laser machine, shared by all laser services including laser tooth brightening; Dr Akshara offers dental services only. Still assumed: Dr Sooraj works full clinic hours.",
+  "_about": "Hasta Wellness, Aestheva's first venue. Venue facts from hastawellnessclinic.com; services, durations, prices and doctors from Dr Sooraj (October 2026). Confirmed by the owner: deposits are 20% of the price rounded to the nearest ₹100, minimum ₹300; tooth brightening takes 60 minutes; the clinic has one laser machine, shared by all laser services including laser tooth brightening; Dr Akshara offers dental services only.",
   "id": "hasta-wellness",
   "slug": "hasta-wellness-kazhakkoottam",
   "name": "Hasta Wellness",
@@ -35,8 +35,8 @@
       ],
       "bio": "",
       "hours": {
-        "mon-sat": "10:00-20:00",
-        "sun": "10:00-14:00"
+        "mon-sat": "12:00-20:00",
+        "sun": "11:00-14:00"
       }
     },
     {
