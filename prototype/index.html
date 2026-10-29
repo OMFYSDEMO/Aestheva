@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AESTHEVA — Aesthetic & Wellness Marketplace Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app"></div>
+<div id="modal"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="data.js"></script>
+<script src="core.js"></script>
+<script src="consumer.js"></script>
+<script src="practitioner.js"></script>
+<script src="admin.js"></script>
+<script>
+  S = load() || seed();
+  save();
+  render();
+</script>
+</body>
+</html>
