@@ -1,19 +1,20 @@
 import { COMPANY, POLICY } from "../config";
-import { fmtDate, fmtTime } from "../domain/time";
+import { fmtDate, fmtTime, istToUtc } from "../domain/time";
 import type { ProviderDetail } from "../services/catalog";
 import { isMedical } from "../services/catalog";
 import type { BookingRow, PaymentRow } from "../services/bookings";
-import { MED_NOTE, artBox, esc, ic, inr } from "./ui";
+import { MED_NOTE, esc, ic, inr, mapsUrl, venueMark } from "./ui";
 
 const STEPS = ["Service", "Practitioner", "Date & time", "Your details", "Deposit"];
 
 /** The booking flow. The page carries the provider's services and team as JSON; /book.js drives the steps. */
-export function bookPage(d: ProviderDetail, preselect: string | null, payments: { gateway: string; mode: string }, preview?: string) {
+export function bookPage(d: ProviderDetail, preselect: string | null, payments: { gateway: string; mode: string }, preview?: string, categories: { id: string; name: string }[] = []) {
   const p = d.provider;
   const data = {
     provider: { slug: p.slug, name: p.name, area: p.area, city: p.city },
     services: d.services.map((s) => ({ id: s.id, name: s.name, kind: s.kind, cat: s.cat, dur: s.dur_min, price: s.price_paise, deposit: s.deposit_paise, staff: s.staff })),
-    staff: d.staff.map((t) => ({ id: t.id, name: t.name, role: t.role, medical: !!t.medical })),
+    staff: d.staff.map((t) => ({ id: t.id, name: t.name, role: t.role, medical: !!t.medical, quals: (() => { try { return (JSON.parse(t.quals_json || "[]") as string[]).join(", "); } catch { return ""; } })() })),
+    categories: categories.filter((c) => d.services.some((s) => s.cat === c.id)),
     preselect, gateway: payments.gateway, freeCancelHours: POLICY.freeCancelHours, holdMinutes: POLICY.holdMinutes, preview: preview ?? null,
   };
   const json = JSON.stringify(data).replace(/</g, "\\u003c");
@@ -23,11 +24,12 @@ export function bookPage(d: ProviderDetail, preselect: string | null, payments: 
     ${p.status === "draft" ? `<div class="note n-plain mt12" role="status">${ic("info", 16)}<div><b>Preview.</b> This venue isn't public yet.</div></div>` : ""}
     ${payments.mode === "test" ? `<div class="note n-plain mt12" role="status">${ic("info", 16)}<div><b>Payments are in test mode.</b> No real money is charged. In Razorpay's test checkout, use the UPI ID <b>success@razorpay</b> or a Razorpay test card.</div></div>` : ""}
     <ol class="steps mt16" id="bk-steps" aria-label="Booking steps" style="list-style:none;padding:0;margin-left:0">${STEPS.map((n, i) => `<li class="st ${i === 0 ? "on" : ""}"><i>${i + 1}</i>${n}</li>`).join("")}</ol>
+    <div class="stepbar mt16" aria-hidden="true"><div class="row between xs"><b id="bk-steptxt">Step 1 of ${STEPS.length} · ${STEPS[0]}</b><span class="muted">${esc(p.name)}</span></div><div class="stepbar-track"><i id="bk-stepfill" style="width:${100 / STEPS.length}%"></i></div></div>
     <div class="flow">
       <div id="bk-main" aria-live="polite">
         <noscript><div class="note n-plain">${ic("info", 16)}<div>Booking needs JavaScript to show live availability and take the deposit. Please enable it, or call the venue directly.</div></div></noscript>
       </div>
-      <aside class="sticky"><div class="card summary" id="bk-summary">${artBox(p.id, p.art, "", "aspect-ratio:16/8;border-radius:10px;margin:-6px -6px 14px")}<b class="serif" style="font-size:22px">${esc(p.name)}</b><div class="xs muted">${esc(p.area)}, ${esc(p.city)}</div><div class="divider"></div><p class="small muted">Select a service to see pricing.</p></div></aside>
+      <aside class="sticky"><div class="card summary" id="bk-summary"><div class="row" style="gap:12px">${venueMark(p.name, p.id, p.art, "s")}<div class="col" style="gap:0"><b class="serif" style="font-size:21px">${esc(p.name)}</b><span class="xs muted">${esc(p.area)}, ${esc(p.city)}</span></div></div><div class="divider"></div><p class="small muted">Choose a treatment to see the price.</p></div></aside>
     </div>
     <script type="application/json" id="bk-data">${json}</script>
     <template id="tpl-med">${MED_NOTE}</template>
@@ -46,9 +48,14 @@ export function managePage(d: {
   token: string; terms: { hours: number; started: boolean; free: boolean }; message?: string; resume?: unknown;
 }) {
   const b = d.booking, pay = d.payment;
+  const start = istToUtc(b.date, b.start_min), end = new Date(start.getTime() + b.dur_min * 6e4);
+  const gcal = (t: Date) => t.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const calUrl = "https://calendar.google.com/calendar/render?" + new URLSearchParams({ action: "TEMPLATE", text: `${b.service_name} · ${d.provider.name}`, dates: `${gcal(start)}/${gcal(end)}`, details: `With ${d.staff.name}. Booking ${b.ref}, booked on Aestheva.`, location: `${d.provider.name}, ${d.provider.address}` }).toString().replace(/&/g, "&amp;");
+  const freeUntil = new Date(start.getTime() - POLICY.freeCancelHours * 36e5).toLocaleString("en-IN", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
   const paid = pay && (pay.status === "captured" || pay.status === "refunded" || pay.status === "partially_refunded") ? pay.amount_paise : 0;
   const hero = b.status === "confirmed"
-    ? `<div class="confirm-hero"><div class="seal">${ic("check", 40)}</div><div class="eyebrow">Booking confirmed · ${esc(b.ref)}</div><h1 class="mt12" style="font-size:clamp(34px,5vw,52px)">See you on ${fmtDate(b.date)}.</h1><p class="muted mt12">Keep this page's link to view or cancel your booking. ${d.client.email ? `Your booking reference is ${esc(b.ref)}.` : ""}</p></div>`
+    ? `<div class="confirm-hero"><div class="seal">${ic("check", 40)}</div><div class="eyebrow">Booking confirmed · ${esc(b.ref)}</div><h1 class="mt12" style="font-size:clamp(34px,5vw,52px)">See you on ${fmtDate(b.date)}.</h1><p class="lede mt12">${fmtTime(b.start_min)} with ${esc(d.staff.name)} at ${esc(d.provider.name)}.</p><p class="small muted mt8">Bookmark this page or save its link: it's how you view or cancel your booking.</p>
+      <div class="row wrap mt24" style="justify-content:center;gap:10px"><a class="btn btn-o btn-s" href="${calUrl}" target="_blank" rel="noopener">${ic("cal", 15)} Add to Google Calendar</a><a class="btn btn-o btn-s" href="${mapsUrl(`${d.provider.name}, ${d.provider.address}`)}" target="_blank" rel="noopener">${ic("nav", 15)} Get directions</a></div></div>`
     : `<div class="confirm-hero"><div class="eyebrow">Booking ${esc(b.ref)}</div><h1 class="mt12" style="font-size:clamp(32px,4.6vw,46px)">${b.status === "held" ? "Almost done" : b.status === "cancelled" ? "This booking is cancelled" : b.status === "expired" ? "This booking wasn't completed" : "Your appointment"}</h1><p class="mt12">${STATUS[b.status] ?? ""}</p></div>`;
 
   const ended = b.status === "cancelled" || b.status === "expired";
@@ -91,7 +98,7 @@ export function managePage(d: {
     ${d.message ? `<div class="form-ok" role="status">${esc(d.message)}</div>` : ""}
     ${hero}
     <div class="card">
-      <div class="row" style="gap:16px;align-items:flex-start">${artBox(d.provider.id, d.provider.art, "", "width:84px;height:84px;border-radius:12px;flex-shrink:0")}
+      <div class="row" style="gap:16px;align-items:flex-start">${venueMark(d.provider.name, d.provider.id, d.provider.art, "m")}
         <div class="grow col" style="gap:4px"><b class="serif" style="font-size:22px">${esc(b.service_name)}</b>
           <span class="small muted"><a href="/p/${esc(d.provider.slug)}">${esc(d.provider.name)}</a> · ${esc(d.provider.area)}</span>
           <span class="small">${ic("cal", 14)} ${fmtDate(b.date, true)} · ${fmtTime(b.start_min)} · ${b.dur_min} min</span>
@@ -101,6 +108,12 @@ export function managePage(d: {
       <div class="summary">${summary}</div>
       ${refundLine}
     </div>
+    ${b.status === "confirmed" ? `<div class="card mt16"><h2 style="font-size:24px">Before you go</h2><ul class="ticks mt12">
+      <li>${ic("clock", 15)} Arrive about 10 minutes early, so there's time to settle in.</li>
+      ${b.price_paise - b.deposit_paise > 0 ? `<li>${ic("wallet", 15)} Pay the remaining ${inr(b.price_paise - b.deposit_paise)} at the clinic.</li>` : ""}
+      ${isMedical(b) ? `<li>${ic("shield", 15)} Tell your practitioner about any medicines you take or allergies you have.</li>` : ""}
+      ${d.terms.free ? `<li>${ic("cal", 15)} Plans changed? Cancel on this page; it's free until ${esc(freeUntil)}.</li>` : ""}
+    </ul></div>` : ""}
     ${isMedical(b) ? `<div class="mt16">${MED_NOTE}</div>` : ""}
     ${held}
     ${cancel}

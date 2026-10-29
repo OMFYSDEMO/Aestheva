@@ -9,7 +9,7 @@ import { gatewayFor, paymentMode, previewAllowed } from "../services/gateway";
 import { layout, type PageOpts } from "../views/layout";
 import { homePage, matchServices, notFoundPage, providerPage, searchPage, type SearchQuery } from "../views/pages";
 import { bookPage, managePage } from "../views/booking";
-import { cancellationPage, contactPage, practitionersPage, privacyPage, termsPage } from "../views/static";
+import { aboutPage, cancellationPage, contactPage, practitionersPage, privacyPage, termsPage } from "../views/static";
 
 type C = Context<{ Bindings: Env }>;
 const site = new Hono<{ Bindings: Env }>();
@@ -54,7 +54,7 @@ site.get("/search", async (c) => {
     title: `${f.q ? f.q + " · " : f.cat ? catName(f.cat) + " · " : ""}${f.area || COMPANY.launchCity} · Aestheva`,
     description: `Book ${f.cat ? catName(f.cat).toLowerCase() : "aesthetic and wellness services"} in ${f.area || COMPANY.launchCity} with verified providers.`,
     canonical: base(c) + "/search", nav: "explore", noindex: !!f.q,
-  }, searchPage({ f, results, categories: cats, ratings: rt, next, today, anyLive: providers.length > 0 }));
+  }, searchPage({ f, results, categories: providers.length ? cats.filter((x) => services.some((s) => s.cat === x.id)) : cats, ratings: rt, next, today, anyLive: providers.length > 0 }));
 });
 
 site.get("/p/:slug", async (c) => {
@@ -80,7 +80,7 @@ site.get("/book/:slug", async (c) => {
   try { gateway = gatewayFor(c.env).kind; } catch { /* production without keys: deposits can't be taken */ }
   const scripts = ["/book.js", ...(gateway === "razorpay" ? ["https://checkout.razorpay.com/v1/checkout.js"] : [])];
   return page(c, { title: `Book · ${d.provider.name} · Aestheva`, noindex: true, scripts },
-    bookPage(d, pre && d.services.some((s) => s.id === pre) ? pre : null, { gateway, mode: paymentMode(c.env) }, preview));
+    bookPage(d, pre && d.services.some((s) => s.id === pre) ? pre : null, { gateway, mode: paymentMode(c.env) }, preview, await categories(c.env.DB)));
 });
 
 async function renderManage(c: C, ref: string, token: string, message?: string) {
@@ -126,12 +126,13 @@ site.get("/policies/cancellation", (c) => page(c, { title: "Cancellation & refun
 site.get("/policies/terms", (c) => page(c, { title: "Terms of use · Aestheva", canonical: base(c) + "/policies/terms" }, termsPage()));
 site.get("/policies/privacy", (c) => page(c, { title: "Privacy · Aestheva", canonical: base(c) + "/policies/privacy" }, privacyPage()));
 site.get("/contact", (c) => page(c, { title: "Contact · Aestheva", canonical: base(c) + "/contact" }, contactPage()));
+site.get("/about", (c) => page(c, { title: "Our story · Aestheva", description: `Why we built Aestheva, who runs it, and what you can count on when you book care in ${COMPANY.launchCity}.`, canonical: base(c) + "/about", nav: "story" }, aboutPage()));
 site.get("/for-practitioners", (c) => page(c, { title: "For practitioners & clinics · Aestheva", canonical: base(c) + "/for-practitioners", nav: "practitioners" }, practitionersPage()));
 
 site.get("/robots.txt", (c) => c.text(c.env.APP_ENV === "production" ? `User-agent: *\nAllow: /\nDisallow: /book/\nDisallow: /booking/\nSitemap: ${base(c)}/sitemap.xml\n` : "User-agent: *\nDisallow: /\n"));
 site.get("/sitemap.xml", async (c) => {
   const ps = await liveProviders(c.env.DB), b = base(c);
-  const urls = ["/", "/search", "/for-practitioners", "/policies/cancellation", "/contact", ...ps.map((p) => `/p/${p.slug}`)];
+  const urls = ["/", "/search", "/about", "/for-practitioners", "/policies/cancellation", "/contact", ...ps.map((p) => `/p/${p.slug}`)];
   return c.body(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map((u) => `<url><loc>${b}${u}</loc></url>`).join("")}</urlset>`, 200, { "content-type": "application/xml" });
 });
 

@@ -73,7 +73,7 @@
         "hasta-dr-sooraj",
         "hasta-dr-akshara"
       ],
-      "desc": "Professional cleaning to remove plaque and tartar from the teeth."
+      "desc": "A professional clean that removes plaque and hardened tartar from above and just below the gumline, finished with a polish. A sensible place to start if it has been a while since your last visit."
     },
     {
       "id": "hasta-composite-filling",
@@ -87,7 +87,7 @@
         "hasta-dr-sooraj",
         "hasta-dr-akshara"
       ],
-      "desc": "A tooth-coloured filling to restore a tooth."
+      "desc": "A tooth-coloured filling that repairs a cavity or small chip and is shaped to match the tooth. The dentist examines the tooth first and talks you through it if more work is needed."
     },
     {
       "id": "hasta-fluoride-varnish",
@@ -101,7 +101,7 @@
         "hasta-dr-sooraj",
         "hasta-dr-akshara"
       ],
-      "desc": "Fluoride varnish applied to the teeth to help protect against decay."
+      "desc": "A thin fluoride coating painted onto the teeth to help protect the enamel against decay. It takes a few minutes in the chair."
     },
     {
       "id": "hasta-brightening-peroxide",
@@ -115,7 +115,7 @@
         "hasta-dr-sooraj",
         "hasta-dr-akshara"
       ],
-      "desc": "In-clinic tooth brightening with a peroxide gel. The dentist first checks it suits your teeth."
+      "desc": "In-clinic whitening with a professional peroxide gel, applied while your gums are protected. The dentist checks your teeth and gums first and tells you what shade change is realistic for you."
     },
     {
       "id": "hasta-brightening-laser",
@@ -129,7 +129,7 @@
         "hasta-dr-sooraj",
         "hasta-dr-akshara"
       ],
-      "desc": "In-clinic tooth brightening activated with a dental laser. The dentist first checks it suits your teeth.",
+      "desc": "In-clinic whitening where the gel is activated with a dental laser. The dentist checks your teeth and gums first and tells you what shade change is realistic for you.",
       "resources": [
         "hasta-laser"
       ]
@@ -145,7 +145,7 @@
       "staff": [
         "hasta-dr-sooraj"
       ],
-      "desc": "Carbon laser peel for the face.",
+      "desc": "A fine layer of carbon is applied to the skin and then passed over with a laser. Often chosen for oily skin, open pores and dullness. Your doctor looks at your skin before starting.",
       "resources": [
         "hasta-laser"
       ]
@@ -161,7 +161,7 @@
       "staff": [
         "hasta-dr-sooraj"
       ],
-      "desc": "Carbon laser peel for the lips.",
+      "desc": "The carbon laser peel adapted for the lips, often chosen for darkened lips. Your doctor looks at your skin before starting.",
       "resources": [
         "hasta-laser"
       ]
@@ -177,7 +177,7 @@
       "staff": [
         "hasta-dr-sooraj"
       ],
-      "desc": "Carbon laser treatment for the under-eye area.",
+      "desc": "Carbon laser treatment for the delicate skin under the eyes, often chosen for darkness in that area. Your doctor looks at your skin before starting.",
       "resources": [
         "hasta-laser"
       ]
@@ -193,7 +193,7 @@
       "staff": [
         "hasta-dr-sooraj"
       ],
-      "desc": "Carbon laser peel for the underarms or elbows.",
+      "desc": "Carbon laser peel for the underarms or elbows, often chosen for darker skin in these areas. Your doctor looks at your skin before starting.",
       "resources": [
         "hasta-laser"
       ]
@@ -209,7 +209,7 @@
       "staff": [
         "hasta-dr-sooraj"
       ],
-      "desc": "A chemical peel for dull-looking skin."
+      "desc": "A light peel solution applied to the face and removed after a set time, often chosen for dull or tired-looking skin. Your doctor picks the peel after looking at your skin."
     },
     {
       "id": "hasta-chem-peel-acne",
@@ -222,7 +222,7 @@
       "staff": [
         "hasta-dr-sooraj"
       ],
-      "desc": "A chemical peel for acne and acne marks."
+      "desc": "A peel often chosen for active acne and the marks it leaves. Your doctor picks the peel after looking at your skin, and may suggest a course."
     },
     {
       "id": "hasta-chem-peel-pigment",
@@ -235,7 +235,7 @@
       "staff": [
         "hasta-dr-sooraj"
       ],
-      "desc": "A chemical peel for uneven pigmentation."
+      "desc": "A peel often chosen for uneven skin tone and patches. Your doctor picks the peel after looking at your skin, and may suggest a course."
     },
     {
       "id": "hasta-lhr-lip-chin",
@@ -248,7 +248,7 @@
       "staff": [
         "hasta-dr-sooraj"
       ],
-      "desc": "One laser hair reduction session for the upper lip and lower chin.",
+      "desc": "One laser hair reduction session for the upper lip and chin. Hair reduction usually takes a course of sessions; your doctor suggests a plan after looking at your skin and hair.",
       "resources": [
         "hasta-laser"
       ]
@@ -264,7 +264,7 @@
       "staff": [
         "hasta-dr-sooraj"
       ],
-      "desc": "One laser hair reduction session for the full face.",
+      "desc": "One laser hair reduction session for the full face. Hair reduction usually takes a course of sessions; your doctor suggests a plan after looking at your skin and hair.",
       "resources": [
         "hasta-laser"
       ]
@@ -280,7 +280,7 @@
       "staff": [
         "hasta-dr-sooraj"
       ],
-      "desc": "One laser hair reduction session for the upper arms.",
+      "desc": "One laser hair reduction session for the upper arms. Hair reduction usually takes a course of sessions; your doctor suggests a plan after looking at your skin and hair.",
       "resources": [
         "hasta-laser"
       ]
@@ -296,7 +296,7 @@
       "staff": [
         "hasta-dr-sooraj"
       ],
-      "desc": "One mesotherapy session for the face."
+      "desc": "Fine micro-injections of a treatment solution into the skin of the face, given by the doctor. Often chosen for dull or dehydrated skin."
     },
     {
       "id": "hasta-gfc-exo-face",
@@ -309,7 +309,7 @@
       "staff": [
         "hasta-dr-sooraj"
       ],
-      "desc": "One GFC Exo mesotherapy session for the face."
+      "desc": "Mesotherapy for the face using GFC, a growth factor concentrate prepared from a small sample of your own blood, given by the doctor."
     },
     {
       "id": "hasta-meso-neck",
@@ -322,7 +322,7 @@
       "staff": [
         "hasta-dr-sooraj"
       ],
-      "desc": "One mesotherapy session for the neck."
+      "desc": "Fine micro-injections of a treatment solution into the skin of the neck, given by the doctor."
     },
     {
       "id": "hasta-gfc-exo-hair",
@@ -335,7 +335,7 @@
       "staff": [
         "hasta-dr-sooraj"
       ],
-      "desc": "One GFC Exo mesotherapy session for the scalp."
+      "desc": "GFC, a growth factor concentrate prepared from a small sample of your own blood, delivered into the scalp by the doctor. Often chosen for thinning hair and usually planned as a course."
     },
     {
       "id": "hasta-gfc-meso-hair",
@@ -348,7 +348,7 @@
       "staff": [
         "hasta-dr-sooraj"
       ],
-      "desc": "One GFC mesotherapy session for the scalp."
+      "desc": "GFC mesotherapy for the scalp, using a growth factor concentrate prepared from a small sample of your own blood. Often chosen for thinning hair and usually planned as a course."
     },
     {
       "id": "hasta-antihairloss-meso",
@@ -361,7 +361,7 @@
       "staff": [
         "hasta-dr-sooraj"
       ],
-      "desc": "One anti-hair-loss mesotherapy session for the scalp."
+      "desc": "Micro-injections of a treatment solution into the scalp, often chosen for hair fall. Your doctor looks for the cause of the hair fall first."
     }
   ],
   "resources": [

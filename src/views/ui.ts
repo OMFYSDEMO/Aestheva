@@ -7,7 +7,7 @@ export { inr };
 export function hash(s: string) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 function rng(seed: number) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
-const PAL: string[][] = [
+export const PAL: string[][] = [
   ['#F3E5E8','#E8CDD4','#C58F9D','#713F54'], ['#E5EBE5','#CBD8CC','#93A898','#4C6352'],
   ['#F7EEE8','#ECD8CB','#C9A08B','#7A4E3E'], ['#F1E9EF','#DFCCDC','#AC8EA9','#5E3F5C'],
   ['#FBF2F1','#F2D6D5','#D99C9E','#8B4A55'], ['#E7EEEA','#CFDDD5','#91B1A2','#3F5E54'],
@@ -54,7 +54,17 @@ const ICONS: Record<string, string> = {
   x:'<path d="M6 6l12 12M18 6 6 18"/>', chevL:'<path d="m15 5-7 7 7 7"/>', chevR:'<path d="m9 5 7 7-7 7"/>', plus:'<path d="M12 5v14M5 12h14"/>',
   filter:'<path d="M4 6h16M7 12h10M10 18h4"/>', leaf:'<path d="M5 19c0-8 5-14 15-14 0 10-6 15-14 15"/><path d="M5 19 13 11"/>', sparkle:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>',
   upload:'<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v4h16v-4"/>', card:'<rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="M3 10h18"/>', refresh:'<path d="M20 11a8 8 0 0 0-14.5-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.5 4.5L20 16M20 20v-4h-4"/>',
-  out:'<path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10"/>', settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>'
+  out:'<path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10"/>',
+  tooth:'<path d="M7.5 4C5 4 3.8 6.2 4.3 9c.4 2.2 1.3 3.6 1.7 6 .4 2.6.8 5 2.2 5 1.6 0 1.6-4.5 3.8-4.5s2.2 4.5 3.8 4.5c1.4 0 1.8-2.4 2.2-5 .4-2.4 1.3-3.8 1.7-6C20.2 6.2 19 4 16.5 4c-1.8 0-2.7 1-4.5 1S9.3 4 7.5 4z"/>',
+  drop:'<path d="M12 3.5s6 6.4 6 10.5a6 6 0 0 1-12 0c0-4.1 6-10.5 6-10.5z"/><path d="M9.5 14.5a2.5 2.5 0 0 0 2.5 2.5"/>',
+  comb:'<path d="M4 7.5h16v3.5H4z"/><path d="M6.5 11v6M9.5 11v6M12.5 11v6M15.5 11v6M18.5 11v4"/>',
+  hand:'<path d="M8 13V6.5a1.5 1.5 0 0 1 3 0V12M11 11V5a1.5 1.5 0 0 1 3 0v6M14 11V6.5a1.5 1.5 0 0 1 3 0V14c0 4-2.5 7-6 7-2.6 0-4.2-1.4-5.5-3.6L4 14.5a1.4 1.4 0 0 1 2.3-1.6L8 15"/>',
+  body:'<circle cx="12" cy="5" r="2"/><path d="M12 7.5V14M7.5 10.5 12 8.5l4.5 2M9 21l3-7 3 7"/>',
+  brush:'<path d="M14.5 3.5 20.5 9.5 12 18H6v-6z"/><path d="M6 18l-2.5 2.5M11 7l6 6"/>',
+  phone:'<path d="M5 4h3.5l2 5-2.4 1.5a11 11 0 0 0 4.9 4.9L14.5 13l5 2v3.5a1.5 1.5 0 0 1-1.5 1.5A15.5 15.5 0 0 1 3.5 5.5 1.5 1.5 0 0 1 5 4z"/>',
+  mail:'<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 6.5 8.5 7 8.5-7"/>',
+  arrowR:'<path d="M5 12h14M13 6l6 6-6 6"/>', nav:'<path d="M3.5 11 20.5 3.5 13 20.5l-2-7.5z"/>',
+  chat:'<path d="M4 5.5h16v10.5H10l-4.5 3.5V16H4z"/>', receipt:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>', settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>'
 };
 export const ic = (n: string, s = 18, extra = "") => `<svg ${extra} width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n] || ""}</svg>`;
 export const stars = (v: number, n?: number) => `<span class="stars">${ic("star", 14, 'fill="currentColor"')} ${v.toFixed(1)}${n != null ? ` <span class="muted" style="font-weight:500">(${n})</span>` : ""}<span class="sr"> out of 5 from ${n} reviews</span></span>`;
@@ -62,3 +72,31 @@ export const kindBadge = (s: { kind: string }) => s.kind === "beauty" ? `<span c
   : s.kind === "consult" ? `<span class="badge b-med">${ic("shield", 12)} Medical consultation</span>`
   : `<span class="badge b-med">${ic("shield", 12)} Medical · prior assessment required</span>`;
 export const MED_NOTE = `<div class="note n-med">${ic("info", 16)}<div><b>Medical services:</b> booking reserves time with a registered practitioner. Your suitability for any treatment is decided at assessment. A booking doesn't mean a treatment is right for you.</div></div>`;
+
+
+/** Icon and one-line introduction for each treatment category. Written to hold for any venue in the category. */
+export const CAT_META: Record<string, { icon: string; line: string }> = {
+  dental: { icon: "tooth", line: "Cleaning, fillings and brightening with a registered dentist." },
+  skin: { icon: "drop", line: "Peels and laser care, planned after a look at your skin." },
+  medaes: { icon: "sparkle", line: "Doctor-led treatments, from laser hair reduction to mesotherapy." },
+  hair: { icon: "comb", line: "Hair-fall and scalp care, starting with the cause." },
+  ayur: { icon: "leaf", line: "Abhyanga, Shirodhara and Kerala's own therapies." },
+  nails: { icon: "hand", line: "Manicures, lashes and brows by certified professionals." },
+  body: { icon: "body", line: "Physiotherapy and body care for everyday aches." },
+  groom: { icon: "brush", line: "Grooming, makeup and occasion styling." },
+};
+export const catIcon = (id: string, s = 20) => ic(CAT_META[id]?.icon ?? "sparkle", s);
+
+/** A venue's mark until it has photographs: its initials on a soft colour from the prototype palette. */
+export function venueMark(name: string, seed: string, idx?: number, size: "s" | "m" | "l" = "m") {
+  const p = PAL[(idx ?? hash(seed)) % PAL.length];
+  const ini = name.split(/\s+/).filter((w) => /^[A-Za-z]/.test(w)).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+  return `<div class="vmark vmark-${size}" style="--v0:${p[0]};--v1:${p[1]};--v2:${p[2]};--v3:${p[3]}" aria-hidden="true"><span>${esc(ini)}</span></div>`;
+}
+
+/** Turns Indian phone numbers inside plain text into tap-to-call links. Escapes everything else. */
+export function linkPhones(text: string) {
+  return esc(text).replace(/(\+91[\s-]?\d{5}[\s-]?\d{5})/g, (m) => `<a href="tel:${m.replace(/[\s-]/g, "")}">${m}</a>`);
+}
+
+export const mapsUrl = (q: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;

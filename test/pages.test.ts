@@ -9,11 +9,13 @@ describe("public pages", () => {
   it("renders the home page with categories and featured venues", async () => {
     const r = await req("GET", "/");
     expect(r.status).toBe(200);
-    expect(r.text).toContain("Considered care for");
+    expect(r.text).toContain("<em>in step</em> with your day");
     expect(r.text).toContain('href="/p/lumiere-skin-and-laser-clinic"');
     expect(r.text).toContain("Haswel Care Private Limited");
-    expect(r.text).toContain("Now open in Thiruvananthapuram");
-    expect(r.text).toContain("Popular:");
+    expect(r.text).toContain("Thiruvananthapuram · Now booking");
+    expect(r.text).toContain("Next free times");
+    expect(r.text).toContain("Try:");
+    expect(r.text).not.toContain(" 0 treatments");
   });
 
   it("searches by text, category, area and service type", async () => {
@@ -30,7 +32,7 @@ describe("public pages", () => {
   it("shows a provider with services, team, verification and booking links", async () => {
     const r = await req("GET", "/p/lumiere-skin-and-laser-clinic");
     expect(r.status).toBe(200);
-    for (const s of ["Dermatology consultation", "Dr. Meera Nair", "Clinical establishment registration checked", "/book/lumiere-skin-and-laser-clinic?service=v1", "Next available",
+    for (const s of ["Dermatology consultation", "Dr. Meera Nair", "Clinical establishment registration checked", "/book/lumiere-skin-and-laser-clinic?service=v1", "Next free time", "Get directions",
       "Registered practitioner", "MD Dermatology, Venereology &amp; Leprosy", "TCMC Reg. No. 48XXX (sample)"]) expect(r.text).toContain(s);
   });
 
@@ -62,7 +64,7 @@ describe("public pages", () => {
   });
 
   it("publishes the policy and contact pages Razorpay's website review looks for", async () => {
-    for (const p of ["/policies/cancellation", "/policies/terms", "/policies/privacy", "/contact"]) {
+    for (const p of ["/policies/cancellation", "/policies/terms", "/policies/privacy", "/contact", "/about"]) {
       const r = await req("GET", p);
       expect(r.status, p).toBe(200);
       expect(r.text, p).toContain("Haswel Care Private Limited");

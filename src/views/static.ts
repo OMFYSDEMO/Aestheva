@@ -56,23 +56,62 @@ export function privacyPage() {
 }
 
 export function contactPage() {
+  const tel = COMPANY.supportPhone.replace(/\s/g, "");
   return `<div class="page narrow prose">
     <div class="eyebrow">Contact</div><h1 class="mt8" style="font-size:44px">Talk to us</h1>
-    <p>Aestheva is operated by <b>${esc(COMPANY.legalName)}</b>.</p>
-    <div class="card mt24 col" style="gap:10px">
-      <div class="row" style="gap:10px">${ic("inbox", 18)} <span>${fact(COMPANY.supportEmail, "Support email")}</span></div>
-      <div class="row" style="gap:10px">${ic("clock", 18)} <span>${fact(COMPANY.supportPhone, "Support phone")}</span></div>
-      <div class="row" style="gap:10px;align-items:flex-start">${ic("pin", 18)} <span>${fact(COMPANY.registeredAddress, "Registered address")}</span></div>
+    <p class="lede">A question about a booking, a clinic you'd like to see on Aestheva, or something that didn't feel right? We'd like to hear it.</p>
+    <div class="contact-grid mt24">
+      <a class="contact-card" href="mailto:${esc(COMPANY.supportEmail)}">${ic("mail", 22)}<b>Email</b><span>${fact(COMPANY.supportEmail, "Support email")}</span></a>
+      ${COMPANY.supportPhone ? `<a class="contact-card" href="tel:${esc(tel)}">${ic("phone", 22)}<b>Phone</b><span>${esc(COMPANY.supportPhone)}</span></a>` : ""}
+      <div class="contact-card">${ic("pin", 22)}<b>Office</b><span>${fact(COMPANY.registeredAddress, "Registered address")}</span></div>
     </div>
-    <p class="mt16">About a booking? Include your booking reference, which starts with AE-.</p>
+    <p class="mt24">About a booking? Include your booking reference, which starts with AE-, and we can help faster.</p>
+    <p class="small muted">Aestheva is operated by <b>${esc(COMPANY.legalName)}</b>.</p>
+  </div>`;
+}
+
+export function aboutPage() {
+  return `<div class="page narrow prose story">
+    <div class="eyebrow">Our story</div>
+    <h1 class="mt8">Care should fit the rhythm of your life.</h1>
+    <p class="lede mt16">In ${esc(COMPANY.launchCity)}, a lot of good care is still booked the slow way: a phone call squeezed into a busy day, a callback that doesn't come, a price you only learn at the counter, and a name you hear for the first time in the chair.</p>
+    <p>Aestheva is our answer to that. It's one place to book skin, hair, dental and wellness care where you can see, before you commit, what a treatment costs, who will treat you and their qualifications, and the times they're genuinely free. Then you hold your appointment in about a minute, from wherever your day has taken you.</p>
+
+    <h2>Who we are</h2>
+    <p>Aestheva is run by ${esc(COMPANY.legalName)}, from Kazhakkoottam, beside Technopark Phase 3. Haswel also runs Hasta Wellness, a clinic that is one of the first venues on Aestheva. We'd rather you heard that from us: Hasta's profile says so, and it's listed under the same rules as every other venue.</p>
+
+    <h2>What you can count on</h2>
+    <div class="promises">
+      <div>${ic("receipt", 20)}<b>Prices in full</b><p>Every treatment shows its full price and how long it takes. No “call for rates”.</p></div>
+      <div>${ic("users", 20)}<b>Names, not just brands</b><p>Practitioners are named with their qualifications, and registration numbers for medical care.</p></div>
+      <div>${ic("shield", 20)}<b>Medical stays medical</b><p>Medical treatments are labelled as such and begin with your doctor checking they suit you. Beauty and wellness are labelled separately.</p></div>
+      <div>${ic("check", 20)}<b>We say what we checked</b><p>Verification lists exactly what we looked at and when. It never promises results.</p></div>
+      <div>${ic("cal", 20)}<b>Your time, respected</b><p>A deposit holds your place. Cancel ${POLICY.freeCancelHours} hours or more ahead and it comes back in full.</p></div>
+    </div>
+
+    <h2>Why ${esc(COMPANY.launchCity)} first</h2>
+    <p>Because it's home. We know the drive from Kazhakkoottam to Kowdiar at six in the evening, and how much a free Saturday afternoon is worth. Starting here lets us get to know the clinics we list and grow carefully, one neighbourhood at a time, before Kochi, Kozhikode and Thrissur.</p>
+
+    <div class="story-cta mt32">
+      <a class="btn btn-p" href="/search">Explore treatments</a>
+      <a class="btn btn-o" href="/for-practitioners">List your practice</a>
+    </div>
   </div>`;
 }
 
 export function practitionersPage() {
   return `<div class="page narrow prose">
-    <div class="eyebrow" style="color:var(--sage-d)">For practitioners &amp; clinics</div>
-    <h1 class="mt8" style="font-size:clamp(36px,5vw,52px)">Bring your practice to Aestheva</h1>
-    <p style="font-size:17px">Clients in ${esc(COMPANY.launchCity)} find you, book a time that suits your rota and pay a deposit up front. You receive deposits, less Aestheva's ${POLICY.commissionBp / 100}% commission on completed marketplace bookings, by weekly settlement to your bank account.</p>
+    <div class="eyebrow" style="color:var(--sage-d)">For clinics &amp; practitioners</div>
+    <h1 class="mt8" style="font-size:clamp(36px,5vw,52px)">Fill your diary with people who turn up.</h1>
+    <p class="lede mt16">Aestheva brings clients in ${esc(COMPANY.launchCity)} to your door having already seen your prices, your team and a time that suits your rota, with a deposit paid to hold it.</p>
+    <div class="promises mt24">
+      <div>${ic("wallet", 20)}<b>Deposits at booking</b><p>Clients pay a deposit online to hold the time, so a missed appointment isn't a lost afternoon.</p></div>
+      <div>${ic("cal", 20)}<b>Your real availability</b><p>Clients only see the hours each practitioner actually works, and two people can never take the same slot or machine.</p></div>
+      <div>${ic("users", 20)}<b>Your team, properly credited</b><p>Each practitioner has their own profile line, with qualifications and registration where they apply.</p></div>
+      <div>${ic("shield", 20)}<b>Verified by scope</b><p>We check what applies to you and say exactly what we checked, which is what careful clients look for.</p></div>
+    </div>
+    <h2>What it costs</h2>
+    <p>Aestheva takes a ${POLICY.commissionBp / 100}% commission on completed bookings made through the marketplace. Deposits are settled to your bank account weekly, less the commission.</p>
     <h2>How joining works</h2>
     <ol>
       <li><b>Apply</b> with your business details, services and team.</li>
@@ -81,6 +120,6 @@ export function practitionersPage() {
       <li><b>Go live.</b> Your profile, services and live availability appear on Aestheva.</li>
     </ol>
     <h2>Apply</h2>
-    <p>Online applications open soon. Until then, write to ${fact(COMPANY.supportEmail, "Support email")} with your venue name, area and the services you offer.</p>
+    <p>Online applications open soon. Until then, write to <a href="mailto:${esc(COMPANY.supportEmail)}?subject=${encodeURIComponent("Listing my practice on Aestheva")}">${esc(COMPANY.supportEmail)}</a> with your venue name, area and the services you offer, and we'll be in touch.</p>
   </div>`;
 }

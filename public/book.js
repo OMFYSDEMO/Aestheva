@@ -70,8 +70,12 @@
   }
   if (D.preselect) chooseService(D.preselect);
 
+  const stepTxt = document.getElementById('bk-steptxt'), stepFill = document.getElementById('bk-stepfill');
   function renderSteps() {
     [...steps.children].forEach((li, i) => { const n = i + 1; li.className = 'st ' + (F.step === n ? 'on' : F.step > n ? 'done' : ''); li.querySelector('i').textContent = F.step > n ? '✓' : n; li.toggleAttribute('aria-current', F.step === n); });
+    const total = steps.children.length;
+    if (stepTxt) stepTxt.textContent = `Step ${F.step} of ${total} · ${steps.children[F.step - 1].lastChild.textContent}`;
+    if (stepFill) stepFill.style.width = `${(F.step / total) * 100}%`;
   }
   function renderSummary() {
     const head = summary.querySelector('.divider');
@@ -99,13 +103,16 @@
     const s = F.svc;
     let html = '';
     if (F.step === 1) {
-      html = `<h2>Choose a service</h2>${D.services.some(isMed) ? `<div class="mt16">${MED_NOTE}</div>` : ''}<div class="col mt16" style="gap:10px" role="radiogroup" aria-label="Services">${D.services.map((x) => `
-        <button type="button" class="opt ${s && s.id === x.id ? 'on' : ''}" role="radio" aria-checked="${s && s.id === x.id}" data-act="svc" data-id="${esc(x.id)}"><div class="col" style="gap:4px;text-align:left"><b>${esc(x.name)}</b><div class="row wrap" style="gap:8px">${kindBadge(x)}<span class="xs muted">${x.dur} min${x.deposit ? ' · ' + inr(x.deposit) + ' deposit' : ''}</span></div></div><b>${inr(x.price)}</b></button>`).join('')}</div>${nav(!!s)}`;
+      const opt = (x) => `<button type="button" class="opt ${s && s.id === x.id ? 'on' : ''}" role="radio" aria-checked="${s && s.id === x.id}" data-act="svc" data-id="${esc(x.id)}"><div class="col" style="gap:4px;text-align:left"><b>${esc(x.name)}</b><div class="row wrap" style="gap:8px">${kindBadge(x)}<span class="xs muted">${x.dur} min${x.deposit ? ' · ' + inr(x.deposit) + ' deposit' : ''}</span></div></div><b>${inr(x.price)}</b></button>`;
+      const groups = (D.categories || []).map((c) => [c.name, D.services.filter((x) => x.cat === c.id)]).filter(([, xs]) => xs.length);
+      const known = new Set((D.categories || []).map((c) => c.id)), rest = D.services.filter((x) => !known.has(x.cat));
+      if (rest.length || !groups.length) groups.push([groups.length ? 'Other' : '', rest.length ? rest : D.services]);
+      html = `<h2>Choose a treatment</h2><p class="muted mt8">Prices are in full. ${D.services.some((x) => x.deposit) ? 'Where there\'s a deposit, it counts towards your bill.' : ''}</p>${D.services.some(isMed) ? `<div class="mt16">${MED_NOTE}</div>` : ''}<div role="radiogroup" aria-label="Treatments">${groups.map(([name, xs]) => `${name && groups.length > 1 ? `<p class="grp-h">${esc(name)}</p>` : '<div class="mt16"></div>'}<div class="col" style="gap:10px">${xs.map(opt).join('')}</div>`).join('')}</div>${nav(!!s)}`;
     }
     if (F.step === 2) {
       html = `<h2>Choose a practitioner</h2><p class="muted mt8">${esc(s.name)} is offered by ${s.staff.length} team members.</p><div class="col mt16" style="gap:10px" role="radiogroup" aria-label="Practitioner">
-        <button type="button" class="opt ${F.staff === 'any' ? 'on' : ''}" role="radio" aria-checked="${F.staff === 'any'}" data-act="staff" data-id="any"><div class="col" style="text-align:left"><b>Any available practitioner</b><div class="small muted">Most availability</div></div></button>
-        ${s.staff.map((id) => { const t = staffById[id]; return `<button type="button" class="opt ${F.staff === id ? 'on' : ''}" role="radio" aria-checked="${F.staff === id}" data-act="staff" data-id="${esc(id)}"><div class="col" style="text-align:left"><b>${esc(t.name)}</b><div class="small muted">${esc(t.role)}</div></div><span class="badge ${t.medical ? 'b-med' : 'b-beauty'}">${t.medical ? 'Registered' : 'Certified'}</span></button>`; }).join('')}</div>${nav(!!F.staff)}`;
+        <button type="button" class="opt ${F.staff === 'any' ? 'on' : ''}" role="radio" aria-checked="${F.staff === 'any'}" data-act="staff" data-id="any"><div class="col" style="text-align:left"><b>Any available practitioner</b><div class="small muted">The most times to choose from</div></div></button>
+        ${s.staff.map((id) => { const t = staffById[id]; return `<button type="button" class="opt ${F.staff === id ? 'on' : ''}" role="radio" aria-checked="${F.staff === id}" data-act="staff" data-id="${esc(id)}"><div class="col" style="text-align:left;gap:2px"><b>${esc(t.name)}</b><div class="small muted">${esc(t.role)}</div>${t.quals ? `<div class="xs soft">${esc(t.quals)}</div>` : ''}</div><span class="badge ${t.medical ? 'b-med' : 'b-beauty'}">${t.medical ? 'Registered' : 'Certified'}</span></button>`; }).join('')}</div>${nav(!!F.staff)}`;
     }
     if (F.step === 3) {
       if (!F.days) { main.innerHTML = '<h2>Pick a date &amp; time</h2><p class="muted mt16">Loading availability…</p>'; loadDays().then(render, (e) => { main.innerHTML = `<h2>Pick a date &amp; time</h2>${errBox(e.message)}${nav(false)}`; }); return; }
@@ -124,9 +131,8 @@
         <form class="col mt24" style="gap:16px" id="bk-form" novalidate>
           <div class="grid g2"><label class="f">Full name<input class="in" name="name" required autocomplete="name" value="${esc(d.name)}"></label><label class="f">Mobile number<input class="in" name="phone" required type="tel" inputmode="tel" autocomplete="tel" placeholder="98765 43210" value="${esc(d.phone)}"></label></div>
           <label class="f">Email<input class="in" type="email" name="email" required autocomplete="email" value="${esc(d.email)}"></label>
-          <label class="f">Note for the provider <span class="hint">Optional. For example accessibility needs or a preference for a female practitioner. Please don't share medical history here; your practitioner will discuss it in person.</span><textarea class="in" name="note" maxlength="240">${esc(d.note)}</textarea></label>
-          ${isMed(s) ? `${MED_NOTE}<label class="check"><input type="checkbox" name="ackMed" required ${d.ackMed ? 'checked' : ''}> I understand this booking is for ${s.kind === 'consult' ? 'a consultation' : 'an appointment'} with a registered practitioner, who will decide whether any treatment is suitable for me.</label>` : ''}
-          ${s.kind === 'treatment' ? `<label class="check"><input type="checkbox" name="ackTreat" required ${d.ackTreat ? 'checked' : ''}> I've already been assessed by this provider for this treatment, or I understand I may be moved to a consultation first.</label>` : ''}
+          <label class="f">Anything the clinic should know? <span class="hint">Optional, for example access needs. Please keep health details for your practitioner in person.</span><textarea class="in" name="note" maxlength="240">${esc(d.note)}</textarea></label>
+          ${isMed(s) ? `<label class="check consent"><input type="checkbox" name="ackMed" required ${d.ackMed ? 'checked' : ''}> <span>${s.kind === 'consult' ? 'I understand this is a consultation with a registered practitioner, who will advise me on what suits me.' : 'I understand this is a medical treatment. My practitioner will first check it suits me, and may suggest a consultation or a different treatment instead.'}</span></label>` : ''}
           <div class="note n-plain"><div>Free cancellation up to ${D.freeCancelHours} hours before. Within ${D.freeCancelHours} hours the deposit is normally kept; you can ask for a review. <a href="/policies/cancellation" target="_blank" rel="noopener">Cancellation policy</a></div></div>
           ${F.error ? errBox(F.error) : ''}
           <div class="row between mt8"><button type="button" class="btn btn-o" data-act="back">Back</button><button class="btn btn-p" type="submit">Continue to ${s.deposit ? 'deposit' : 'confirm'}</button></div>
@@ -134,9 +140,10 @@
     }
     if (F.step === 5) {
       const ok = D.gateway !== 'unavailable';
-      html = `<h2>${s.deposit ? 'Secure with a deposit' : 'Confirm your booking'}</h2>
+      html = `<h2>${s.deposit ? 'Hold your time with a deposit' : 'Confirm your booking'}</h2>
         <p class="muted mt8">${s.deposit ? `Pay ${inr(s.deposit)} now to confirm. The remaining ${inr(s.price - s.deposit)} is paid at the venue.` : 'No deposit is needed for this service.'}</p>
-        <div class="card mt16 small"><b>${esc(s.name)}</b><div class="muted">${dParts(F.date).long} · ${esc(F.slot.label)} · ${esc(staffById[F.slot.staffId].name)}</div><div class="muted">${esc(F.details.name)} · ${esc(F.details.phone)} · ${esc(F.details.email)}</div></div>
+        <div class="card mt16 review-card"><b class="serif" style="font-size:20px">${esc(s.name)}</b>
+          <dl class="kv mt12"><dt>When</dt><dd>${dParts(F.date).long} · ${esc(F.slot.label)}</dd><dt>With</dt><dd>${esc(staffById[F.slot.staffId].name)}, ${esc(staffById[F.slot.staffId].role)}</dd><dt>For</dt><dd>${esc(F.details.name)} · ${esc(F.details.phone)}<br>${esc(F.details.email)}</dd></dl></div>
         ${s.deposit ? `<p class="xs muted mt16">Payments are processed securely by Razorpay: UPI, cards, netbanking and wallets. We hold your time for ${D.holdMinutes} minutes while you pay.</p>` : ''}
         ${!ok && s.deposit ? errBox('Online payments are not available yet. Please try again later.') : ''}
         <div id="pay-mount" class="mt16"></div><div id="pay-err">${F.error ? errBox(F.error) : ''}</div>
@@ -153,7 +160,12 @@
     if (act === 'svc') { chooseService(el.dataset.id); F.step = 1; render(); return; }
     if (act === 'staff') { F.staff = el.dataset.id; F.days = null; F.date = null; F.slot = null; render(); return; }
     if (act === 'date') { F.date = el.dataset.d; F.slot = null; render(); return; }
-    if (act === 'slot') { F.slot = { min: +el.dataset.min, staffId: el.dataset.staff, label: el.dataset.label }; render(); return; }
+    if (act === 'slot') {
+      F.slot = { min: +el.dataset.min, staffId: el.dataset.staff, label: el.dataset.label }; render();
+      // On a phone the Continue button is below the fold once a time is picked; bring it into view.
+      if (window.innerWidth < 760) main.querySelector('[data-act=next]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     if (act === 'back') {
       if (created && created.status === 'held') {   // release our own hold so a changed choice doesn't collide with it
         const t = new URL(created.manageUrl).searchParams.get('t');
@@ -179,15 +191,15 @@
   });
   main.addEventListener('submit', (e) => {
     e.preventDefault();
-    const f = e.target, d = F.details;
+    const f = e.target, d = F.details, s = F.svc;
     d.name = f.name.value.trim(); d.phone = f.phone.value.trim(); d.email = f.email.value.trim(); d.note = f.note.value.trim();
-    d.ackMed = !!(f.ackMed && f.ackMed.checked); d.ackTreat = !!(f.ackTreat && f.ackTreat.checked);
+    // One consent covers both acknowledgements: its wording includes the prior-assessment requirement for treatments.
+    d.ackMed = !!(f.ackMed && f.ackMed.checked); d.ackTreat = d.ackMed && s.kind === 'treatment';
     const digits = d.phone.replace(/\D/g, '').replace(/^(91|0)(?=\d{10}$)/, '');
     if (d.name.length < 2) F.error = 'Please enter your full name.';
     else if (!/^[6-9]\d{9}$/.test(digits)) F.error = 'Please enter a 10-digit Indian mobile number.';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) F.error = 'Please enter a valid email address.';
-    else if (f.ackMed && !d.ackMed) F.error = 'Please confirm you understand this is a medical appointment.';
-    else if (f.ackTreat && !d.ackTreat) F.error = 'Please confirm the prior-assessment requirement.';
+    else if (f.ackMed && !d.ackMed) F.error = 'Please tick the box to confirm you understand this is a medical appointment.';
     else { F.error = ''; F.step = 5; }
     render(); if (!F.error) window.scrollTo(0, 0);
   });
