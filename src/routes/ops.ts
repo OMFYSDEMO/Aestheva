@@ -6,7 +6,9 @@ import { audit, hmacSha256Hex, safeEqual } from "../db";
 import { categories } from "../services/catalog";
 import { getApplication, listApplications, updateApplication, venueDraft } from "../services/applications";
 import { layout } from "../views/layout";
-import { opsDetailPage, opsListPage, opsLoginPage } from "../views/ops";
+import { opsClinicsPage, opsDetailPage, opsListPage, opsLoginPage, type ClinicLoginRow } from "../views/ops";
+import { createClinicUser, resetClinicPassword, setClinicUserActive } from "../services/clinic";
+import { HttpError } from "../db";
 import { sendTestEmail, teamInbox } from "../services/notify";
 
 type C = Context<{ Bindings: Env; Variables: { csrf: string } }>;
@@ -64,6 +66,31 @@ ops.get("/applications", async (c) => {
   const e = c.req.query("email");
   const emailResult = e === "sent" ? { ok: true, to: teamInbox(c.env) } : e === "failed" ? { ok: false, to: teamInbox(c.env), code: c.req.query("code") ?? "" } : undefined;
   return page(c, "Applications", opsListPage({ ...(await listApplications(c.env.DB, status)), status, csrf: c.get("csrf"), emailResult }));
+});
+async function clinicsPage(c: C, extra: { issued?: { email: string; password: string; what: string }; error?: string } = {}, status = 200) {
+  const db = c.env.DB;
+  const [providers, users] = await Promise.all([
+    db.prepare("SELECT id, name, status FROM providers ORDER BY status = 'live' DESC, name").all<{ id: string; name: string; status: string }>(),
+    db.prepare("SELECT id, provider_id, name, email, active, last_login_at FROM provider_users ORDER BY created_at").all<ClinicLoginRow>(),
+  ]);
+  return page(c, "Clinic logins", opsClinicsPage({ providers: providers.results, users: users.results, csrf: c.get("csrf"), ...extra }), status);
+}
+ops.get("/clinics", (c) => clinicsPage(c));
+ops.post("/clinics", async (c) => {
+  const f = await c.req.parseBody();
+  try {
+    const u = await createClinicUser(c.env.DB, String(f.provider ?? ""), String(f.name ?? ""), String(f.email ?? ""));
+    return clinicsPage(c, { issued: { email: u.email, password: u.password, what: "Login created" } });
+  } catch (e) { if (e instanceof HttpError && e.status < 500) return clinicsPage(c, { error: e.message }, e.status); throw e; }
+});
+ops.post("/clinics/:id/reset", async (c) => {
+  const r = await resetClinicPassword(c.env.DB, c.req.param("id"));
+  return clinicsPage(c, { issued: { ...r, what: "New password issued. The old one no longer works." } });
+});
+ops.post("/clinics/:id/active", async (c) => {
+  const f = await c.req.parseBody();
+  await setClinicUserActive(c.env.DB, c.req.param("id"), f.active === "1");
+  return c.redirect("/ops/clinics", 303);
 });
 ops.post("/test-email", async (c) => {
   const r = await sendTestEmail(c.env, new URL(c.req.url).origin);

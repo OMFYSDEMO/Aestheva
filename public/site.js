@@ -9,3 +9,8 @@ document.querySelectorAll('form[data-autosubmit] select, form[data-autosubmit] i
 });
 // Application form: move focus to the list of answers to fix, so screen readers announce it.
 document.getElementById('apply-errors')?.focus();
+// Clinic calendar: open at the current time, or at the first appointment, instead of the top of the day.
+(() => {
+  const cal = document.querySelector('.cal2'), mark = cal && (cal.querySelector('.cal2-now') || cal.querySelector('.cal2-appt, .cal2-on'));
+  if (mark) cal.scrollTop = Math.max(0, mark.offsetTop - 120);
+})();

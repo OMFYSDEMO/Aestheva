@@ -4,6 +4,7 @@ import { HttpError } from "./db";
 import api from "./routes/api";
 import hooks from "./routes/hooks";
 import ops from "./routes/ops";
+import clinic from "./routes/clinic";
 import site from "./routes/site";
 import { expireHolds } from "./services/bookings";
 import { paymentMode } from "./services/gateway";
@@ -54,6 +55,7 @@ app.get("/api/health", async (c) => {
 app.route("/api", api);
 app.route("/hooks", hooks);
 app.route("/ops", ops);
+app.route("/clinic", clinic);
 app.route("/", site);
 app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));
 app.notFound((c) => c.html(layout({ title: "Not found · Aestheva", appEnv: c.env.APP_ENV, noindex: true }, notFoundPage()), 404));

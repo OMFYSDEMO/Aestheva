@@ -107,6 +107,19 @@ Each new application is emailed to the team from `notifications@bookaestheva.com
 
 A failed email never loses an application: it is saved first, and the outcome is recorded in `audit_log` (`application.notified` or `application.notify_failed`).
 
+### Clinic portal
+
+Each venue's team signs in at `/clinic` to run their day on Aestheva:
+
+- **Today:** today's appointments, the next seven days, new bookings and deposits paid this month.
+- **Calendar:** a day view with a column per practitioner, their online hours, bookings and blocked time. Tapping an empty time starts a booking.
+- **Add a booking** for phone, walk-in and Sunday clients. These can be outside online hours, take no deposit and no commission, and hold the practitioner's time so online clients can't take it. A WhatsApp button sends the client a confirmation with their private booking link.
+- **Block time** for leave or breaks; online booking skips it.
+- **Bookings:** mark an appointment completed or a no-show once its time has come, or cancel it (any deposit is refunded in full).
+- **Clients, Services & hours, Payments:** client history, the venue's menu and hours (read-only; the team changes them on request), and a monthly summary of deposits, refunds, balances collected and commission.
+
+Logins are issued by the Aestheva team at `/ops/clinics`. Passwords are generated, shown once, and can be reset there; a reset or disabling a login ends its sessions. Sessions are signed with `OPS_KEY`. A clinic login only ever sees and changes its own venue.
+
 ### Adding a venue
 
 Until the operations console exists, each venue is a file in `providers/`, such as `providers/hasta-wellness.json`. Fill in every `TODO`, then:

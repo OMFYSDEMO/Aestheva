@@ -79,12 +79,13 @@ export async function loadInventory(db: D1Database, staffIds: string[], from: st
   if (!staffIds.length) return { hours, occupied, svcRes, resOccupied };
   const ph = staffIds.map(() => "?").join(",");
   const sph = serviceIds.map(() => "?").join(",") || "NULL";
-  const [h, o, sr, ro] = await db.batch([
+  const [h, o, sr, ro, bl] = await db.batch([
     db.prepare(`SELECT staff_id, dow, start_min, end_min FROM staff_hours WHERE staff_id IN (${ph})`).bind(...staffIds),
     db.prepare(`SELECT staff_id, date, slot FROM staff_slots WHERE staff_id IN (${ph}) AND date BETWEEN ? AND ?`).bind(...staffIds, from, to),
     db.prepare(`SELECT sr.service_id, sr.resource_id FROM service_resources sr JOIN resources r ON r.id = sr.resource_id WHERE r.active = 1 AND sr.service_id IN (${sph})`).bind(...serviceIds),
     db.prepare(`SELECT rs.resource_id, rs.date, rs.slot FROM resource_slots rs WHERE rs.date BETWEEN ? AND ? AND rs.resource_id IN
       (SELECT sr.resource_id FROM service_resources sr WHERE sr.service_id IN (${sph}))`).bind(from, to, ...serviceIds),
+    db.prepare(`SELECT staff_id, date, start_min, end_min FROM staff_blocks WHERE staff_id IN (${ph}) AND date BETWEEN ? AND ?`).bind(...staffIds, from, to),
   ]);
   for (const r of sr.results as { service_id: string; resource_id: string }[]) svcRes.set(r.service_id, [...(svcRes.get(r.service_id) ?? []), r.resource_id]);
   for (const r of ro.results as { resource_id: string; date: string; slot: number }[]) {
@@ -97,6 +98,12 @@ export async function loadInventory(db: D1Database, staffIds: string[], from: st
     const k = key(r.staff_id, r.date);
     if (!occupied.has(k)) occupied.set(k, new Set());
     occupied.get(k)!.add(r.slot);
+  }
+  // Time the clinic has blocked (leave, breaks) is unavailable like a booked slot.
+  for (const r of bl.results as { staff_id: string; date: string; start_min: number; end_min: number }[]) {
+    const k = key(r.staff_id, r.date);
+    if (!occupied.has(k)) occupied.set(k, new Set());
+    for (const slot of slotsFor(r.start_min, r.end_min - r.start_min)) occupied.get(k)!.add(slot);
   }
   return { hours, occupied, svcRes, resOccupied };
 }

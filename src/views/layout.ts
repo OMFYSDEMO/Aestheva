@@ -11,6 +11,7 @@ export interface PageOpts {
   scripts?: string[];         // extra script URLs, loaded deferred
   head?: string;
   ogImage?: string;           // absolute URL of a 1200x630 image
+  app?: { label: string; right?: string };   // signed-in workspace: slim header and footer, no marketing navigation
 }
 
 const FONTS = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700&display=swap";
@@ -48,17 +49,17 @@ ${o.head ?? ""}
 <a class="skip" href="#main">Skip to content</a>
 ${ribbon}
 <header class="topbar"><div class="topbar-in">
-  <a class="logo" href="/" style="text-decoration:none" aria-label="Aestheva home">AESTHEVA<small>${esc(COMPANY.launchCity.toUpperCase())}</small></a>
-  <nav class="topnav" aria-label="Main">
+  <a class="logo" href="${o.app ? "/clinic" : "/"}" style="text-decoration:none" aria-label="Aestheva home">AESTHEVA<small>${esc(o.app ? o.app.label.toUpperCase() : COMPANY.launchCity.toUpperCase())}</small></a>
+  ${o.app ? `<div class="topnav">${o.app.right ?? ""}</div>` : `<nav class="topnav" aria-label="Main">
     ${navLink("/search", "explore", "search", "Explore")}
     ${navLink("/about", "story", "leaf", "Our story")}
     ${navLink("/for-practitioners", "practitioners", "users", "For practitioners")}
-  </nav>
+  </nav>`}
 </div></header>
 <main id="main">
 ${body}
 </main>
-<footer class="footer"><div class="footer-in">
+${o.app ? `<footer class="footer app-foot"><p>Aestheva for clinics · Help: <a href="mailto:${esc(COMPANY.supportEmail)}">${esc(COMPANY.supportEmail)}</a></p></footer>` : `<footer class="footer"><div class="footer-in">
   <div class="footer-brand">
     <div class="serif" style="font-size:24px;letter-spacing:.22em;color:var(--mulberry);font-weight:600">AESTHEVA</div>
     <p class="mt12">Skin, hair and dental care in ${esc(COMPANY.launchCity)}, booked with the price, the practitioner and the time settled before you arrive.</p>
@@ -71,7 +72,7 @@ ${body}
 <div class="footer-base">
   <p>© ${new Date().getFullYear()} ${esc(COMPANY.legalName)} · <a href="mailto:${esc(COMPANY.supportEmail)}">${esc(COMPANY.supportEmail)}</a></p>
   <p class="mt8">Verification labels describe what was checked and its scope. They are not a guarantee of results.</p>
-</div></footer>
+</div></footer>`}
 <script src="/site.js" defer></script>
 ${(o.scripts ?? []).map((s) => `<script src="${esc(s)}" defer></script>`).join("\n")}
 </body>
