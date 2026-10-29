@@ -7,7 +7,7 @@ import { categories } from "../services/catalog";
 import { getApplication, listApplications, updateApplication, venueDraft } from "../services/applications";
 import { layout } from "../views/layout";
 import { opsClinicsPage, opsDetailPage, opsListPage, opsLoginPage, opsVenuePage, opsVenuesPage, type ClinicLoginRow } from "../views/ops";
-import { STAGE, addVerification, approveApplication, checklist, listing, removeVerification, setVenueStage } from "../services/onboarding";
+import { STAGE, addDocument, addVerification, approveApplication, checklist, listing, removeVerification, setVenueStage } from "../services/onboarding";
 import { photosOf } from "../views/ui";
 import { createClinicUser, emailPasswordLink, issuePasswordLink, setClinicUserActive, type ClinicUser } from "../services/clinic";
 import { HttpError } from "../db";
@@ -89,7 +89,7 @@ ops.get("/venues", async (c) => {
   const db = c.env.DB;
   const ps = (await db.prepare("SELECT id FROM providers ORDER BY created_at DESC").all<{ id: string }>()).results;
   const logins = new Map((await db.prepare("SELECT provider_id, COUNT(*) AS n FROM provider_users WHERE active = 1 GROUP BY provider_id").all<{ provider_id: string; n: number }>()).results.map((r) => [r.provider_id, r.n]));
-  const rows = await Promise.all(ps.map(async ({ id }) => { const l = await listing(db, id); return { id, name: l.p.name, type: l.p.type, area: l.p.area, stage: STAGE(l.p), percent: checklist(l).percent, submitted_at: l.p.submitted_at, logins: logins.get(id) ?? 0 }; }));
+  const rows = await Promise.all(ps.map(async ({ id }) => { const l = await listing(db, id); return { id, name: l.p.name, type: l.p.type, area: l.p.area, stage: STAGE(l.p), missing: checklist(l).steps.filter((x) => !x.done).map((x) => x.title), submitted_at: l.p.submitted_at, logins: logins.get(id) ?? 0 }; }));
   return page(c, "Venues", opsVenuesPage({ rows }));
 });
 async function venuePage(c: C, id: string, extra: { message?: string; error?: string } = {}, status = 200) {
@@ -100,7 +100,7 @@ async function venuePage(c: C, id: string, extra: { message?: string; error?: st
   const previewUrl = `/p/${l.p.slug}${l.p.status === "live" ? "" : `?preview=${encodeURIComponent(c.env.PREVIEW_KEY ?? "")}`}`;
   return page(c, l.p.name, opsVenuePage({ p: l.p, stage: STAGE(l.p), steps: ch.steps, staff: l.staff, services: l.services, photos: photosOf(l.p), docs: l.docs, verifications: ver, previewUrl, csrf: c.get("csrf"), ...extra }), status);
 }
-const STAGE_DONE: Record<string, string> = { publish: "Published. The clinic has been emailed.", send_back: "Sent back. The clinic has been emailed your note.", pause: "Paused. The clinic has been emailed." };
+const STAGE_DONE: Record<string, string> = { document: "Document uploaded.", publish: "Published. The clinic has been emailed.", send_back: "Sent back. The clinic has been emailed your note.", pause: "Paused. The clinic has been emailed." };
 ops.get("/venues/:id", (c) => venuePage(c, c.req.param("id"), { message: STAGE_DONE[c.req.query("done") ?? ""] }));
 ops.post("/venues/:id/stage", async (c) => {
   const f = await c.req.parseBody(), id = c.req.param("id"), action = String(f.action ?? "");
@@ -117,6 +117,14 @@ ops.post("/venues/:id/verifications", async (c) => {
 });
 ops.post("/venues/:id/verifications/:vid/remove", async (c) => { await removeVerification(c.env.DB, c.req.param("id"), Number(c.req.param("vid"))); return c.redirect(`/ops/venues/${encodeURIComponent(c.req.param("id"))}`, 303); });
 // Verification documents open only here, for signed-in team members, sandboxed and never cached.
+// For documents a clinic sent by email or WhatsApp: the team files them against the venue.
+ops.post("/venues/:id/documents", async (c) => {
+  const id = c.req.param("id"), f = await c.req.parseBody();
+  if (!(await c.env.DB.prepare("SELECT 1 FROM providers WHERE id = ?").bind(id).first())) throw new HttpError(404, "Unknown venue");
+  try { await addDocument(c.env, id, String(f.kind ?? ""), f.file, "ops"); }
+  catch (e) { if (e instanceof HttpError && (e.status < 500 || e.status === 503)) return venuePage(c, id, { error: e.message }, e.status); throw e; }
+  return c.redirect(`/ops/venues/${encodeURIComponent(id)}?done=document`, 303);
+});
 ops.get("/documents/:id", async (c) => {
   const d = await c.env.DB.prepare("SELECT * FROM provider_documents WHERE id = ?").bind(c.req.param("id")).first<{ r2_key: string; content_type: string; filename: string }>();
   const obj = d && c.env.MEDIA ? await c.env.MEDIA.get(d.r2_key) : null;

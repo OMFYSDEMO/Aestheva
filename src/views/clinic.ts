@@ -82,12 +82,13 @@ const apptRow = (a: Appt, today: string, showDate = false) => `<a class="appt-ro
   <span class="col" style="gap:4px;align-items:flex-end">${statusBadge(a.status)}${a.source === "direct" ? '<span class="xs soft">Booked by clinic</span>' : a.pay_status === "captured" ? `<span class="xs" style="color:var(--ok)">Deposit ${inr(a.deposit_paise)} paid</span>` : ""}</span>
 </a>`;
 
-export function todayPage(o: { providerName: string; now: { date: string; min: number }; today: Appt[]; upcoming: Appt[]; newThisWeek: number; weekCount: number; depositsThisMonth: number }) {
+export function todayPage(o: { providerName: string; now: { date: string; min: number }; today: Appt[]; upcoming: Appt[]; newThisWeek: number; weekCount: number; depositsThisMonth: number; todo?: string[] }) {
   const h = Math.floor(o.now.min / 60);
   const active = o.today.filter((a) => a.status !== "cancelled");
   const next = active.find((a) => a.status === "confirmed" && a.start_min + a.dur_min > o.now.min);
   const kpi = (l: string, v: string, d: string, feature = false) => `<div class="kpi${feature ? " feature" : ""}"><div class="l">${l}</div><div class="v">${v}</div><div class="d">${d}</div></div>`;
   return `<div class="ws-head"><div><div class="eyebrow">${fmtDate(o.now.date, true)}</div><h2 class="mt8">Good ${h < 12 ? "morning" : h < 17 ? "afternoon" : "evening"}, ${esc(o.providerName)}</h2></div><a class="btn btn-p btn-s" href="/clinic/new">${ic("plus", 15)} Add a booking</a></div>
+    ${o.todo?.length ? `<a class="note n-warn mt16" href="/clinic/setup" style="text-decoration:none;color:inherit">${ic("alert", 16)}<div><b>Finish your listing:</b> ${esc(o.todo.join(", "))}. It takes a few minutes. <u>Open your listing</u></div></a>` : ""}
     <div class="grid g4 kpis">
       ${kpi("Today", String(active.length), next ? `Next: ${fmtTime(next.start_min)}, ${esc(next.client_name)}` : active.length ? "All done for today" : "Nothing booked yet", true)}
       ${kpi("Next 7 days", String(o.weekCount), "confirmed appointments")}

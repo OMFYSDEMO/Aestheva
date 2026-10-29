@@ -111,7 +111,8 @@ clinic.get("/", async (c) => {
   // Until the listing is live, the clinic starts on its setup checklist.
   const p = await c.env.DB.prepare("SELECT status FROM providers WHERE id = ?").bind(pid(c)).first<{ status: string }>();
   if (p?.status !== "live" && c.req.query("today") !== "1") return c.redirect("/clinic/setup", 303);
-  return page(c, "Today", "today", todayPage({ providerName: c.get("providerName"), ...(await overview(c.env.DB, pid(c))) }));
+  const todo = checklist(await listing(c.env.DB, pid(c))).steps.filter((s) => !s.done).map((s) => s.title);
+  return page(c, "Today", "today", todayPage({ providerName: c.get("providerName"), ...(await overview(c.env.DB, pid(c))), todo }));
 });
 
 // ---------- set up your listing ----------

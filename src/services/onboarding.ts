@@ -65,7 +65,7 @@ export function validateDetails(f: Form) {
   if (v.tagline.length < 10 || v.tagline.length > 90) e.tagline = "One line of 10 to 90 characters, for example “Skin and hair care near Technopark”.";
   if (v.about.length < 60 || v.about.length > 700) e.about = `Two or three sentences, 60 to 700 characters (now ${v.about.length}).`;
   if (v.hours_text.length < 5 || v.hours_text.length > 120) e.hours_text = "For example “Mon–Sat · 10:00–19:00 · Sunday closed”.";
-  if (v.amenities.length > 6 || v.amenities.some((x) => x.length > 60)) e.amenities = "Up to 6 short lines.";
+  if (v.amenities.length > 6 || v.amenities.some((x) => x.length > 80)) e.amenities = "Up to 6 short lines of up to 80 characters each.";
   if (Object.keys(e).length) throw new FormError(e);
   return { ...v, phone: phone! };
 }

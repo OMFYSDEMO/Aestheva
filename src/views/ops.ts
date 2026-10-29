@@ -1,5 +1,6 @@
 import { APP_STATUSES, type ApplicationRow } from "../services/applications";
 import { esc, ic } from "./ui";
+import { DOC_KINDS } from "../services/onboarding";
 
 const STATUS_BADGE: Record<string, string> = { new: "b-blush", reviewing: "b-warn", approved: "b-ok", declined: "b-plain" };
 const badge = (s: string) => `<span class="badge ${STATUS_BADGE[s] ?? "b-plain"}">${esc(s[0].toUpperCase() + s.slice(1))}</span>`;
@@ -11,12 +12,12 @@ const STAGE_BADGE: Record<string, [string, string]> = { setup: ["b-plain", "Sett
 const stageBadge = (s: string) => `<span class="badge ${STAGE_BADGE[s]?.[0] ?? "b-plain"}">${STAGE_BADGE[s]?.[1] ?? esc(s)}</span>`;
 const inrP = (p: number) => "₹" + (p / 100).toLocaleString("en-IN");
 
-export function opsVenuesPage(d: { rows: { id: string; name: string; type: string; area: string; stage: string; percent: number; submitted_at: string | null; logins: number }[] }) {
+export function opsVenuesPage(d: { rows: { id: string; name: string; type: string; area: string; stage: string; missing: string[]; submitted_at: string | null; logins: number }[] }) {
   const order = ["review", "setup", "live", "paused"];
   const rows = [...d.rows].sort((a, b) => order.indexOf(a.stage) - order.indexOf(b.stage));
   return shell(`<h1 class="mt8" style="font-size:40px">Venues</h1><p class="small muted mt8">Listings that are ready for review come first.</p>
-    <div class="tbl-wrap mt16"><table class="tbl"><thead><tr><th>Venue</th><th>Stage</th><th>Setup</th><th>Logins</th></tr></thead><tbody>
-    ${rows.map((r) => `<tr><td><a href="/ops/venues/${esc(r.id)}"><b>${esc(r.name)}</b></a><div class="xs muted">${esc(r.type)}${r.area ? ` · ${esc(r.area)}` : ""}</div></td><td>${stageBadge(r.stage)}${r.submitted_at && r.stage === "review" ? `<div class="xs muted">since ${when(r.submitted_at)}</div>` : ""}</td><td class="small">${r.percent}%</td><td class="small">${r.logins}</td></tr>`).join("")}
+    <div class="tbl-wrap mt16"><table class="tbl"><thead><tr><th>Venue</th><th>Stage</th><th>Checklist</th><th>Logins</th></tr></thead><tbody>
+    ${rows.map((r) => `<tr><td><a href="/ops/venues/${esc(r.id)}"><b>${esc(r.name)}</b></a><div class="xs muted">${esc(r.type)}${r.area ? ` · ${esc(r.area)}` : ""}</div></td><td>${stageBadge(r.stage)}${r.submitted_at && r.stage === "review" ? `<div class="xs muted">since ${when(r.submitted_at)}</div>` : ""}</td><td class="small">${r.missing.length ? `${6 - r.missing.length} of 6 done<div class="xs muted">To finish: ${esc(r.missing.join(", "))}</div>` : "Complete"}</td><td class="small">${r.logins}</td></tr>`).join("")}
     </tbody></table></div>`);
 }
 
@@ -32,13 +33,18 @@ export function opsVenuePage(d: { p: { id: string; name: string; slug: string; t
     ${d.message ? `<div class="form-ok mt12" role="status">${esc(d.message)}</div>` : ""}${d.error ? `<div class="form-error mt12" role="alert">${esc(d.error)}</div>` : ""}
     <div class="row wrap between mt12"><div><div class="eyebrow">${esc(d.p.type)}${d.p.area ? ` · ${esc(d.p.area)}` : ""}</div><h1 class="mt8" style="font-size:38px">${esc(d.p.name)}</h1></div><div class="row" style="gap:8px">${stageBadge(d.stage)}<a class="btn btn-o btn-s" href="${esc(d.previewUrl)}" target="_blank" rel="noopener">Preview page</a></div></div>
     <div class="apply-layout mt16"><div class="col" style="gap:16px">
-      <div class="card"><h2 style="font-size:22px">Checklist</h2><ul class="ticks mt12">${d.steps.map((s) => `<li style="color:${s.done ? "inherit" : "var(--err)"}">${ic(s.done ? "check" : "x", 15)} <span><b>${esc(s.title)}</b> · ${esc(s.summary)}</span></li>`).join("")}</ul></div>
+      <div class="card"><h2 style="font-size:22px">Checklist</h2>${d.stage === "live" && d.steps.some((s) => !s.done) ? `<p class="small muted mt8">This listing is already live, so clients can still book. The clinic sees the unfinished steps under <b>Your listing</b> in their portal and can complete them there.</p>` : ""}<ul class="ticks mt12">${d.steps.map((s) => `<li style="color:${s.done ? "inherit" : "var(--err)"}">${ic(s.done ? "check" : "x", 15)} <span><b>${esc(s.title)}</b> · ${esc(s.summary)}</span></li>`).join("")}</ul></div>
       <div class="card"><h2 style="font-size:22px">Clinic</h2><dl class="kv mt12"><dt>Tagline</dt><dd>${esc(d.p.tagline)}</dd><dt>About</dt><dd>${esc(d.p.about)}</dd><dt>Address</dt><dd>${esc(d.p.address)}</dd><dt>Phone</dt><dd>${esc(d.p.phone)}</dd><dt>Hours</dt><dd>${esc(d.p.hours_text)}</dd><dt>Terms</dt><dd>${d.p.terms_accepted_at ? `Accepted ${when(d.p.terms_accepted_at)}` : "Not yet"}</dd></dl></div>
       <div class="card"><h2 style="font-size:22px">Team</h2>${d.staff.length ? `<div class="mt8">${d.staff.map((t) => `<div style="padding:8px 0;border-top:1px solid var(--line)"><b>${esc(t.name)}</b> <span class="small muted">${esc(t.role)} · ${t.medical ? "registered practitioner" : "non-medical"}</span><div class="xs muted">${esc(q(t.quals_json))}${t.registration ? ` · <b>${esc(t.registration)}</b>` : ""}</div></div>`).join("")}</div>` : '<p class="small muted mt8">None yet.</p>'}</div>
       <div class="card"><h2 style="font-size:22px">Treatments</h2>${d.services.length ? `<div class="mt8">${d.services.map((s) => `<div class="row between small" style="padding:6px 0;border-top:1px solid var(--line)"><span>${esc(s.name)} <span class="xs muted">${s.kind === "beauty" ? "beauty" : "medical"} · ${s.dur_min} min</span></span><b>${inrP(s.price_paise)}</b></div>`).join("")}</div>` : '<p class="small muted mt8">None yet.</p>'}</div>
       ${d.photos.length ? `<div class="card"><h2 style="font-size:22px">Photos</h2><div class="photo-grid mt12">${d.photos.map((ph) => `<img src="${esc(ph.src)}-400.webp" alt="${esc(ph.alt)}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px">`).join("")}</div></div>` : ""}
     </div><aside class="col" style="gap:16px">
-      <div class="card"><h2 style="font-size:22px">Documents</h2>${d.docs.length ? `<div class="mt8">${d.docs.map((x) => `<div style="padding:8px 0;border-top:1px solid var(--line)"><a href="/ops/documents/${esc(x.id)}" target="_blank" rel="noopener"><b class="small">${esc(x.kind)}</b></a><div class="xs muted">${esc(x.filename)} · ${Math.max(1, Math.round(x.size_bytes / 1024))} KB · ${when(x.created_at)}</div></div>`).join("")}</div>` : '<p class="small muted mt8">None uploaded.</p>'}</div>
+      <div class="card"><h2 style="font-size:22px">Documents</h2>${d.docs.length ? `<div class="mt8">${d.docs.map((x) => `<div style="padding:8px 0;border-top:1px solid var(--line)"><a href="/ops/documents/${esc(x.id)}" target="_blank" rel="noopener"><b class="small">${esc(x.kind)}</b></a><div class="xs muted">${esc(x.filename)} · ${Math.max(1, Math.round(x.size_bytes / 1024))} KB · ${when(x.created_at)}</div></div>`).join("")}</div>` : '<p class="small muted mt8">None uploaded.</p>'}
+        <details class="mt12"><summary class="small"><b>Upload for the clinic</b></summary><p class="xs muted mt8">For documents the clinic sent you by email or WhatsApp. Only the team can open them.</p>
+          <form method="post" action="/ops/venues/${esc(d.p.id)}/documents" enctype="multipart/form-data" class="col mt8" style="gap:8px">${tok}
+            <select class="in" name="kind" required><option value="">What is it?</option>${DOC_KINDS.map((k) => `<option>${esc(k)}</option>`).join("")}</select>
+            <input class="in" type="file" name="file" accept="application/pdf,image/jpeg,image/png" required><span class="xs muted">PDF or a clear photo, up to 8 MB. Upload one file per document.</span>
+            <button class="btn btn-o btn-s" type="submit">Upload</button></form></details></div>
       <div class="card"><h2 style="font-size:22px">What we verified</h2><p class="xs muted mt8">Shown on the public page. Add only what you've actually checked.</p>
         ${d.verifications.map((v) => `<div class="row between" style="padding:8px 0;border-top:1px solid var(--line);gap:8px"><div class="small"><b>${esc(v.label)}</b><div class="xs muted">${esc(v.scope)} · ${esc(v.checked_on)}</div></div><form method="post" action="/ops/venues/${esc(d.p.id)}/verifications/${v.id}/remove">${tok}<button class="btn btn-g btn-x" type="submit">Remove</button></form></div>`).join("")}
         <form method="post" action="/ops/venues/${esc(d.p.id)}/verifications" class="col mt12" style="gap:8px">${tok}

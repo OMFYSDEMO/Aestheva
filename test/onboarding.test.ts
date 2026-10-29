@@ -181,6 +181,30 @@ describe("self-serve onboarding, from application to a live listing", () => {
     expect((await sql("SELECT status FROM bookings WHERE ref = ?", b.json.ref))[0].status).toBe("confirmed");
   });
 
+  it("a venue that went live before the checklist shows what's left, and the team can file documents for it", async () => {
+    const list = await send("GET", "/ops/venues", undefined, { cookie: ops });
+    expect(list.text).toMatch(/Lumière Skin &amp; Laser Clinic[\s\S]*?To finish: Your clinic, Photos, Verification documents, Terms/);
+    const page = await send("GET", "/ops/venues/p1", undefined, { cookie: ops });
+    expect(page.text).toContain("This listing is already live");
+    const oc = csrfIn(page.text);
+    const bad = new FormData(); bad.append("csrf", oc); bad.append("kind", "Practitioner council registration"); bad.append("file", new File(["not a pdf"], "x.txt"));
+    expect((await send("POST", "/ops/venues/p1/documents", bad, { cookie: ops })).text).toContain("Please upload a PDF or a photo");
+    const fd = new FormData(); fd.append("csrf", oc); fd.append("kind", "Practitioner council registration"); fd.append("file", new File(["%PDF-1.4 tcmc"], "tcmc.pdf", { type: "application/pdf" }));
+    const up = await send("POST", "/ops/venues/p1/documents", fd, { cookie: ops });
+    expect(up.status).toBe(303);
+    expect(await sql("SELECT kind, filename, uploaded_by FROM provider_documents WHERE provider_id = 'p1'")).toEqual([{ kind: "Practitioner council registration", filename: "tcmc.pdf", uploaded_by: "ops" }]);
+    const after = await send("GET", "/ops/venues/p1?done=document", undefined, { cookie: ops });
+    expect(after.text).toContain("Document uploaded."); expect(after.text).toContain("tcmc.pdf");
+    const noCsrf = new FormData(); noCsrf.append("kind", "Other"); noCsrf.append("file", new File(["%PDF-1.4"], "y.pdf"));
+    expect((await send("POST", "/ops/venues/p1/documents", noCsrf, { cookie: ops })).status).toBe(403);
+  });
+
+  it("accepts the longer notes that existing listings already have", async () => {
+    const [p] = await sql("SELECT name, type, area, address, tagline, about, hours_text FROM providers WHERE id = ?", pid);
+    const r = await send("POST", "/clinic/setup/details", { csrf, ...p, phone: "9895077777", amenities: "Fibe healthcare finance enquiries for eligible dental treatment" }, { cookie: clinic });
+    expect(r.status).toBe(303);
+  });
+
   it("never lets one clinic change another's listing", async () => {
     const [other] = await sql("SELECT id FROM staff WHERE provider_id = 'p1' LIMIT 1");
     expect((await send("POST", `/clinic/setup/team/${other.id}`, { csrf, name: "Hijack", role: "Therapist", medical: "no", day2: "on", from2: "600", to2: "720" }, { cookie: clinic })).status).toBe(404);
