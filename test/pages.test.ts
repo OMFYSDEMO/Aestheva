@@ -54,6 +54,25 @@ describe("public pages", () => {
     expect((await req("GET", "/p/lumiere-skin-and-laser-clinic")).text).not.toContain('id="join-pop"');   // never while someone is choosing where to book
   });
 
+  it("describes pages for search engines with structured data, canonical links and a sitemap", async () => {
+    const ld = (html: string) => [...html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)].map((m) => JSON.parse(m[1]));
+    const home = await req("GET", "/");
+    expect(ld(home.text).map((x) => x["@type"])).toEqual(["Organization", "WebSite"]);
+    expect(ld(home.text)[1].potentialAction.target.urlTemplate).toMatch(/\/search\?q=\{search_term_string\}$/);
+    expect(home.text).toContain('rel="icon" href="/favicon.ico"'); expect(home.text).toContain("/brand/og-default.jpg");
+    const venue = await req("GET", "/p/lumiere-skin-and-laser-clinic");
+    const [biz, crumbs] = ld(venue.text);
+    expect(biz["@type"]).toContain("MedicalClinic"); expect(biz.address.addressCountry).toBe("IN"); expect(biz.makesOffer.length).toBeGreaterThan(0);
+    expect(biz.makesOffer[0]).toMatchObject({ "@type": "Offer", priceCurrency: "INR" });
+    expect(crumbs["@type"]).toBe("BreadcrumbList");
+    const cat = await req("GET", "/search?cat=dental");
+    expect(cat.text).toMatch(/rel="canonical" href="[^"]*\/search\?cat=dental"/); expect(cat.text).toContain("Smile &amp; dental in Trivandrum · Book online");
+    expect((await req("GET", "/search?cat=dental&sort=price")).text).toMatch(/rel="canonical" href="[^"]*\/search"/);
+    expect((await req("GET", "/search?cat=tattoo")).text).toContain('content="noindex"');   // nothing to book there yet
+    const map = await req("GET", "/sitemap.xml");
+    for (const u of ["/search?cat=dental", "/p/lumiere-skin-and-laser-clinic", "/policies/privacy"]) expect(map.text).toContain(u);
+  });
+
   it("understands everyday words for treatments", async () => {
     const [dental] = await sql("SELECT name FROM services WHERE provider_id = 'p7' AND name LIKE '%Scaling%' LIMIT 1");
     if (dental) expect((await req("GET", "/search?q=teeth+cleaning")).text).toContain("Veda Smile Studio");

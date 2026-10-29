@@ -104,7 +104,7 @@
     const s = F.svc;
     let html = '';
     if (F.step === 1) {
-      const opt = (x) => `<button type="button" class="opt ${s && s.id === x.id ? 'on' : ''}" role="radio" aria-checked="${s && s.id === x.id}" data-act="svc" data-id="${esc(x.id)}"><div class="col" style="gap:4px;text-align:left"><b>${esc(x.name)}</b><div class="row wrap" style="gap:8px">${kindBadge(x)}<span class="xs muted">${x.dur} min${x.deposit ? ' · ' + inr(x.deposit) + ' deposit' : ''}</span></div></div><b>${inr(x.price)}</b></button>`;
+      const opt = (x) => `<button type="button" class="opt ${s && s.id === x.id ? 'on' : ''}" role="radio" aria-checked="${!!(s && s.id === x.id)}" data-act="svc" data-id="${esc(x.id)}"><div class="col" style="gap:4px;text-align:left"><b>${esc(x.name)}</b><div class="row wrap" style="gap:8px">${kindBadge(x)}<span class="xs muted">${x.dur} min${x.deposit ? ' · ' + inr(x.deposit) + ' deposit' : ''}</span></div></div><b>${inr(x.price)}</b></button>`;
       const groups = (D.categories || []).map((c) => [c.name, D.services.filter((x) => x.cat === c.id)]).filter(([, xs]) => xs.length);
       const known = new Set((D.categories || []).map((c) => c.id)), rest = D.services.filter((x) => !known.has(x.cat));
       if (rest.length || !groups.length) groups.push([groups.length ? 'Other' : '', rest.length ? rest : D.services]);

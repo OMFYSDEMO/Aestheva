@@ -1,6 +1,8 @@
 import { Hono, type Context } from "hono";
 import type { Env } from "../env";
-import { AREAS, COMPANY, WAITLIST_CITIES } from "../config";
+import { AREAS, COMPANY, WAITLIST_CITIES, typeLabel } from "../config";
+import { breadcrumbs, business, itemList, organisation, website } from "../views/seo";
+import { CAT_META, photosOf } from "../views/ui";
 import { HttpError, isUniqueViolation } from "../db";
 import { nowIst } from "../domain/time";
 import { inServiceArea, km, locality, parseNear } from "../domain/geo";
@@ -8,7 +10,6 @@ import { categories, liveProviders, liveServices, nextAvailable, providerBySlug,
 import { authorisedBooking, bookingView, cancelByClient, cancellationTerms, type PaymentRow } from "../services/bookings";
 import { gatewayFor, paymentMode, previewAllowed } from "../services/gateway";
 import { layout, type PageOpts } from "../views/layout";
-import { photosOf } from "../views/ui";
 import { homePage, matchServices, notFoundPage, providerPage, searchPage, type SearchQuery } from "../views/pages";
 import { bookPage, managePage } from "../views/booking";
 import { applyPage, applyThanksPage } from "../views/apply";
@@ -18,6 +19,7 @@ import { aboutPage, cancellationPage, contactPage, practitionersPage, privacyPag
 
 type C = Context<{ Bindings: Env }>;
 const site = new Hono<{ Bindings: Env }>();
+const inrPlain = (paise: number) => `₹${Math.round(paise / 100).toLocaleString("en-IN")}`;
 const base = (c: C) => c.env.SITE_URL || new URL(c.req.url).origin;
 const page = (c: C, o: Omit<PageOpts, "appEnv">, body: string, status = 200) =>
   c.html(layout({ ...o, appEnv: c.env.APP_ENV }, body), status as 200);
@@ -28,9 +30,9 @@ site.get("/", async (c) => {
   const next = await nextAvailable(db, services);
   const joined = c.req.query("joined");
   return page(c, {
-    title: "Book skin, dental & hair care in Trivandrum · Aestheva",
-    description: "Find clinics near you in Thiruvananthapuram (Trivandrum), from Technopark to Kovalam. See full prices and verified doctors, and book a free time in a minute.",
-    canonical: base(c) + "/", joinPromo: true,
+    title: "Book beauty, wellness & care in Trivandrum · Aestheva",
+    description: "Find salons, clinics, studios and independent beauty professionals near you in Thiruvananthapuram. See full prices and real free times, and book in a minute.",
+    canonical: base(c) + "/", joinPromo: true, jsonLd: [organisation(base(c)), website(base(c))],
   }, homePage({ providers, services, categories: cats, ratings: rt, next, today, joined: joined && (WAITLIST_CITIES as readonly string[]).includes(joined) ? joined : undefined }));
 });
 
@@ -62,10 +64,15 @@ site.get("/search", async (c) => {
   else if (f.sort === "rating") results.sort((a, b) => (rt.get(b.p.id)?.avg ?? 0) - (rt.get(a.p.id)?.avg ?? 0));
   else if (f.sort === "near") results.sort((a, b) => (a.km ?? 999) - (b.km ?? 999));
   else results.sort((a, b) => score(b.p.id) - score(a.p.id));
+  // A plain category listing ("Nails, lashes & brows") is a page worth finding on Google; filtered or typed searches are not.
+  const catPage = !!f.cat && !f.q && !f.area && !f.near && f.kind === "all" && f.sort === "rec";
+  const b = base(c), where = f.area || "Trivandrum";
   return page(c, {
-    title: `${f.q ? f.q + " · " : f.cat ? catName(f.cat) + " · " : ""}${f.area || COMPANY.launchCity} · Aestheva`,
-    description: `Book ${f.cat ? catName(f.cat).toLowerCase() : "aesthetic and wellness services"} in ${f.area || COMPANY.launchCity} with verified providers.`,
-    canonical: base(c) + "/search", nav: "explore", noindex: !!f.q, joinPromo: true,
+    title: catPage ? `${catName(f.cat)} in Trivandrum · Book online · Aestheva` : `${f.q ? f.q + " · " : f.cat ? catName(f.cat) + " · " : ""}${where} · Aestheva`,
+    description: catPage ? `${CAT_META[f.cat]?.line ?? ""} Compare full prices and book ${catName(f.cat).toLowerCase()} in Thiruvananthapuram (Trivandrum) online.`.trim()
+      : `Find and book ${f.cat ? catName(f.cat).toLowerCase() : "beauty, wellness and care"} near ${where}: salons, clinics, studios and independent professionals, with full prices.`,
+    canonical: catPage ? `${b}/search?cat=${encodeURIComponent(f.cat)}` : `${b}/search`, nav: "explore", noindex: !!f.q || (catPage && !results.length), joinPromo: true,
+    jsonLd: catPage && results.length ? [breadcrumbs(b, [["Home", "/"], [catName(f.cat), `/search?cat=${encodeURIComponent(f.cat)}`]]), itemList(b, results.map((r) => r.p))] : undefined,
   }, searchPage({ f, results, outside: !f.area && !!near && !inServiceArea(near), categories: providers.length ? cats.filter((x) => services.some((s) => s.cat === x.id)) : cats, ratings: rt, next, today, anyLive: providers.length > 0 }));
 });
 
@@ -77,9 +84,10 @@ site.get("/p/:slug", async (c) => {
   if (!d) return page(c, { title: "Not found · Aestheva", noindex: true }, notFoundPage("We couldn't find that venue."), 404);
   const [cats, next] = await Promise.all([categories(db), nextAvailable(db, d.services)]);
   return page(c, {
-    title: `${d.provider.name} · ${d.provider.area}, ${d.provider.city} · Aestheva`,
-    description: `${d.provider.tagline}. ${d.provider.type} in ${d.provider.area}, ${d.provider.city}. See services, prices and live availability, and book online.`,
+    title: `${d.provider.name}, ${d.provider.area} · Prices & booking · Aestheva`,
+    description: `${d.provider.tagline}. ${typeLabel(d.provider.type)} in ${d.provider.area}, ${d.provider.city}: ${d.services.length ? `${d.services.length} services from ${inrPlain(Math.min(...d.services.map((s) => s.price_paise)))}, with live free times. Book online.` : "see services, prices and free times."}`,
     canonical: `${base(c)}/p/${d.provider.slug}`, nav: "explore", noindex: d.provider.status !== "live",
+    jsonLd: d.provider.status === "live" ? [business(base(c), d), breadcrumbs(base(c), [["Home", "/"], [d.provider.area, `/search?area=${encodeURIComponent(d.provider.area)}`], [d.provider.name, `/p/${d.provider.slug}`]])] : undefined,
     ogImage: photosOf(d.provider)[0] ? `${base(c)}${photosOf(d.provider)[0].src}-og.jpg` : undefined,
   }, providerPage({ ...d, categories: cats, next, today: nowIst().date, preview }));
 });
@@ -139,7 +147,7 @@ site.get("/policies/cancellation", (c) => page(c, { title: "Cancellation & refun
 site.get("/policies/terms", (c) => page(c, { title: "Terms of use · Aestheva", canonical: base(c) + "/policies/terms" }, termsPage()));
 site.get("/policies/privacy", (c) => page(c, { title: "Privacy · Aestheva", canonical: base(c) + "/policies/privacy" }, privacyPage()));
 site.get("/contact", (c) => page(c, { title: "Contact · Aestheva", canonical: base(c) + "/contact" }, contactPage()));
-site.get("/about", (c) => page(c, { title: "Our story · Aestheva", description: `Why we built Aestheva, who runs it, and what you can count on when you book care in ${COMPANY.launchCity}.`, canonical: base(c) + "/about", nav: "story", joinPromo: true }, aboutPage()));
+site.get("/about", (c) => page(c, { jsonLd: [organisation(base(c))], title: "Our story · Aestheva", description: `Why we built Aestheva, who runs it, and what you can count on when you book care in ${COMPANY.launchCity}.`, canonical: base(c) + "/about", nav: "story", joinPromo: true }, aboutPage()));
 site.get("/for-practitioners", async (c) => page(c, { title: "List your business · Aestheva", description: `Salons, studios, clinics and independent professionals: list your beauty, wellness or care business on Aestheva in ${COMPANY.launchCity}.`, canonical: base(c) + "/for-practitioners", nav: "practitioners" }, practitionersPage(await categories(c.env.DB))));
 
 const applyMeta = (c: C) => ({ title: "Apply to join · Aestheva", description: `Apply to list your salon, studio, clinic or independent business on Aestheva in ${COMPANY.launchCity}.`, canonical: base(c) + "/for-practitioners/apply", nav: "practitioners" as const });
@@ -166,9 +174,13 @@ site.post("/for-practitioners/apply", async (c) => {
 
 site.get("/robots.txt", (c) => c.text(c.env.APP_ENV === "production" ? `User-agent: *\nAllow: /\nDisallow: /book/\nDisallow: /booking/\nDisallow: /ops/\nDisallow: /clinic/\nSitemap: ${base(c)}/sitemap.xml\n` : "User-agent: *\nDisallow: /\n"));
 site.get("/sitemap.xml", async (c) => {
-  const ps = await liveProviders(c.env.DB), b = base(c);
-  const urls = ["/", "/search", "/about", "/for-practitioners", "/for-practitioners/apply", "/policies/cancellation", "/contact", ...ps.map((p) => `/p/${p.slug}`)];
-  return c.body(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map((u) => `<url><loc>${b}${u}</loc></url>`).join("")}</urlset>`, 200, { "content-type": "application/xml" });
+  const db = c.env.DB, b = base(c);
+  const [ps, svcs] = await Promise.all([liveProviders(db), liveServices(db)]);
+  const cats = [...new Set(svcs.map((s) => s.cat))];
+  const xmlEsc = (u: string) => u.replace(/&/g, "&amp;");
+  const urls: [string, string][] = [["/", "daily"], ["/search", "daily"], ...cats.map((id): [string, string] => [`/search?cat=${id}`, "weekly"]), ...ps.map((p): [string, string] => [`/p/${p.slug}`, "daily"]),
+    ["/about", "monthly"], ["/for-practitioners", "monthly"], ["/for-practitioners/apply", "monthly"], ["/contact", "monthly"], ["/policies/cancellation", "yearly"], ["/policies/terms", "yearly"], ["/policies/privacy", "yearly"]];
+  return c.body(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map(([u, f]) => `<url><loc>${xmlEsc(b + u)}</loc><changefreq>${f}</changefreq></url>`).join("")}</urlset>`, 200, { "content-type": "application/xml" });
 });
 
 export { page, notFoundPage };

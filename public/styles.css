@@ -1,7 +1,7 @@
 :root{
   /* Fresh and bright, in Aestheva's berry family: white page, near-black type, berry actions, a coral-rose accent. */
   --porcelain:#FFFFFF; --canvas:#FBF5F7; --blush:#FCE8EE; --rose:#E0577A; --mulberry:#8A2E5C; --sage:#E6F1EA; --charcoal:#1D1A1C;
-  --mulberry-d:#6E2149; --mulberry-l:#FAEEF3; --line:#EFE7EA; --line-2:#E2D6DB; --muted:#5F565B; --soft:#857A80;
+  --mulberry-d:#6E2149; --mulberry-l:#FAEEF3; --line:#EFE7EA; --line-2:#E2D6DB; --muted:#5F565B; --soft:#6F6469;
   --sage-d:#2F6B4F; --sage-m:#B5D3C1; --white:#fff; --warn:#9A5B12; --warn-bg:#FDF2E4; --err:#B4233A; --err-bg:#FDECEE;
   --ok:#2F6B4F; --ok-bg:#E6F3EB; --gold:#C89A3E;
   --serif:'Cormorant Garamond', Georgia, serif; --sans:'Manrope', system-ui, -apple-system, Segoe UI, sans-serif; --display:'Outfit', var(--sans); --band:#F8F2EF; --ink-bg:#26141F;
@@ -139,7 +139,7 @@ input[type=range]{accent-color:var(--mulberry);width:100%}
 .rcard .art{min-height:100%}
 .results-layout{display:grid;grid-template-columns:270px 1fr;gap:28px;align-items:start}
 .filters{position:sticky;top:96px;display:flex;flex-direction:column;gap:22px}
-.filters h4{font-family:var(--sans);font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:10px;color:var(--muted)}
+.filters .filter-h{font-family:var(--sans);font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:10px;color:var(--muted)}
 .filters .check{padding:3px 0}
 
 /* Provider page */
@@ -284,7 +284,7 @@ input[type=range]{accent-color:var(--mulberry);width:100%}
   .modes button{flex:1;padding:7px 6px}
   .topnav{margin-left:auto}
   .topnav button{padding:7px 8px;font-size:13px}
-  .topnav .lbl{display:none}
+  .topnav .lbl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   .page{padding:22px 16px 80px}
   .g2,.g3,.g4{grid-template-columns:1fr}
   .g4.kpis,.g3.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -718,3 +718,5 @@ html{overflow-x:clip}
 @media (prefers-reduced-motion:reduce){.join-pop{transition:none}}
 @media (max-width:1060px){.who-grid{grid-template-columns:1fr 1fr}}
 @media (max-width:760px){.who-grid{grid-template-columns:1fr}.join-pop{right:12px;left:12px;bottom:12px;width:auto}}
+.filter-h{font-family:var(--sans);font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--charcoal)}
+#bk-main{min-height:70vh}

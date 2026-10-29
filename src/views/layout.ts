@@ -13,9 +13,14 @@ export interface PageOpts {
   ogImage?: string;           // absolute URL of a 1200x630 image
   app?: { label: string; right?: string };   // signed-in workspace: slim header and footer, no marketing navigation
   joinPromo?: boolean;        // invite businesses to join with a small, dismissible pop-up
+  jsonLd?: object[];          // schema.org structured data for search engines
 }
 
-const FONTS = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap";
+// Body and heading fonts, plus the serif only for the letters of the wordmark (a few hundred bytes).
+const FONTS = "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Outfit:wght@600;700&display=swap";
+const LOGO_FONT = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&text=AESTHV&display=swap";
+/** JSON-LD, with "<" escaped so a name can never close the script tag. */
+const ld = (o: object) => `<script type="application/ld+json">${JSON.stringify(o).replace(/</g, "\\u003c")}</script>`;
 
 export function layout(o: PageOpts, body: string): string {
   const ribbon = o.appEnv === "production" ? "" :
@@ -38,19 +43,30 @@ ${o.noindex || o.appEnv !== "production" ? '<meta name="robots" content="noindex
 <meta property="og:description" content="${esc(desc)}">
 ${o.canonical ? `<meta property="og:url" content="${esc(o.canonical)}">` : ""}
 <meta property="og:locale" content="en_IN">
-${o.ogImage ? `<meta property="og:image" content="${esc(o.ogImage)}">\n<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n<meta name="twitter:card" content="summary_large_image">` : ""}
-<meta name="theme-color" content="#713F54">
+<meta property="og:image" content="${esc(o.ogImage ?? (o.canonical ? new URL("/brand/og-default.jpg", o.canonical).href : "/brand/og-default.jpg"))}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(o.title)}">
+<meta name="twitter:description" content="${esc(desc)}">
+<meta name="theme-color" content="#8A2E5C">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="${FONTS}" rel="stylesheet">
+<link rel="stylesheet" href="${LOGO_FONT}" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="${FONTS}" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="${LOGO_FONT}"><link rel="stylesheet" href="${FONTS}"></noscript>
 <link rel="stylesheet" href="/styles.css">
+${(o.jsonLd ?? []).map(ld).join("\n")}
 ${o.head ?? ""}
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 ${ribbon}
 <header class="topbar"><div class="topbar-in">
-  <a class="logo" href="${o.app ? "/clinic" : "/"}" style="text-decoration:none" aria-label="Aestheva home">AESTHEVA<small>${esc(o.app ? o.app.label.toUpperCase() : COMPANY.launchCity.toUpperCase())}</small></a>
+  <a class="logo" href="${o.app ? "/clinic" : "/"}" style="text-decoration:none">AESTHEVA<small>${esc(o.app ? o.app.label.toUpperCase() : COMPANY.launchCity.toUpperCase())}</small></a>
   ${o.app ? `<div class="topnav">${o.app.right ?? ""}</div>` : `<nav class="topnav" aria-label="Main">
     ${navLink("/search", "explore", "search", "Explore")}
     ${navLink("/about", "story", "leaf", "Our story")}
