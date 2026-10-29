@@ -74,8 +74,9 @@ export async function createBooking(env: Env, input: NewBooking, now: Date = new
   if (!candidates.length) throw new HttpError(400, "That practitioner doesn't offer this service");
 
   const ist: IstNow = nowIst(now);
-  const inv = await loadInventory(db, candidates, input.date, input.date);
-  const free = candidates.filter((id) => canStart(inv, id, input.date, input.start, service.dur_min, ist));
+  const inv = await loadInventory(db, candidates, input.date, input.date, [service.id]);
+  const free = candidates.filter((id) => canStart(inv, id, input.date, input.start, service.dur_min, ist, service.id));
+  const resources = inv.svcRes.get(service.id) ?? [];
   if (!free.length) throw new HttpError(409, "That time is no longer available. Please choose another.");
 
   // Client identity is the mobile number; name and email follow the latest booking.
@@ -105,12 +106,15 @@ export async function createBooking(env: Env, input: NewBooking, now: Date = new
             needsDeposit ? null : ts, ts, ts),
         ...slotsFor(input.start, service.dur_min).map((slot) =>
           db.prepare("INSERT INTO staff_slots (staff_id, date, slot, booking_id) VALUES (?, ?, ?, ?)").bind(staffId, input.date, slot, id)),
+        ...resources.flatMap((r) => slotsFor(input.start, service.dur_min).map((slot) =>
+          db.prepare("INSERT INTO resource_slots (resource_id, date, slot, booking_id) VALUES (?, ?, ?, ?)").bind(r, input.date, slot, id))),
         audit(db, `client:${client.id}`, needsDeposit ? "booking.held" : "booking.confirmed", "booking", id, { ref, staffId, date: input.date, start: input.start }),
       ];
       try { await db.batch(stmts); }
       catch (e) {
         if (isUniqueViolation(e, "bookings.ref")) continue;          // reference collision: new ref
         if (isUniqueViolation(e, "staff_slots")) break;              // slot just taken: next practitioner
+        if (isUniqueViolation(e, "resource_slots")) throw new HttpError(409, "That time was just taken. Please choose another.");
         throw e;
       }
       const booking = (await db.prepare("SELECT * FROM bookings WHERE id = ?").bind(id).first<BookingRow>())!;
@@ -138,6 +142,7 @@ async function releaseSlots(db: D1Database, bookingId: string, status: "expired"
   const ts = nowIso();
   await db.batch([
     db.prepare("DELETE FROM staff_slots WHERE booking_id = ?").bind(bookingId),
+    db.prepare("DELETE FROM resource_slots WHERE booking_id = ?").bind(bookingId),
     db.prepare(`UPDATE bookings SET status = ?, hold_expires_at = NULL, updated_at = ?,
         cancelled_at = CASE WHEN ? = 'cancelled' THEN ? ELSE cancelled_at END,
         cancelled_by = CASE WHEN ? = 'cancelled' THEN ? ELSE cancelled_by END,
@@ -175,17 +180,21 @@ export async function applyCapturedPayment(env: Env, p: { orderId: string; payme
   }
 
   if (booking.status === "expired") {
+    const resources = (await db.prepare("SELECT sr.resource_id FROM service_resources sr JOIN resources r ON r.id = sr.resource_id WHERE r.active = 1 AND sr.service_id = ?")
+      .bind(booking.service_id).all<{ resource_id: string }>()).results.map((r) => r.resource_id);
     try {
       await db.batch([
         markCaptured,
         ...slotsFor(booking.start_min, booking.dur_min).map((slot) =>
           db.prepare("INSERT INTO staff_slots (staff_id, date, slot, booking_id) VALUES (?, ?, ?, ?)").bind(booking.staff_id, booking.date, slot, booking.id)),
+        ...resources.flatMap((r) => slotsFor(booking.start_min, booking.dur_min).map((slot) =>
+          db.prepare("INSERT INTO resource_slots (resource_id, date, slot, booking_id) VALUES (?, ?, ?, ?)").bind(r, booking.date, slot, booking.id))),
         db.prepare("UPDATE bookings SET status = 'confirmed', confirmed_at = ?, cancel_reason = NULL, updated_at = ? WHERE id = ? AND status = 'expired'").bind(ts, ts, booking.id),
         audit(db, actor, "booking.confirmed_after_hold", "booking", booking.id, { paymentId: p.paymentId }),
       ]);
       return { outcome: "confirmed" as const, bookingId: booking.id };
     } catch (e) {
-      if (!isUniqueViolation(e, "staff_slots")) throw e;
+      if (!isUniqueViolation(e, "staff_slots") && !isUniqueViolation(e, "resource_slots")) throw e;
     }
   }
 

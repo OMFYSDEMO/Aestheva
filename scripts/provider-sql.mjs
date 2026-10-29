@@ -34,6 +34,8 @@ need(TYPES.includes(v.type), `type: one of ${TYPES.join(', ')}`);
 need(AREAS.includes(v.area), `area: one of ${AREAS.join(', ')}`);
 need(['draft', 'live', 'paused'].includes(v.status), 'status: draft, live or paused');
 const staffIds = new Set((v.staff ?? []).map((s) => s.id));
+const resourceIds = new Set((v.resources ?? []).map((r) => r.id));
+for (const r of v.resources ?? []) need(/^[a-z0-9-]+$/.test(r.id ?? '') && r.name, `resource ${r.id}: needs an id (lowercase, hyphens) and a name`);
 const toMin = (t) => { const m = /^(\d{1,2}):(\d{2})$/.exec(t); return m ? +m[1] * 60 + +m[2] : NaN; };
 const rota = (s) => {
   const out = new Map();
@@ -53,6 +55,7 @@ for (const s of v.services ?? []) {
   for (const k of ['dur', 'price', 'deposit']) if (!/\bTODO\b/.test(String(s[k]))) need(Number.isInteger(s[k]) && s[k] >= 0, `service ${s.id}: ${k} must be a whole number`);
   if (Number.isInteger(s.price) && Number.isInteger(s.deposit)) need(s.deposit <= s.price, `service ${s.id}: deposit is more than the price`);
   need((s.staff ?? []).length && s.staff.every((x) => staffIds.has(x)), `service ${s.id}: staff must list ids from "staff"`);
+  need((s.resources ?? []).every((x) => resourceIds.has(x)), `service ${s.id}: resources must list ids from "resources"`);
 }
 need((v.services ?? []).length > 0, 'services: at least one');
 
@@ -78,6 +81,9 @@ ON CONFLICT(id) DO UPDATE SET name=excluded.name, role=excluded.role, medical=ex
   sql.push(`DELETE FROM staff_hours WHERE staff_id = ${q(s.id)};`);
   for (const [dow, [a, b]] of rotas.get(s.id)) sql.push(`INSERT INTO staff_hours (staff_id, dow, start_min, end_min) VALUES (${q(s.id)}, ${dow}, ${a}, ${b});`);
 }
+for (const r of v.resources ?? []) sql.push(`INSERT INTO resources (id, provider_id, name, active) VALUES (${[r.id, v.id, r.name].map(q).join(', ')}, 1)
+ON CONFLICT(id) DO UPDATE SET name=excluded.name, active=1;`);
+sql.push(`UPDATE resources SET active = 0 WHERE provider_id = ${q(v.id)}${(v.resources ?? []).length ? ` AND id NOT IN (${v.resources.map((r) => q(r.id)).join(', ')})` : ''};`);
 sql.push(`UPDATE staff SET active = 0 WHERE provider_id = ${q(v.id)} AND id NOT IN (${v.staff.map((s) => q(s.id)).join(', ')});`);
 v.services.forEach((s, i) => {
   sql.push(`INSERT INTO services (id, provider_id, name, cat, kind, dur_min, price_paise, deposit_paise, description, active, sort)
@@ -88,5 +94,7 @@ ON CONFLICT(id) DO UPDATE SET name=excluded.name, cat=excluded.cat, kind=exclude
 sql.push(`UPDATE services SET active = 0 WHERE provider_id = ${q(v.id)} AND id NOT IN (${v.services.map((s) => q(s.id)).join(', ')});`);
 sql.push(`DELETE FROM service_staff WHERE service_id IN (SELECT id FROM services WHERE provider_id = ${q(v.id)});`);
 for (const s of v.services) for (const t of s.staff) sql.push(`INSERT INTO service_staff (service_id, staff_id) VALUES (${q(s.id)}, ${q(t)});`);
+sql.push(`DELETE FROM service_resources WHERE service_id IN (SELECT id FROM services WHERE provider_id = ${q(v.id)});`);
+for (const s of v.services) for (const r of s.resources ?? []) sql.push(`INSERT INTO service_resources (service_id, resource_id) VALUES (${q(s.id)}, ${q(r)});`);
 sql.push(`INSERT INTO audit_log (actor, action, entity, entity_id, data_json) VALUES ('ops:provider-sql', 'provider.loaded', 'provider', ${q(v.id)}, ${q(JSON.stringify({ file, status: v.status, services: v.services.length, staff: v.staff.length }))});`);
 process.stdout.write(sql.join('\n') + '\n');

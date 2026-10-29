@@ -159,6 +159,40 @@ describe("when Razorpay rejects the keys", () => {
   });
 });
 
+describe("shared equipment", () => {
+  const rp = fakeRazorpay();
+  beforeAll(async () => {
+    rp.install();
+    // One machine needed by Abhyanga (v7) and Shirodhara (v8); Elakizhi (v9) doesn't need it.
+    await sql("INSERT INTO resources (id, provider_id, name) VALUES ('r-machine', 'p2', 'Machine')");
+    await sql("INSERT INTO service_resources (service_id, resource_id) VALUES ('v7', 'r-machine'), ('v8', 'r-machine')");
+  });
+  const date = day(9);
+  let held: any;
+
+  it("blocks the machine for every practitioner once one booking uses it", async () => {
+    held = (await req("POST", "/api/bookings", { ...ABHYANGA, phone: "9000000101", staffId: "s5", date, start: 600 })).json;   // 10:00–11:30
+    const v8 = (await req("GET", `/api/slots?service=v8&staff=s6&from=${date}&days=1`)).json.days[0].slots.map((s: any) => s.min);
+    expect(v8).not.toContain(600);
+    expect(v8).not.toContain(570);   // a 60-minute 9:30 start would overlap
+    expect(v8).toContain(690);       // free again from 11:30
+    const clash = await req("POST", "/api/bookings", { serviceId: "v8", staffId: "s6", date, start: 600, ...guest, phone: "9000000102" });
+    expect(clash.status).toBe(409);
+  });
+
+  it("leaves services that don't need the machine bookable", async () => {
+    const other = await req("POST", "/api/bookings", { serviceId: "v9", staffId: "s6", date, start: 600, ...guest, phone: "9000000103" });
+    expect(other.status).toBe(201);
+  });
+
+  it("frees the machine when the booking is cancelled", async () => {
+    await req("POST", `/api/bookings/${held.ref}/cancel`, { token: token(held.manageUrl) });
+    expect(await sql("SELECT * FROM resource_slots WHERE booking_id = (SELECT id FROM bookings WHERE ref = ?)", held.ref)).toEqual([]);
+    const v8 = (await req("GET", `/api/slots?service=v8&staff=s5&from=${date}&days=1`)).json.days[0].slots.map((s: any) => s.min);
+    expect(v8).toContain(600);
+  });
+});
+
 describe("booking rules", () => {
   beforeAll(() => fakeRazorpay().install());
 

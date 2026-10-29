@@ -100,7 +100,7 @@ node scripts/provider-sql.mjs providers/hasta-wellness.json > venue.sql
 npx wrangler d1 execute aestheva --remote --file=venue.sql
 ```
 
-Prices and deposits in the file are in rupees. Set `"status": "live"` to list the venue, `"draft"` to keep it hidden. Re-running the same file updates the venue safely: services and staff removed from the file are deactivated, never deleted, because bookings refer to them. Add verification entries only for checks that have actually been completed; the profile says "Verification in progress" until then.
+Shared equipment goes in `"resources"`, for example `[{"id": "hasta-laser", "name": "Laser machine"}]`, and each service that needs it lists `"resources": ["hasta-laser"]`. Two bookings can then never use the same machine at the same time, whichever practitioner takes them. Prices and deposits in the file are in rupees. Set `"status": "live"` to list the venue, `"draft"` to keep it hidden. Re-running the same file updates the venue safely: services and staff removed from the file are deactivated, never deleted, because bookings refer to them. Add verification entries only for checks that have actually been completed; the profile says "Verification in progress" until then.
 
 ### Before going live
 

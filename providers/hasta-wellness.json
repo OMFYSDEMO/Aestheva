@@ -1,5 +1,5 @@
 {
-  "_about": "Hasta Wellness, Aestheva's first venue. Venue facts from hastawellnessclinic.com; services, durations, prices and doctors from Dr Sooraj (October 2026). Assumptions awaiting confirmation: deposits (20% of price rounded to the nearest ₹100, minimum ₹200), 60-minute tooth brightening, both doctors on full clinic hours, doctors' surnames, qualifications and registration numbers.",
+  "_about": "Hasta Wellness, Aestheva's first venue. Venue facts from hastawellnessclinic.com; services, durations, prices and doctors from Dr Sooraj (October 2026). Assumptions awaiting confirmation: deposits (20% of price rounded to the nearest ₹100, minimum ₹200), 60-minute tooth brightening, Dr Sooraj on full clinic hours (Dr Akshara's hours confirmed), doctors' surnames, qualifications and registration numbers.",
   "id": "hasta-wellness",
   "slug": "hasta-wellness-kazhakkoottam",
   "name": "Hasta Wellness",
@@ -48,8 +48,8 @@
       ],
       "bio": "",
       "hours": {
-        "mon-sat": "10:00-20:00",
-        "sun": "10:00-14:00"
+        "mon-fri": "17:00-20:00",
+        "sat": "13:00-20:00"
       }
     }
   ],
@@ -122,7 +122,10 @@
         "hasta-dr-sooraj",
         "hasta-dr-akshara"
       ],
-      "desc": "In-clinic tooth brightening activated with a dental laser. The dentist first checks it suits your teeth."
+      "desc": "In-clinic tooth brightening activated with a dental laser. The dentist first checks it suits your teeth.",
+      "resources": [
+        "hasta-laser"
+      ]
     },
     {
       "id": "hasta-carbon-peel-face",
@@ -136,7 +139,10 @@
         "hasta-dr-sooraj",
         "hasta-dr-akshara"
       ],
-      "desc": "Carbon laser peel for the face."
+      "desc": "Carbon laser peel for the face.",
+      "resources": [
+        "hasta-laser"
+      ]
     },
     {
       "id": "hasta-carbon-peel-lips",
@@ -150,7 +156,10 @@
         "hasta-dr-sooraj",
         "hasta-dr-akshara"
       ],
-      "desc": "Carbon laser peel for the lips."
+      "desc": "Carbon laser peel for the lips.",
+      "resources": [
+        "hasta-laser"
+      ]
     },
     {
       "id": "hasta-carbon-dark-circles",
@@ -164,7 +173,10 @@
         "hasta-dr-sooraj",
         "hasta-dr-akshara"
       ],
-      "desc": "Carbon laser treatment for the under-eye area."
+      "desc": "Carbon laser treatment for the under-eye area.",
+      "resources": [
+        "hasta-laser"
+      ]
     },
     {
       "id": "hasta-carbon-peel-underarm",
@@ -178,7 +190,10 @@
         "hasta-dr-sooraj",
         "hasta-dr-akshara"
       ],
-      "desc": "Carbon laser peel for the underarms or elbows."
+      "desc": "Carbon laser peel for the underarms or elbows.",
+      "resources": [
+        "hasta-laser"
+      ]
     },
     {
       "id": "hasta-chem-peel-glow",
@@ -234,7 +249,10 @@
         "hasta-dr-sooraj",
         "hasta-dr-akshara"
       ],
-      "desc": "One laser hair reduction session for the upper lip and lower chin."
+      "desc": "One laser hair reduction session for the upper lip and lower chin.",
+      "resources": [
+        "hasta-laser"
+      ]
     },
     {
       "id": "hasta-lhr-full-face",
@@ -248,7 +266,10 @@
         "hasta-dr-sooraj",
         "hasta-dr-akshara"
       ],
-      "desc": "One laser hair reduction session for the full face."
+      "desc": "One laser hair reduction session for the full face.",
+      "resources": [
+        "hasta-laser"
+      ]
     },
     {
       "id": "hasta-lhr-upper-arms",
@@ -262,7 +283,10 @@
         "hasta-dr-sooraj",
         "hasta-dr-akshara"
       ],
-      "desc": "One laser hair reduction session for the upper arms."
+      "desc": "One laser hair reduction session for the upper arms.",
+      "resources": [
+        "hasta-laser"
+      ]
     },
     {
       "id": "hasta-meso-face",
@@ -347,6 +371,12 @@
         "hasta-dr-akshara"
       ],
       "desc": "One anti-hair-loss mesotherapy session for the scalp."
+    }
+  ],
+  "resources": [
+    {
+      "id": "hasta-laser",
+      "name": "Laser machine"
     }
   ]
 }

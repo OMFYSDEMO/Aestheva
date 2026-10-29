@@ -64,42 +64,64 @@ export type ProviderDetail = NonNullable<Awaited<ReturnType<typeof providerBySlu
 
 // ---------- availability ----------
 
-interface Inventory { hours: Map<string, Hours>; occupied: Map<string, Set<number>> }
+interface Inventory {
+  hours: Map<string, Hours>; occupied: Map<string, Set<number>>;
+  svcRes: Map<string, string[]>;            // service -> shared resources it needs (e.g. the laser machine)
+  resOccupied: Map<string, Set<number>>;   // resource|date -> taken slots
+}
 const key = (staffId: string, x: string | number) => `${staffId}|${x}`;
 
-/** Rotas and occupied slots for a set of staff over a date range: two queries. */
-export async function loadInventory(db: D1Database, staffIds: string[], from: string, to: string): Promise<Inventory> {
+/** Rotas, occupied staff slots and, for the given services, occupied shared-resource slots over a date range. */
+export async function loadInventory(db: D1Database, staffIds: string[], from: string, to: string, serviceIds: string[] = []): Promise<Inventory> {
   const hours = new Map<string, Hours>(), occupied = new Map<string, Set<number>>();
-  if (!staffIds.length) return { hours, occupied };
+  const svcRes = new Map<string, string[]>(), resOccupied = new Map<string, Set<number>>();
+  if (!staffIds.length) return { hours, occupied, svcRes, resOccupied };
   const ph = staffIds.map(() => "?").join(",");
-  const [h, o] = await db.batch([
+  const sph = serviceIds.map(() => "?").join(",") || "NULL";
+  const [h, o, sr, ro] = await db.batch([
     db.prepare(`SELECT staff_id, dow, start_min, end_min FROM staff_hours WHERE staff_id IN (${ph})`).bind(...staffIds),
     db.prepare(`SELECT staff_id, date, slot FROM staff_slots WHERE staff_id IN (${ph}) AND date BETWEEN ? AND ?`).bind(...staffIds, from, to),
+    db.prepare(`SELECT sr.service_id, sr.resource_id FROM service_resources sr JOIN resources r ON r.id = sr.resource_id WHERE r.active = 1 AND sr.service_id IN (${sph})`).bind(...serviceIds),
+    db.prepare(`SELECT rs.resource_id, rs.date, rs.slot FROM resource_slots rs WHERE rs.date BETWEEN ? AND ? AND rs.resource_id IN
+      (SELECT sr.resource_id FROM service_resources sr WHERE sr.service_id IN (${sph}))`).bind(from, to, ...serviceIds),
   ]);
+  for (const r of sr.results as { service_id: string; resource_id: string }[]) svcRes.set(r.service_id, [...(svcRes.get(r.service_id) ?? []), r.resource_id]);
+  for (const r of ro.results as { resource_id: string; date: string; slot: number }[]) {
+    const k = key(r.resource_id, r.date);
+    if (!resOccupied.has(k)) resOccupied.set(k, new Set());
+    resOccupied.get(k)!.add(r.slot);
+  }
   for (const r of h.results as { staff_id: string; dow: number; start_min: number; end_min: number }[]) hours.set(key(r.staff_id, r.dow), r);
   for (const r of o.results as { staff_id: string; date: string; slot: number }[]) {
     const k = key(r.staff_id, r.date);
     if (!occupied.has(k)) occupied.set(k, new Set());
     occupied.get(k)!.add(r.slot);
   }
-  return { hours, occupied };
+  return { hours, occupied, svcRes, resOccupied };
 }
 
 export interface Slot { min: number; staffId: string }
 
-/** Bookable start times on a date for a service, across the chosen staff ("any" = earliest free practitioner per time). */
-export function slotsOn(inv: Inventory, staffIds: string[], date: string, durMin: number, now: IstNow): Slot[] {
+/**
+ * Bookable start times on a date for a service, across the chosen staff ("any" = earliest free practitioner per time).
+ * When the service needs a shared resource, slots where that resource is taken are excluded for every practitioner.
+ */
+export function slotsOn(inv: Inventory, staffIds: string[], date: string, durMin: number, now: IstNow, serviceId?: string): Slot[] {
   const dow = dowOf(date), best = new Map<number, string>();
+  const shared = new Set<number>();
+  for (const r of (serviceId && inv.svcRes.get(serviceId)) || []) for (const s of inv.resOccupied.get(key(r, date)) ?? []) shared.add(s);
   for (const id of staffIds) {
-    const starts = freeStarts({ date, hours: inv.hours.get(key(id, dow)), durMin, occupied: inv.occupied.get(key(id, date)) ?? new Set(), now });
+    const own = inv.occupied.get(key(id, date));
+    const occupied = shared.size ? new Set([...(own ?? []), ...shared]) : own ?? new Set<number>();
+    const starts = freeStarts({ date, hours: inv.hours.get(key(id, dow)), durMin, occupied, now });
     for (const t of starts) if (!best.has(t)) best.set(t, id);
   }
   return [...best.entries()].sort((a, b) => a[0] - b[0]).map(([min, staffId]) => ({ min, staffId }));
 }
 
 /** Whether a specific staff member can start at a time; used to re-check just before writing a booking. */
-export function canStart(inv: Inventory, staffId: string, date: string, startMin: number, durMin: number, now: IstNow): boolean {
-  return slotsOn(inv, [staffId], date, durMin, now).some((s) => s.min === startMin);
+export function canStart(inv: Inventory, staffId: string, date: string, startMin: number, durMin: number, now: IstNow, serviceId?: string): boolean {
+  return slotsOn(inv, [staffId], date, durMin, now, serviceId).some((s) => s.min === startMin);
 }
 
 /** The earliest bookable time for each provider over the next `days` days. */
@@ -109,13 +131,13 @@ export async function nextAvailable(db: D1Database, services: (ServiceRow & { st
   for (const l of links) staffBySvc.set(l.service_id, [...(staffBySvc.get(l.service_id) ?? []), l.staff_id]);
   const staffIds = [...new Set(services.flatMap((s) => staffBySvc.get(s.id) ?? []))];
   const to = addDays(now.date, days - 1);
-  const inv = await loadInventory(db, staffIds, now.date, to);
+  const inv = await loadInventory(db, staffIds, now.date, to, services.map((s) => s.id));
   const out = new Map<string, { date: string; min: number }>();
   for (let i = 0; i < days; i++) {
     const date = addDays(now.date, i);
     for (const s of services) {
       if (out.has(s.provider_id) && out.get(s.provider_id)!.date < date) continue;
-      const first = slotsOn(inv, staffBySvc.get(s.id) ?? [], date, s.dur_min, now)[0];
+      const first = slotsOn(inv, staffBySvc.get(s.id) ?? [], date, s.dur_min, now, s.id)[0];
       if (!first) continue;
       const cur = out.get(s.provider_id);
       if (!cur || (cur.date === date && first.min < cur.min)) out.set(s.provider_id, { date, min: first.min });

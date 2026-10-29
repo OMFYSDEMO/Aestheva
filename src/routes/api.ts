@@ -31,11 +31,11 @@ api.get("/slots", async (c) => {
   const ids = staff === "any" ? offered : offered.filter((x) => x === staff);
   if (!ids.length) throw new HttpError(400, "That practitioner doesn't offer this service");
   const to = addDays(from, days - 1);
-  const inv = await loadInventory(c.env.DB, ids, from, to);
+  const inv = await loadInventory(c.env.DB, ids, from, to, [svc.id]);
   const out = [];
   for (let i = 0; i < days; i++) {
     const date = addDays(from, i);
-    out.push({ date, slots: slotsOn(inv, ids, date, svc.dur_min, now).map((s) => ({ min: s.min, label: fmtTime(s.min), staffId: s.staffId })) });
+    out.push({ date, slots: slotsOn(inv, ids, date, svc.dur_min, now, svc.id).map((s) => ({ min: s.min, label: fmtTime(s.min), staffId: s.staffId })) });
   }
   c.header("cache-control", "no-store");
   return c.json({ service: svc.id, staff, days: out });
