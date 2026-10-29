@@ -12,6 +12,8 @@ describe("public pages", () => {
     expect(r.text).toContain("Considered care for");
     expect(r.text).toContain('href="/p/lumiere-skin-and-laser-clinic"');
     expect(r.text).toContain("Haswel Care Private Limited");
+    expect(r.text).toContain("Now open in Thiruvananthapuram");
+    expect(r.text).toContain("Popular:");
   });
 
   it("searches by text, category, area and service type", async () => {

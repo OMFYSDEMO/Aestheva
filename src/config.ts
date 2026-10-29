@@ -18,3 +18,6 @@ export const POLICY = {
 } as const;
 
 export const AREAS = ["Kazhakkoottam", "Kowdiar", "Pattom", "Vellayambalam"] as const;
+
+/** Cities people can ask to hear about. The launch city is offered while it has no live venues. */
+export const WAITLIST_CITIES = ["Thiruvananthapuram", "Kochi", "Kozhikode", "Thrissur", "Bengaluru", "Chennai", "Mumbai"] as const;

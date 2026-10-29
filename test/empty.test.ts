@@ -6,11 +6,21 @@ describe("before the first venue goes live", () => {
   it("tells visitors bookings open soon and invites providers to join", async () => {
     const home = await req("GET", "/");
     expect(home.status).toBe(200);
-    expect(home.text).toContain("We're welcoming our first venues");
+    expect(home.text).toContain("Opening soon in Thiruvananthapuram");
+    expect(home.text).not.toContain("Now open");
+    expect(home.text).not.toContain("0 venues");
+    expect(home.text).not.toContain("Popular:");
+    expect(home.text).toContain("Tell me when bookings open");
     expect(home.text).not.toContain("Featured in Trivandrum");
     const search = await req("GET", "/search?q=facial");
     expect(search.text).toContain("Opening soon");
     expect(search.text).not.toContain("No matches yet");
+  });
+
+  it("takes launch-city sign-ups from the hero", async () => {
+    const r = await req("POST", "/waitlist", "city=Thiruvananthapuram&email=first%40example.com", { "content-type": "application/x-www-form-urlencoded" });
+    expect(r.status).toBe(303);
+    expect((await req("GET", "/?joined=Thiruvananthapuram")).text).toContain("We'll email you when bookings open");
   });
 
   it("serves the policy pages and the sitemap", async () => {

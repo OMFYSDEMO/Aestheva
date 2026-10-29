@@ -1,6 +1,6 @@
 import { Hono, type Context } from "hono";
 import type { Env } from "../env";
-import { AREAS, COMPANY } from "../config";
+import { AREAS, COMPANY, WAITLIST_CITIES } from "../config";
 import { HttpError, isUniqueViolation } from "../db";
 import { nowIst } from "../domain/time";
 import { categories, liveProviders, liveServices, nextAvailable, providerBySlug, ratings } from "../services/catalog";
@@ -26,7 +26,7 @@ site.get("/", async (c) => {
     title: "Aestheva · Verified skin, hair & wellness care in Thiruvananthapuram",
     description: "Find and book verified clinics, salons, Ayurveda centres and practitioners in Thiruvananthapuram. Medical and beauty services clearly labelled.",
     canonical: base(c) + "/",
-  }, homePage({ providers, services, categories: cats, ratings: rt, next, today, joined: joined && ["Kochi", "Kozhikode", "Thrissur", "Bengaluru", "Chennai", "Mumbai"].includes(joined) ? joined : undefined }));
+  }, homePage({ providers, services, categories: cats, ratings: rt, next, today, joined: joined && (WAITLIST_CITIES as readonly string[]).includes(joined) ? joined : undefined }));
 });
 
 site.get("/search", async (c) => {
@@ -112,10 +112,10 @@ site.post("/booking/:ref/cancel", async (c) => {
 site.post("/waitlist", async (c) => {
   const form = await c.req.parseBody();
   const city = String(form.city ?? ""), email = String(form.email ?? "").trim().toLowerCase();
-  if (!["Kochi", "Kozhikode", "Thrissur", "Bengaluru", "Chennai", "Mumbai"].includes(city) || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return c.redirect("/#waitlist", 303);
+  if (!(WAITLIST_CITIES as readonly string[]).includes(city) || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return c.redirect("/#waitlist", 303);
   try { await c.env.DB.prepare("INSERT INTO waitlist (city, email) VALUES (?, ?)").bind(city, email).run(); }
   catch (e) { if (!isUniqueViolation(e)) throw e; }
-  return c.redirect(`/?joined=${encodeURIComponent(city)}#waitlist`, 303);
+  return c.redirect(`/?joined=${encodeURIComponent(city)}#${city === COMPANY.launchCity ? "notify" : "waitlist"}`, 303);
 });
 
 site.get("/policies/cancellation", (c) => page(c, { title: "Cancellation & refunds · Aestheva", canonical: base(c) + "/policies/cancellation" }, cancellationPage()));
