@@ -44,7 +44,11 @@ To use real bookings, export a JSON file with the same shape as `dashboard/sampl
 
 ## Decisions so far
 
-- **Payment gateway: Razorpay.** Chosen for UPI, cards and split settlements to providers in India.
+- **Payment gateway: Razorpay.** Chosen for UPI, cards and split settlements to providers in India. Stripe was compared in October 2026 and set aside for three reasons:
+  - New Indian businesses can only join Stripe by invitation.
+  - Stripe Connect, its marketplace product, needs Stripe's approval before an Indian platform can onboard connected accounts.
+  - Stripe's strength is international cards, while Aestheva's clients pay in rupees, mostly by UPI.
+  Before integrating, confirm two things with Razorpay: that Route is enabled for a marketplace of clinics, salons and wellness centres, and the current Route transfer fee.
 - **Tech stack and hosting:** not decided yet.
 
 ## How Razorpay fits the prototype's payment rules
