@@ -3,7 +3,7 @@
 export const COMPANY = {
   brand: "Aestheva",
   legalName: "Haswel Care Private Limited",
-  supportEmail: "",
+  supportEmail: "hello@bookaestheva.com",
   supportPhone: "",
   registeredAddress: "",
   launchCity: "Thiruvananthapuram",

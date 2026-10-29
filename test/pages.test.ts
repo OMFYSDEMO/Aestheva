@@ -58,6 +58,9 @@ describe("public pages", () => {
       expect(r.status, p).toBe(200);
       expect(r.text, p).toContain("Haswel Care Private Limited");
     }
+    const contact = await req("GET", "/contact");
+    expect(contact.text).toContain("hello@bookaestheva.com");
+    expect(contact.text).not.toContain("Support email to be added");
   });
 
   it("adds an email to a city waitlist once", async () => {
