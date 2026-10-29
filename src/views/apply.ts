@@ -1,6 +1,6 @@
 import { AREAS, COMPANY, VENUE_TYPES, VENUE_TYPE_CHOICES } from "../config";
 import { ROLES, type ApplicationForm } from "../services/applications";
-import { catIcon, esc, ic } from "./ui";
+import { catTile, esc, ic } from "./ui";
 
 const val = (v: ApplicationForm, k: string) => esc(Array.isArray(v[k]) ? v[k][0] : v[k] ?? "");
 const has = (v: ApplicationForm, k: string, x: string) => (Array.isArray(v[k]) ? v[k] : [v[k]]).includes(x);
@@ -38,7 +38,7 @@ export function applyPage(d: { values: ApplicationForm; errors: Record<string, s
 
           <fieldset class="apply-sec"><legend><span>2</span> What you offer</legend>
             <div class="f" id="categories"><span>Kinds of service <span class="hint">Choose all that apply</span></span>
-              <div class="pick mt8">${d.categories.map((c) => `<label class="pick-item"><input type="checkbox" name="categories" value="${esc(c.id)}" ${has(v, "categories", c.id) ? "checked" : ""}> ${catIcon(c.id, 16)} ${esc(c.name)}</label>`).join("")}</div>${err("categories")}</div>
+              <div class="pick mt8">${d.categories.map((c) => `<label class="pick-item"><input type="checkbox" name="categories" value="${esc(c.id)}" ${has(v, "categories", c.id) ? "checked" : ""}> ${catTile(c.id, 14)} ${esc(c.name)}</label>`).join("")}</div>${err("categories")}</div>
             <div class="f" id="medical"><span>Do you offer medical treatments? <span class="hint">Only treatments given by a doctor or dentist, for example dental work, medical lasers, medical peels or injectables. Beauty, nails, makeup, tattoos and massage are not medical.</span></span>
               <div class="row wrap mt8" style="gap:10px"><label class="pick-item"><input type="radio" name="medical" value="yes" ${val(v, "medical") === "yes" ? "checked" : ""}> Yes</label><label class="pick-item"><input type="radio" name="medical" value="no" ${val(v, "medical") === "no" ? "checked" : ""}> No, beauty, wellness or body art</label></div>${err("medical")}</div>
             ${input("team_size", "How many people would take bookings, including you?", 'type="number" min="1" max="500" inputmode="numeric" required style="max-width:160px"')}

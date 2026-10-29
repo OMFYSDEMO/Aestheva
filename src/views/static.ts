@@ -1,6 +1,6 @@
 import { COMPANY, POLICY } from "../config";
 import { fact } from "./layout";
-import { esc, ic } from "./ui";
+import { catTile, esc, ic } from "./ui";
 
 const DRAFT = `<div class="note n-plain mt16">${ic("info", 16)}<div><b>Draft for legal review.</b> This text describes how Aestheva works today. It must be reviewed by ${esc(COMPANY.legalName)}'s legal adviser before launch.</div></div>`;
 
@@ -101,12 +101,13 @@ export function aboutPage() {
   </div>`;
 }
 
-export function practitionersPage() {
+export function practitionersPage(cats: { id: string; name: string }[] = []) {
   return `<div class="page narrow prose">
     <div class="eyebrow" style="color:var(--sage-d)">List your business</div>
     <h1 class="mt8" style="font-size:clamp(36px,5vw,52px)">Whatever you do to help people look and feel good, there's room for you here.</h1>
     <p class="lede mt16">Aestheva is for everyone in beauty, wellness and care in ${esc(COMPANY.launchCity)}: big salons and one-chair studios, clinics, and independent professionals building their own name. Clients find you, see your prices and your work, and book a time that fits your diary.</p>
     <div class="row wrap mt24" style="gap:10px"><a class="btn btn-ok" href="/for-practitioners/apply">Apply online ${ic("arrowR", 16)}</a><span class="small muted">About five minutes. No documents needed yet.</span></div>
+    ${cats.length ? `<div class="join-tiles mt32"><h2 style="margin:0">Select your business to get started</h2><div class="tile-grid mt16">${cats.map((c) => `<a class="tile" href="/for-practitioners/apply?cat=${esc(c.id)}">${catTile(c.id, 22)}<b>${esc(c.name)}</b></a>`).join("")}</div></div>` : ""}
     <h2>Who can join</h2>
     <ul class="ticks">
       <li>${ic("check", 15)} <span><b>Independent professionals</b>: beauticians, nail artists, makeup and bridal artists, tattoo and piercing artists, hair stylists, massage and wellness therapists.</span></li>

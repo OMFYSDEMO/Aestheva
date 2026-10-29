@@ -76,18 +76,20 @@ export const MED_NOTE = `<div class="note n-med">${ic("info", 16)}<div><b>Medica
 
 
 /** Icon and one-line introduction for each treatment category. Written to hold for any venue in the category. */
-export const CAT_META: Record<string, { icon: string; line: string }> = {
-  dental: { icon: "tooth", line: "Cleaning, fillings and brightening with a registered dentist." },
-  skin: { icon: "drop", line: "Peels and laser care, planned after a look at your skin." },
-  medaes: { icon: "sparkle", line: "Doctor-led treatments, from laser hair reduction to mesotherapy." },
-  hair: { icon: "comb", line: "Hair-fall and scalp care, starting with the cause." },
-  ayur: { icon: "leaf", line: "Abhyanga, Shirodhara and Kerala's own therapies." },
-  nails: { icon: "hand", line: "Manicures, nail art, lashes and brows." },
-  body: { icon: "body", line: "Physiotherapy and body care for everyday aches." },
-  groom: { icon: "brush", line: "Bridal and party makeup, styling and grooming." },
-  tattoo: { icon: "needle", line: "Custom tattoos, cover-ups and piercing, with clean single-use kit." },
+export const CAT_META: Record<string, { icon: string; line: string; tone?: string }> = {
+  dental: { icon: "tooth", line: "Cleaning, fillings and brightening with a registered dentist.", tone: "#8ED3C3" },
+  skin: { icon: "drop", line: "Facials, peels and skin care, planned around your skin.", tone: "#F5A3B7" },
+  medaes: { icon: "sparkle", line: "Doctor-led treatments, from laser hair reduction to mesotherapy.", tone: "#D7A6DA" },
+  hair: { icon: "comb", line: "Cuts, colour, styling, and hair-fall and scalp care.", tone: "#7FC4CF" },
+  ayur: { icon: "leaf", line: "Abhyanga, Shirodhara and Kerala's own therapies.", tone: "#A3CE7F" },
+  nails: { icon: "hand", line: "Manicures, nail art, lashes and brows.", tone: "#FFB48F" },
+  body: { icon: "body", line: "Massage, physiotherapy and body care.", tone: "#93B9EA" },
+  groom: { icon: "brush", line: "Bridal and party makeup, styling and grooming.", tone: "#EDC06A" },
+  tattoo: { icon: "needle", line: "Custom tattoos, cover-ups and piercing, with clean single-use kit.", tone: "#A795E3" },
 };
 export const catIcon = (id: string, s = 20) => ic(CAT_META[id]?.icon ?? "sparkle", s);
+/** A category's icon on its own colour square, like a shop sign. */
+export const catTile = (id: string, s = 20) => `<span class="ctile" style="--tone:${CAT_META[id]?.tone ?? "#F5A3B7"}" aria-hidden="true">${catIcon(id, s)}</span>`;
 
 /** A venue's mark until it has photographs: its initials on a soft colour from the prototype palette. */
 export function venueMark(name: string, seed: string, idx?: number, size: "s" | "m" | "l" = "m") {

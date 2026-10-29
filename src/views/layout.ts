@@ -14,7 +14,7 @@ export interface PageOpts {
   app?: { label: string; right?: string };   // signed-in workspace: slim header and footer, no marketing navigation
 }
 
-const FONTS = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700&display=swap";
+const FONTS = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap";
 
 export function layout(o: PageOpts, body: string): string {
   const ribbon = o.appEnv === "production" ? "" :
@@ -53,7 +53,7 @@ ${ribbon}
   ${o.app ? `<div class="topnav">${o.app.right ?? ""}</div>` : `<nav class="topnav" aria-label="Main">
     ${navLink("/search", "explore", "search", "Explore")}
     ${navLink("/about", "story", "leaf", "Our story")}
-    ${navLink("/for-practitioners", "practitioners", "users", "List your business")}
+    <a href="/for-practitioners" class="nav-cta${o.nav === "practitioners" ? " on" : ""}"${o.nav === "practitioners" ? ' aria-current="page"' : ""}>${ic("users", 17)} <span class="lbl">List your business</span></a>
   </nav>`}
 </div></header>
 <main id="main">

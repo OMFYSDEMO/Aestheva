@@ -140,10 +140,13 @@ site.get("/policies/terms", (c) => page(c, { title: "Terms of use · Aestheva", 
 site.get("/policies/privacy", (c) => page(c, { title: "Privacy · Aestheva", canonical: base(c) + "/policies/privacy" }, privacyPage()));
 site.get("/contact", (c) => page(c, { title: "Contact · Aestheva", canonical: base(c) + "/contact" }, contactPage()));
 site.get("/about", (c) => page(c, { title: "Our story · Aestheva", description: `Why we built Aestheva, who runs it, and what you can count on when you book care in ${COMPANY.launchCity}.`, canonical: base(c) + "/about", nav: "story" }, aboutPage()));
-site.get("/for-practitioners", (c) => page(c, { title: "For practitioners & clinics · Aestheva", canonical: base(c) + "/for-practitioners", nav: "practitioners" }, practitionersPage()));
+site.get("/for-practitioners", async (c) => page(c, { title: "List your business · Aestheva", description: `Salons, studios, clinics and independent professionals: list your beauty, wellness or care business on Aestheva in ${COMPANY.launchCity}.`, canonical: base(c) + "/for-practitioners", nav: "practitioners" }, practitionersPage(await categories(c.env.DB))));
 
-const applyMeta = (c: C) => ({ title: "Apply to join · Aestheva", description: `Apply to list your clinic, salon or practice on Aestheva in ${COMPANY.launchCity}.`, canonical: base(c) + "/for-practitioners/apply", nav: "practitioners" as const });
-site.get("/for-practitioners/apply", async (c) => page(c, applyMeta(c), applyPage({ values: {}, errors: {}, categories: await categories(c.env.DB), started: Date.now() })));
+const applyMeta = (c: C) => ({ title: "Apply to join · Aestheva", description: `Apply to list your salon, studio, clinic or independent business on Aestheva in ${COMPANY.launchCity}.`, canonical: base(c) + "/for-practitioners/apply", nav: "practitioners" as const });
+site.get("/for-practitioners/apply", async (c) => {
+  const cats = await categories(c.env.DB), pre = c.req.query("cat");
+  return page(c, applyMeta(c), applyPage({ values: pre && cats.some((x) => x.id === pre) ? { categories: [pre] } : {}, errors: {}, categories: cats, started: Date.now() }));
+});
 site.post("/for-practitioners/apply", async (c) => {
   const form = (await c.req.parseBody({ all: true })) as ApplicationForm;
   const cats = await categories(c.env.DB);

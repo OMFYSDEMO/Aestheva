@@ -3,7 +3,7 @@ import { kmLabel } from "../domain/geo";
 import { fmtTime, relDay } from "../domain/time";
 import type { ProviderDetail, ProviderRow, Rating, ServiceRow } from "../services/catalog";
 import { isMedical } from "../services/catalog";
-import { CAT_META, MED_NOTE, avatar, catIcon, esc, ic, inr, linkPhones, mapsUrl, photoImg, photosOf, stars, venueMark, venueThumb } from "./ui";
+import { CAT_META, MED_NOTE, avatar, catIcon, catTile, esc, ic, inr, linkPhones, mapsUrl, photoImg, photosOf, stars, venueMark, venueThumb } from "./ui";
 
 type Next = Map<string, { date: string; min: number }>;
 const quals = (t: { quals_json: string }): string[] => { try { const q = JSON.parse(t.quals_json || "[]"); return Array.isArray(q) ? q.map(String) : []; } catch { return []; } };
@@ -103,14 +103,14 @@ export function homePage(d: {
   ${open ? `<section class="promise-strip" aria-label="Why book with Aestheva">${promises.map(([i, t, b]) => `<div>${ic(i, 20)}<div><b>${t}</b><span>${b}</span></div></div>`).join("")}</section>
 
   <section class="mt48"><div class="section-head"><div><div class="eyebrow">Services</div><h2 class="mt8">What would you like to book?</h2></div><a class="btn btn-o btn-s" href="/search">See all services</a></div>
-    <div class="grid g4 cat2-grid">${cats.map((c) => `<a class="cat2" href="/search?cat=${c.id}"><span class="cat2-ic">${catIcon(c.id, 22)}</span><b>${esc(c.name)}</b><span class="small muted">${esc(CAT_META[c.id]?.line ?? "")}</span><span class="xs cat2-n">${c.svcs.length} service${c.svcs.length === 1 ? "" : "s"} · from ${inr(minPrice(c.svcs))}</span></a>`).join("")}</div>
+    <div class="tile-grid mt24">${cats.map((c) => `<a class="tile" href="/search?cat=${c.id}">${catTile(c.id, 22)}<span class="col" style="gap:1px;min-width:0"><b>${esc(c.name)}</b><span class="xs muted">${c.svcs.length} service${c.svcs.length === 1 ? "" : "s"} · from ${inr(minPrice(c.svcs))}</span></span></a>`).join("")}</div>
   </section>
 
   <section class="mt64"><div class="section-head"><div><div class="eyebrow">Now booking</div><h2 class="mt8">Book with them today</h2></div></div>
     <div class="grid g3 vgrid${featured.length === 1 ? " vgrid-one" : ""}">${featured.map((p) => venueCard(p, byProv(p.id), d.ratings.get(p.id), d.next, d.today, catName)).join("")}</div>
   </section>
 
-  <section class="mt64 beats-wrap">
+  <section class="mt64 beats-wrap band">
     <div class="eyebrow">How it works</div><h2 class="mt8" style="max-width:620px">Booked in three steps, without a single phone call.</h2>
     <ol class="steps3 mt32">${STEPS.map(([i, t, b], n) => `<li><span class="steps3-ic">${ic(i, 20)}</span><div><span class="xs muted">Step ${n + 1}</span><h3>${t}</h3><p class="small muted mt8">${b}</p></div></li>`).join("")}</ol>
     <div class="mt32"><a class="btn btn-p" href="/search">Find something near you ${ic("arrowR", 16)}</a></div>
@@ -209,7 +209,7 @@ export function searchPage(d: {
       <div><div class="eyebrow">${esc(COMPANY.launchCity)}${f.area ? " · " + esc(f.area) : f.near ? " · Near you" : ""}</div><h1 class="mt8" style="font-size:clamp(30px,3.6vw,40px)">${title}</h1>${fromLabel ? `<p class="small muted mt8">Nearest to ${fromLabel} first. Distances are straight-line and approximate.</p>` : ""}</div>
       <button class="btn btn-o btn-s filter-toggle" type="button" data-toggle="filters" aria-expanded="false" aria-controls="filters">${ic("filter", 16)} Filters</button>
     </div>
-    <div class="chips mt16 scroll-x" style="flex-wrap:nowrap">${d.categories.map((c) => `<a class="chip chip-ic ${f.cat === c.id ? "on" : ""}" href="${qs({ cat: f.cat === c.id ? "" : c.id })}">${catIcon(c.id, 15)} ${esc(c.name)}</a>`).join("")}</div>
+    <div class="chips mt16 scroll-x" style="flex-wrap:nowrap">${d.categories.map((c) => `<a class="chip chip-ic ${f.cat === c.id ? "on" : ""}" href="${qs({ cat: f.cat === c.id ? "" : c.id })}">${catTile(c.id, 14)} ${esc(c.name)}</a>`).join("")}</div>
     <div class="results-layout mt24">
       <form class="filters" id="filters" method="get" action="/search" data-autosubmit role="search" aria-label="Filters">
         <div><h4><label for="sq">Search</label></h4><input class="in" id="sq" name="q" value="${esc(f.q)}" placeholder="Treatment or venue"></div>
