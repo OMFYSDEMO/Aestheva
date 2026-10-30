@@ -17,6 +17,7 @@ import {
   markOutcome, monthMoney, overview, removeBlock, sessionFor, userFromSession, type ClinicUser,
 } from "../services/clinic";
 import { layout } from "../views/layout";
+import { emailBookingCancelled, emailBookingConfirmed } from "../services/booking-emails";
 import {
   bookingCreatedPage, bookingDetailPage, bookingsPage, calendarPage, clientPage, clientsPage, clinicLoginPage, clinicShell, forgotPage, linkInvalidPage, newBookingPage, setPasswordPage,
   paymentsPage, servicesPage, signOutButton, todayPage, type Section,
@@ -285,6 +286,8 @@ clinic.post("/bookings/:ref", async (c) => {
     if (action === "completed" || action === "no_show") { await markOutcome(c.env.DB, pid(c), ref, action, actor(c)); return c.redirect(`/clinic/bookings/${encodeURIComponent(ref)}?done=${action}`, 303); }
     if (action === "cancel") {
       const r = await cancelByClinic(c.env, pid(c), ref, String(f.reason ?? ""), actor(c));
+      const { b } = await clinicBooking(c.env.DB, pid(c), ref);
+      c.executionCtx.waitUntil(emailBookingCancelled(c.env, b.id, base(c), r.refund));
       return c.redirect(`/clinic/bookings/${encodeURIComponent(ref)}?done=${r.refund === "refunded" ? "refunded" : r.refund === "failed" ? "refund_failed" : "cancelled"}`, 303);
     }
     throw new HttpError(400, "Unknown action");
@@ -301,7 +304,8 @@ clinic.post("/new", async (c) => {
   const f = Object.fromEntries(Object.entries(await c.req.parseBody()).map(([k, v]) => [k, String(v ?? "")]));
   try {
     const r = await createDirectBooking(c.env.DB, pid(c), { serviceId: f.service, staffId: f.staff, date: f.date, start: Number(f.start), name: f.name, phone: f.phone, email: f.email, note: f.note }, actor(c));
-    const { a } = await clinicBooking(c.env.DB, pid(c), r.ref);
+    const { a, b } = await clinicBooking(c.env.DB, pid(c), r.ref);
+    c.executionCtx.waitUntil(emailBookingConfirmed(c.env, b.id, base(c)));
     return page(c, "Booked", "new", bookingCreatedPage({ ref: r.ref, manageUrl: `${base(c)}/booking/${r.ref}?t=${r.token}`, a, siteName: c.get("providerName") }));
   } catch (e) { if (e instanceof HttpError && e.status < 500) return newForm(c, f, e.message, e.status); throw e; }
 });

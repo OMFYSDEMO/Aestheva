@@ -18,6 +18,8 @@ import { bookPage, managePage } from "../views/booking";
 import { applyPage, applyThanksPage } from "../views/apply";
 import { createApplication, validateApplication, type ApplicationForm } from "../services/applications";
 import { notifyNewApplication } from "../services/notify";
+import { afterClientCancel } from "./api";
+import { icsFor } from "../services/booking-emails";
 import { aboutPage, cancellationPage, contactPage, practitionersPage, privacyPage, termsPage } from "../views/static";
 
 type C = Context<{ Bindings: Env }>;
@@ -128,11 +130,20 @@ site.get("/booking/:ref", async (c) => {
   catch (e) { if (e instanceof HttpError && e.status === 404) return page(c, { title: "Booking not found · Aestheva", noindex: true }, notFoundPage("We couldn't find that booking."), 404); throw e; }
 });
 
+/** The booking as a calendar file, for Apple Calendar and Outlook. Needs the booking's private link. */
+site.get("/booking/:ref/calendar.ics", async (c) => {
+  const token = c.req.query("t") ?? "";
+  const b = await authorisedBooking(c.env.DB, c.req.param("ref"), token);
+  const p = (await c.env.DB.prepare("SELECT name, address FROM providers WHERE id = ?").bind(b.provider_id).first<{ name: string; address: string }>())!;
+  return c.body(icsFor({ b, p }, `${base(c)}/booking/${b.ref}?t=${token}`), 200, { "content-type": "text/calendar; charset=utf-8", "content-disposition": `attachment; filename="aestheva-${b.ref}.ics"`, "cache-control": "no-store" });
+});
+
 site.post("/booking/:ref/cancel", async (c) => {
   const form = await c.req.parseBody();
   const token = String(form.t ?? "");
   const b = await authorisedBooking(c.env.DB, c.req.param("ref"), token);
   const r = await cancelByClient(c.env, b, { requestReview: form.review === "1", reason: String(form.reason ?? "") });
+  afterClientCancel(c, b.id, r.refund);
   const msg = { refunded: "Your booking is cancelled and your deposit is being refunded.", review: "Your booking is cancelled. We've opened a refund review and will email you the outcome.", retained: "Your booking is cancelled.", none: "Your booking is cancelled.", failed: "Your booking is cancelled. The automatic refund didn't go through, so our team will process it manually." }[r.refund];
   return renderManage(c, b.ref, token, msg);
 });

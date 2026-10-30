@@ -7,6 +7,7 @@ import { loadInventory, slotsOn, type ServiceRow } from "../services/catalog";
 import { applyCapturedPayment, authorisedBooking, bookingByRef, cancelByClient, createBooking, type PaymentRow } from "../services/bookings";
 import { gatewayFor, previewAllowed } from "../services/gateway";
 import { COMPANY } from "../config";
+import { afterConfirmed, alertBusiness, emailBookingCancelled, siteOf } from "../services/booking-emails";
 
 const api = new Hono<{ Bindings: Env }>();
 
@@ -14,6 +15,19 @@ async function json<T>(req: Request): Promise<T> {
   try { return (await req.json()) as T; } catch { throw new HttpError(400, "Invalid request body"); }
 }
 const origin = (env: Env, req: Request) => env.SITE_URL || new URL(req.url).origin;
+
+type Ctx = { env: Env; req: { raw: Request }; executionCtx: { waitUntil(p: Promise<unknown>): void } };
+/** Emails after a deposit lands: confirmed, or refunded because the time had gone. Each outcome is reported once. */
+export function afterPayment(c: Ctx, r: { outcome: string; bookingId?: string }) {
+  if (!r.bookingId) return;
+  const site = siteOf(c.env, c.req.raw);
+  if (r.outcome === "confirmed") c.executionCtx.waitUntil(afterConfirmed(c.env, r.bookingId, site));
+  if (r.outcome === "refunded") c.executionCtx.waitUntil(emailBookingCancelled(c.env, r.bookingId, site, "refunded"));
+}
+export function afterClientCancel(c: Ctx, bookingId: string, refund: "refunded" | "review" | "retained" | "failed" | "none") {
+  const site = siteOf(c.env, c.req.raw);
+  c.executionCtx.waitUntil(Promise.all([emailBookingCancelled(c.env, bookingId, site, refund), alertBusiness(c.env, bookingId, site, "cancelled")]));
+}
 
 /** Free start times for a service over a run of days. staff = a staff id or "any". */
 api.get("/slots", async (c) => {
@@ -51,6 +65,7 @@ api.post("/bookings", async (c) => {
     allowDraft: previewAllowed(c.env, b.preview),
   });
   const bk = created.booking;
+  if (bk.status === "confirmed") c.executionCtx.waitUntil(afterConfirmed(c.env, bk.id, siteOf(c.env, c.req.raw)));
   const manageUrl = `${origin(c.env, c.req.raw)}/booking/${bk.ref}?t=${created.manageToken}`;
   return c.json({
     ref: bk.ref, status: bk.status, manageUrl, holdExpiresAt: bk.hold_expires_at,
@@ -81,6 +96,7 @@ api.post("/bookings/:ref/payment", async (c) => {
   if (p.status === "authorized") p = await gw.capture(paymentId, pay.amount_paise);
   if (p.status !== "captured") throw new HttpError(402, "The payment has not completed yet");
   const r = await applyCapturedPayment(c.env, { orderId, paymentId, amount: p.amount || pay.amount_paise, method: p.method }, "client");
+  afterPayment(c, r);
   const bk = (await bookingByRef(c.env.DB, c.req.param("ref")))!;
   return c.json({ outcome: r.outcome, status: bk.status });
 });
@@ -93,6 +109,7 @@ api.post("/bookings/:ref/simulate-payment", async (c) => {
   const bk = await authorisedBooking(c.env.DB, c.req.param("ref"), String(b.token ?? ""));
   const { pay } = await paymentFor(c.env.DB, bk.ref, String(b.orderId ?? ""));
   const r = await applyCapturedPayment(c.env, { orderId: pay.order_id, paymentId: "sim_pay_" + crypto.randomUUID().slice(0, 12), amount: pay.amount_paise, method: "upi" }, "client");
+  afterPayment(c, r);
   return c.json({ outcome: r.outcome, status: (await bookingByRef(c.env.DB, bk.ref))!.status });
 });
 
@@ -100,6 +117,7 @@ api.post("/bookings/:ref/cancel", async (c) => {
   const b = await json<{ token?: string; requestReview?: boolean; reason?: string }>(c.req.raw);
   const bk = await authorisedBooking(c.env.DB, c.req.param("ref"), String(b.token ?? ""));
   const r = await cancelByClient(c.env, bk, { requestReview: b.requestReview === true, reason: b.reason });
+  afterClientCancel(c, bk.id, r.refund);
   return c.json({ status: "cancelled", refund: r.refund });
 });
 

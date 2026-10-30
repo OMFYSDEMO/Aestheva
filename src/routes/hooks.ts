@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Env } from "../env";
 import { audit } from "../db";
 import { applyCapturedPayment } from "../services/bookings";
+import { afterPayment } from "./api";
 import { gatewayFor, verifyWebhook } from "../services/gateway";
 
 const hooks = new Hono<{ Bindings: Env }>();
@@ -34,12 +35,12 @@ hooks.post("/razorpay", async (c) => {
   const pay = evt.payload?.payment?.entity;
   let result: unknown = "ignored";
   if ((evt.event === "payment.captured" || evt.event === "order.paid") && pay?.order_id) {
-    result = await applyCapturedPayment(c.env, { orderId: pay.order_id, paymentId: pay.id, amount: pay.amount, method: pay.method ?? null }, "razorpay");
+    { const r = await applyCapturedPayment(c.env, { orderId: pay.order_id, paymentId: pay.id, amount: pay.amount, method: pay.method ?? null }, "razorpay"); afterPayment(c, r); result = r; }
   } else if (evt.event === "payment.authorized" && pay?.order_id) {
     const known = await db.prepare("SELECT amount_paise FROM payments WHERE order_id = ? AND status = 'created'").bind(pay.order_id).first<{ amount_paise: number }>();
     if (known) {
       const p = await gatewayFor(c.env).capture(pay.id, known.amount_paise);
-      if (p.status === "captured") result = await applyCapturedPayment(c.env, { orderId: pay.order_id, paymentId: pay.id, amount: p.amount, method: p.method }, "razorpay");
+      if (p.status === "captured") { const r = await applyCapturedPayment(c.env, { orderId: pay.order_id, paymentId: pay.id, amount: p.amount, method: p.method }, "razorpay"); afterPayment(c, r); result = r; }
     }
   } else if (evt.event === "refund.processed" || evt.event === "refund.failed") {
     const rf = evt.payload?.refund?.entity;

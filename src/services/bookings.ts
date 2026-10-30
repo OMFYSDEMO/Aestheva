@@ -9,7 +9,7 @@ import { gatewayFor } from "./gateway";
 export interface BookingRow {
   id: string; ref: string; provider_id: string; service_id: string; staff_id: string; client_id: string; date: string; start_min: number;
   dur_min: number; service_name: string; kind: string; price_paise: number; deposit_paise: number; commission_bp: number; source: string;
-  status: "held" | "confirmed" | "completed" | "cancelled" | "no_show" | "expired"; hold_expires_at: string | null; manage_token_hash: string;
+  status: "held" | "confirmed" | "completed" | "cancelled" | "no_show" | "expired"; hold_expires_at: string | null; manage_token_hash: string; email_token_hash?: string | null;
   client_note: string; confirmed_at: string | null; cancelled_at: string | null; cancelled_by: string | null; cancel_reason: string | null; created_at: string;
 }
 export interface PaymentRow {
@@ -241,7 +241,8 @@ export async function bookingByRef(db: D1Database, ref: string) {
 }
 export async function authorisedBooking(db: D1Database, ref: string, token: string) {
   const b = await bookingByRef(db, ref);
-  if (!b || !token || (await sha256Hex(token)) !== b.manage_token_hash) throw new HttpError(404, "Booking not found");
+  const h = token ? await sha256Hex(token) : "";
+  if (!b || !h || (h !== b.manage_token_hash && h !== b.email_token_hash)) throw new HttpError(404, "Booking not found");
   return b;
 }
 export async function bookingView(db: D1Database, b: BookingRow) {
