@@ -747,3 +747,21 @@ html{overflow-x:clip}
 .founding{display:flex;gap:24px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--mulberry);color:#F6EAEE;border-radius:var(--r-lg);padding:32px}
 .founding h2{color:#fff;font-size:clamp(24px,3vw,32px);max-width:720px}.founding p{color:#F1DFE5;max-width:720px}
 .own-link-band .card{background:var(--white)}
+
+/* Seasonal banner (Deepavali): berry and gold, diya and rangoli in hairline strokes */
+.campaign{position:relative;overflow:hidden;display:flex;align-items:center;gap:26px;margin:0 0 44px;padding:26px 34px;border-radius:var(--r-lg);color:#fff;background:linear-gradient(120deg,#8A2E5C 0%,#6E2149 55%,#4A1632 100%)}
+.hero:has(.campaign){padding-top:24px}
+.cb-confetti{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.cb-diya{width:104px;height:85px;flex-shrink:0;position:relative}
+.cb-text{flex:1;position:relative;min-width:0}
+.cb-eyebrow{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#F6D58E}
+.campaign h2{color:#fff;font-size:clamp(26px,3.2vw,38px);margin-top:6px}
+.campaign p{color:#F6EAEE;font-size:16px;line-height:1.5;margin-top:8px;max-width:640px}
+.cb-cta{position:relative;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.cb-cta .btn{font-weight:700}
+.cb-offer{font-size:13px;font-weight:600;color:#F6D58E;white-space:nowrap}
+.cb-rangoli{position:absolute;right:-58px;top:-58px;width:180px;height:180px;opacity:.5;pointer-events:none}
+.campaign-compact{padding:16px 24px;margin:0 0 20px}.campaign-compact .cb-diya{width:64px;height:52px}.campaign-compact h2{font-size:24px;margin-top:2px}
+@media (max-width:760px){.campaign{flex-direction:column;align-items:flex-start;gap:12px;padding:22px 20px}.cb-diya{width:72px;height:59px}.cb-cta{align-items:flex-start}.cb-rangoli{width:130px;height:130px;right:-40px;top:-40px}
+  .campaign-compact{flex-direction:row;align-items:center;flex-wrap:wrap}.campaign-compact .cb-diya{display:none}}
+@media (max-width:760px){.cb-confetti{opacity:.45}}

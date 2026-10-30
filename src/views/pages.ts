@@ -1,6 +1,7 @@
 import { COMPANY, LOCALITIES, POLICY, SERVICE_AREA, WAITLIST_CITIES, ZONES, typeLabel } from "../config";
 import { kmLabel } from "../domain/geo";
 import { TOPICS } from "../content/topics";
+import { campaignBanner } from "./campaign";
 import { addDays, fmtTime, relDay } from "../domain/time";
 import type { ProviderDetail, ProviderRow, Rating, ServiceRow } from "../services/catalog";
 import { isMedical } from "../services/catalog";
@@ -78,7 +79,7 @@ export function homePage(d: {
       <a class="btn btn-o btn-s mt12" href="/search">See everyone and their times</a>
     </div>`;
   return `<div class="page" style="padding-top:0">
-  <section class="hero"><div class="hero-grid">
+  <section class="hero">${campaignBanner(d.today, d.welcome ?? 0, false, d.services.some((s) => s.kind === "beauty"))}<div class="hero-grid">
     <div>
       <div class="eyebrow">Namaskaram, ${esc(SERVICE_AREA.short)} · ${open ? (firstFree ? `<span class="nowrap">next free time ${firstFree}</span>` : "bookings open") : "opening soon"}</div>
       ${open ? `<h1 class="mt16">Book beauty, wellness and care <em>near you</em> in ${esc(SERVICE_AREA.short)}.</h1>
@@ -190,7 +191,7 @@ export function matchServices(svcs: ServiceRow[], p: ProviderRow, f: SearchQuery
 
 export function searchPage(d: {
   f: SearchQuery; results: { p: ProviderRow; svcs: ServiceRow[]; verifications: number; km?: number }[]; categories: { id: string; name: string }[];
-  ratings: Map<string, Rating>; next: Next; today: string; anyLive: boolean; outside?: boolean;
+  ratings: Map<string, Rating>; next: Next; today: string; anyLive: boolean; outside?: boolean; welcome?: number; beauty?: boolean;
 }) {
   const { f } = d;
   const catName = (id: string) => d.categories.find((c) => c.id === id)?.name ?? id;
@@ -212,6 +213,7 @@ export function searchPage(d: {
       </div></article>`;
   }).join("");
   return `<div class="page">
+    ${d.anyLive ? campaignBanner(d.today, d.welcome ?? 0, true, d.beauty) : ""}
     <div class="row between wrap" style="gap:16px">
       <div><div class="eyebrow">${esc(COMPANY.launchCity)}${f.area ? " · " + esc(f.area) : f.near ? " · Near you" : ""}</div><h1 class="mt8" style="font-size:clamp(30px,3.6vw,40px)">${title}</h1>${fromLabel ? `<p class="small muted mt8">Nearest to ${fromLabel} first. Distances are straight-line and approximate.</p>` : f.cat && !f.q && CAT_META[f.cat] ? `<p class="muted mt8">${esc(CAT_META[f.cat].line)} Compare full prices and book a free time online.</p>` : ""}</div>
       <button class="btn btn-o btn-s filter-toggle" type="button" data-toggle="filters" aria-expanded="false" aria-controls="filters">${ic("filter", 16)} Filters</button>

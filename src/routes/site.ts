@@ -80,7 +80,7 @@ site.get("/search", async (c) => {
       : `Find and book ${f.cat ? catName(f.cat).toLowerCase() : "beauty, wellness and care"} near ${where}: salons, clinics, studios and independent professionals, with full prices.`,
     canonical: catPage ? `${b}/search?cat=${encodeURIComponent(f.cat)}` : `${b}/search`, nav: "explore", noindex: !!f.q || (catPage && !results.length), joinPromo: true,
     jsonLd: catPage && results.length ? [breadcrumbs(b, [["Home", "/"], [catName(f.cat), `/search?cat=${encodeURIComponent(f.cat)}`]]), itemList(b, results.map((r) => r.p))] : undefined,
-  }, searchPage({ f, results, outside: !f.area && !!near && !inServiceArea(near), categories: providers.length ? cats.filter((x) => services.some((s) => s.cat === x.id)) : cats, ratings: rt, next, today, anyLive: providers.length > 0 }));
+  }, searchPage({ f, results, welcome: welcomeAmount(c.env), beauty: services.some((s) => s.kind === "beauty"), outside: !f.area && !!near && !inServiceArea(near), categories: providers.length ? cats.filter((x) => services.some((s) => s.cat === x.id)) : cats, ratings: rt, next, today, anyLive: providers.length > 0 }));
 });
 
 /** A business's own booking link: remembers where the client came from for 30 days, then opens the business's page. */

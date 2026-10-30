@@ -41,3 +41,20 @@ describe("phone numbers", () => {
     for (const v of ["12345", "5876543210", "+44 7700 900123", ""]) expect(normalisePhone(v)).toBeNull();
   });
 });
+
+import { activeCampaign, campaignBanner } from "../src/views/campaign";
+describe("seasonal banners", () => {
+  it("show the Deepavali banner only between its dates", () => {
+    expect(activeCampaign("2026-10-29")).toBeNull();
+    expect(activeCampaign("2026-10-30")?.id).toBe("deepavali-2026");
+    expect(activeCampaign("2026-11-09")?.id).toBe("deepavali-2026");
+    expect(activeCampaign("2026-11-10")).toBeNull();
+    const html = campaignBanner("2026-11-05", 10000, false, true);
+    for (const s of ["Glow for Deepavali.", "Deepavali · Sunday 8 November", 'href="/search?kind=beauty"', "mehendi-ready hands", "New here? ₹100 off your first deposit"]) expect(html).toContain(s);
+    const general = campaignBanner("2026-11-05", 10000, false, false);   // nothing non-medical live: no beauty promises, link to everything
+    expect(general).not.toContain("mehendi"); expect(general).toContain('href="/search"');
+    expect(campaignBanner("2026-11-05", 0)).not.toContain("New here?");   // no welcome line while the offer is paused
+    expect(campaignBanner("2026-11-05", 0, true)).not.toContain("mehendi");   // compact version on search
+    expect(campaignBanner("2026-11-12", 10000)).toBe("");
+  });
+});
