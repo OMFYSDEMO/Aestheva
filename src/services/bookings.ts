@@ -167,12 +167,14 @@ export async function applyCapturedPayment(env: Env, p: { orderId: string; payme
 
   const booking = (await db.prepare("SELECT * FROM bookings WHERE id = ?").bind(pay.booking_id).first<BookingRow>())!;
   const ts = nowIso();
-  const markCaptured = db.prepare("UPDATE payments SET status = 'captured', payment_id = ?, method = ?, captured_at = ? WHERE id = ? AND status = 'created'")
-    .bind(p.paymentId, p.method, ts, pay.id);
+  // Claim the payment first. Razorpay often sends payment.captured and order.paid at the same instant, and the checkout
+  // callback can race them too: only the request whose update changes the row goes on to confirm and send emails.
+  const claim = await db.prepare("UPDATE payments SET status = 'captured', payment_id = ?, method = ?, captured_at = ? WHERE id = ? AND status = 'created'")
+    .bind(p.paymentId, p.method, ts, pay.id).run();
+  if (!claim.meta.changes) return { outcome: "already_applied" as const, bookingId: pay.booking_id };
 
   if (booking.status === "held") {
     await db.batch([
-      markCaptured,
       db.prepare("UPDATE bookings SET status = 'confirmed', confirmed_at = ?, hold_expires_at = NULL, updated_at = ? WHERE id = ? AND status = 'held'").bind(ts, ts, booking.id),
       audit(db, actor, "booking.confirmed", "booking", booking.id, { paymentId: p.paymentId, amount: p.amount }),
     ]);
@@ -184,7 +186,6 @@ export async function applyCapturedPayment(env: Env, p: { orderId: string; payme
       .bind(booking.service_id).all<{ resource_id: string }>()).results.map((r) => r.resource_id);
     try {
       await db.batch([
-        markCaptured,
         ...slotsFor(booking.start_min, booking.dur_min).map((slot) =>
           db.prepare("INSERT INTO staff_slots (staff_id, date, slot, booking_id) VALUES (?, ?, ?, ?)").bind(booking.staff_id, booking.date, slot, booking.id)),
         ...resources.flatMap((r) => slotsFor(booking.start_min, booking.dur_min).map((slot) =>
@@ -200,7 +201,6 @@ export async function applyCapturedPayment(env: Env, p: { orderId: string; payme
 
   // The slot is gone (or the booking was cancelled while paying): keep the record and return the money.
   await db.batch([
-    markCaptured,
     // A client cancellation keeps its own reason; a lapsed hold records why the late payment was refunded.
     db.prepare(`UPDATE bookings SET
         cancelled_at = CASE WHEN status = 'cancelled' THEN cancelled_at ELSE ? END,

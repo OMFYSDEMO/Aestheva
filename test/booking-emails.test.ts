@@ -3,6 +3,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { day, fakeRazorpay, guest, req, seed, sql } from "./helpers";
 import { cancelByClinic, createDirectBooking } from "../src/services/clinic";
 import { emailBookingCancelled, emailBookingConfirmed } from "../src/services/booking-emails";
+import { applyCapturedPayment } from "../src/services/bookings";
 
 type Sent = { to: string; subject: string; text: string; html: string };
 let sent: Sent[] = [];
@@ -76,6 +77,22 @@ describe("booking emails", () => {
     expect(to("desk@saanvi.example")).toHaveLength(1);
     await req("POST", `/api/bookings/${held.ref}/payment`, paid);   // a repeat callback sends nothing new
     expect(to(guest.email)).toHaveLength(1);
+  });
+
+  it("sends one confirmation when Razorpay's notifications and the checkout callback arrive at the same moment", async () => {
+    const rp = fakeRazorpay(); rp.install(); sent = [];
+    const slot = await firstSlot("v7", day(8));
+    const held = (await req("POST", "/api/bookings", { serviceId: "v7", staffId: "any", date: day(8), start: slot.min, ...guest, phone: "9811144455" })).json;
+    const paid = await rp.pay(held.payment.orderId);
+    const pay = { orderId: held.payment.orderId, paymentId: paid.razorpay_payment_id, amount: held.payment.amount, method: "upi" };
+    const outcomes = await Promise.all([
+      applyCapturedPayment(env, pay, "razorpay"), applyCapturedPayment(env, pay, "razorpay"),
+      req("POST", `/api/bookings/${held.ref}/payment`, paid).then((r) => ({ outcome: r.json.outcome })),
+    ]);
+    expect(outcomes.filter((o) => o.outcome === "confirmed")).toHaveLength(1);
+    expect(outcomes.filter((o) => o.outcome === "already_applied")).toHaveLength(2);
+    expect(await sql("SELECT action FROM audit_log WHERE action = 'booking.confirmed' AND entity_id = (SELECT id FROM bookings WHERE ref = ?)", held.ref)).toHaveLength(1);
+    expect((await sql("SELECT status FROM bookings WHERE ref = ?", held.ref))[0].status).toBe("confirmed");
   });
 
   it("tells a client the business booked them in, and when the business cancels", async () => {
