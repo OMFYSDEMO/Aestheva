@@ -736,3 +736,6 @@ html{overflow-x:clip}
 .faq details[open] summary::after{content:'–'}
 .faq details p{margin-top:10px;color:var(--muted);font-size:14.5px}
 @media (max-width:760px){.topic-row{flex-wrap:wrap;gap:8px 12px}.topic-row>a{flex-basis:100%}}
+/* Footer sketch of Trivandrum: full width on desktop, centred on the gopuram on phones */
+.footer-art{display:block;width:calc(100% + 48px);height:auto;aspect-ratio:1260/200;margin:-12px -24px 36px;color:#F4D7E3;opacity:.42;stroke-width:1}
+@media (max-width:760px){.footer-art{aspect-ratio:auto;height:150px;margin-bottom:28px}}
