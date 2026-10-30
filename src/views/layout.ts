@@ -16,9 +16,8 @@ export interface PageOpts {
   jsonLd?: object[];          // schema.org structured data for search engines
 }
 
-// Body and heading fonts, plus the serif only for the letters of the wordmark (a few hundred bytes).
-const FONTS = "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Outfit:wght@600;700&display=swap";
-const LOGO_FONT = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&text=AESTHV&display=swap";
+// Body font (Manrope) and the heading and wordmark font (Outfit).
+const FONTS = "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap";
 /** JSON-LD, with "<" escaped so a name can never close the script tag. */
 const ld = (o: object) => `<script type="application/ld+json">${JSON.stringify(o).replace(/</g, "\\u003c")}</script>`;
 
@@ -55,9 +54,8 @@ ${o.canonical ? `<meta property="og:url" content="${esc(o.canonical)}">` : ""}
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="${LOGO_FONT}" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="${FONTS}" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="${LOGO_FONT}"><link rel="stylesheet" href="${FONTS}"></noscript>
+<noscript><link rel="stylesheet" href="${FONTS}"></noscript>
 <link rel="stylesheet" href="/styles.css">
 ${(o.jsonLd ?? []).map(ld).join("\n")}
 ${o.head ?? ""}
@@ -66,7 +64,7 @@ ${o.head ?? ""}
 <a class="skip" href="#main">Skip to content</a>
 ${ribbon}
 <header class="topbar"><div class="topbar-in">
-  <a class="logo" href="${o.app ? "/clinic" : "/"}" style="text-decoration:none">AESTHEVA<small>${esc(o.app ? o.app.label.toUpperCase() : COMPANY.launchCity.toUpperCase())}</small></a>
+  <a class="logo" href="${o.app ? "/clinic" : "/"}" style="text-decoration:none"><span class="wm">aestheva</span>${o.app ? `<span class="logo-sub">${esc(o.app.label)}</span>` : ""}</a>
   ${o.app ? `<div class="topnav">${o.app.right ?? ""}</div>` : `<nav class="topnav" aria-label="Main">
     ${navLink("/search", "explore", "search", "Explore")}
     ${navLink("/about", "story", "leaf", "Our story")}
@@ -78,12 +76,12 @@ ${body}
 </main>
 ${o.app ? `<footer class="footer app-foot"><p>Aestheva for business · Help: <a href="mailto:${esc(COMPANY.supportEmail)}">${esc(COMPANY.supportEmail)}</a></p></footer>` : `<footer class="footer"><div class="footer-in">
   <div class="footer-brand">
-    <div class="serif" style="font-size:24px;letter-spacing:.22em;color:var(--mulberry);font-weight:600">AESTHEVA</div>
+    <div class="logo logo-foot"><span class="wm">aestheva</span></div>
     <p class="mt12">Beauty, wellness and care in ${esc(COMPANY.launchCity)}, booked with the price, the person and the time settled before you arrive.</p>
     <p class="mt12 xs">Made in Kazhakkoottam. Kochi, Kozhikode and Thrissur next.</p>
   </div>
   <nav aria-label="Explore"><h2>Explore</h2><a href="/search">All services</a><a href="/trivandrum">Prices &amp; service guides</a><a href="/search?cat=skin">Skin &amp; facials</a><a href="/search?cat=nails">Nails, lashes &amp; brows</a><a href="/search?cat=groom">Makeup &amp; grooming</a><a href="/search?cat=dental">Smile &amp; dental</a></nav>
-  <nav aria-label="Aestheva"><h2>Aestheva</h2><a href="/about">Our story</a><a href="/for-practitioners">List your business</a><a href="/for-practitioners/apply">Apply to join</a><a href="/contact">Contact</a></nav>
+  <nav aria-label="Company"><h2>Company</h2><a href="/about">Our story</a><a href="/for-practitioners">List your business</a><a href="/for-practitioners/apply">Apply to join</a><a href="/contact">Contact</a></nav>
   <nav aria-label="Policies"><h2>Policies</h2><a href="/policies/cancellation">Cancellation &amp; refunds</a><a href="/policies/terms">Terms of use</a><a href="/policies/privacy">Privacy</a></nav>
 </div>
 <div class="footer-base">

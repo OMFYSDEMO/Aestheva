@@ -37,7 +37,7 @@ export const signOutButton = (csrf: string, name: string) => `<span class="small
 
 export function clinicLoginPage(error = "", configured = true, notice = "") {
   return `<div class="page narrow" style="max-width:460px;padding-top:56px">
-    <div class="card"><div class="eyebrow">Aestheva for business</div><h1 class="mt8" style="font-size:34px">Sign in</h1>
+    <div class="card"><div class="logo"><span class="wm">aestheva</span><span class="logo-sub">for business</span></div><h1 class="mt8" style="font-size:34px">Sign in</h1>
     <p class="small muted mt8">For salons, studios, clinics and independent professionals listed on Aestheva. Your login comes from the Aestheva team.</p>
     ${notice ? `<div class="form-ok mt12" role="status">${esc(notice)}</div>` : ""}
     ${configured ? `<form method="post" action="/clinic/login" class="col mt16" style="gap:12px">
@@ -64,12 +64,12 @@ export function setPasswordPage(d: { token: string; email: string; venue: string
     </form></div></div>`;
 }
 export function linkInvalidPage() {
-  return `<div class="page narrow" style="max-width:480px;padding-top:56px"><div class="card"><div class="eyebrow">Aestheva for business</div><h1 class="mt8" style="font-size:30px">This link has expired</h1>
+  return `<div class="page narrow" style="max-width:480px;padding-top:56px"><div class="card"><div class="logo"><span class="wm">aestheva</span><span class="logo-sub">for business</span></div><h1 class="mt8" style="font-size:30px">This link has expired</h1>
     <p class="small muted mt8">Set-password links work once, for a limited time. You can ask for a new one below, or ask the Aestheva team to send a fresh invitation.</p>
     <div class="row wrap mt16" style="gap:8px"><a class="btn btn-p btn-s" href="/clinic/forgot">Email me a new link</a><a class="btn btn-o btn-s" href="/clinic/login">Sign in</a></div></div></div>`;
 }
 export function forgotPage(sent = false) {
-  return `<div class="page narrow" style="max-width:460px;padding-top:56px"><div class="card"><div class="eyebrow">Aestheva for business</div><h1 class="mt8" style="font-size:32px">Forgot your password?</h1>
+  return `<div class="page narrow" style="max-width:460px;padding-top:56px"><div class="card"><div class="logo"><span class="wm">aestheva</span><span class="logo-sub">for business</span></div><h1 class="mt8" style="font-size:32px">Forgot your password?</h1>
     ${sent ? `<div class="form-ok mt12" role="status">If that email has a clinic login, we've sent it a link to choose a new password. It works for 1 hour. Check spam if it isn't there in a few minutes.</div><p class="small mt16"><a href="/clinic/login">Back to sign in</a></p>`
     : `<p class="small muted mt8">Enter your login email and we'll send you a link to choose a new password.</p>
       <form method="post" action="/clinic/forgot" class="col mt16" style="gap:12px"><label class="f" for="fe">Email<input class="in" id="fe" name="email" type="email" autocomplete="username" required autofocus></label><button class="btn btn-p" type="submit">Email me a link</button></form>

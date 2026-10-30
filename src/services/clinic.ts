@@ -112,10 +112,10 @@ export async function emailPasswordLink(env: Env, u: { name: string; email: stri
   const until = invite ? `${LINK_HOURS.invite / 24} days` : "1 hour";
   const text = `Hello ${u.name},\n\n${lead}\n\n${invite ? "Set your password" : "Choose a new password"} here (the link works once, for ${until}):\n${url}\n\nYour login email is ${u.email}. After that, sign in at ${new URL(url).origin}/clinic.\n\nAestheva`;
   const html = `<div style="font-family:Arial,sans-serif;font-size:15px;color:#302A2E;line-height:1.55;max-width:520px">
-    <p style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#713F54;font-weight:bold;margin:0">Aestheva for business</p>
-    <h1 style="font-family:Georgia,serif;font-weight:normal;font-size:26px;margin:8px 0 14px">${invite ? `Welcome, ${escH(u.name)}` : "Reset your password"}</h1>
+    <p style="font-family:Arial,sans-serif;font-size:24px;font-weight:bold;letter-spacing:-0.5px;color:#8A2E5C;margin:0">aestheva <span style="font-size:15px;font-weight:normal;letter-spacing:0;color:#857A80">for business</span></p>
+    <h1 style="font-family:Arial,sans-serif;font-weight:bold;font-size:24px;color:#1D1A1C;margin:18px 0 14px">${invite ? `Welcome, ${escH(u.name)}` : "Reset your password"}</h1>
     <p>${escH(lead)}</p>
-    <p style="margin:24px 0"><a href="${escH(url)}" style="background:#713F54;color:#fff;padding:12px 20px;border-radius:999px;text-decoration:none">${invite ? "Set your password" : "Choose a new password"}</a></p>
+    <p style="margin:24px 0"><a href="${escH(url)}" style="background:#8A2E5C;color:#fff;padding:12px 20px;border-radius:999px;text-decoration:none">${invite ? "Set your password" : "Choose a new password"}</a></p>
     <p style="color:#6B5F65;font-size:13px">The link works once, for ${until}. Your login email is <b>${escH(u.email)}</b>.</p>
     <p style="color:#8A7C83;font-size:12px">If the button doesn't work, copy this link into your browser:<br>${escH(url)}</p></div>`;
   return sendEmail(env, u.email, { subject, text, html });
