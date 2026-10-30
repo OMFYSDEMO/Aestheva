@@ -5,12 +5,14 @@ import { addDays, hoursUntil, isIsoDate, nowIst, type IstNow } from "../domain/t
 import { slotsFor } from "../domain/availability";
 import { canStart, isMedical, loadInventory, type ServiceRow } from "./catalog";
 import { gatewayFor } from "./gateway";
+import { commissionBp, welcomeCredit } from "./incentives";
 
 export interface BookingRow {
   id: string; ref: string; provider_id: string; service_id: string; staff_id: string; client_id: string; date: string; start_min: number;
   dur_min: number; service_name: string; kind: string; price_paise: number; deposit_paise: number; commission_bp: number; source: string;
   status: "held" | "confirmed" | "completed" | "cancelled" | "no_show" | "expired"; hold_expires_at: string | null; manage_token_hash: string; email_token_hash?: string | null;
   client_note: string; confirmed_at: string | null; cancelled_at: string | null; cancelled_by: string | null; cancel_reason: string | null; created_at: string;
+  channel?: string; credit_paise?: number;
 }
 export interface PaymentRow {
   id: string; booking_id: string; gateway: "razorpay" | "simulated"; order_id: string; payment_id: string | null; amount_paise: number;
@@ -23,6 +25,7 @@ export interface NewBooking {
   serviceId: string; staffId: string; date: string; start: number;
   name: string; phone: string; email: string; note?: string; ackMedical?: boolean; ackTreatment?: boolean;
   allowDraft?: boolean;   // set only when the request carried a valid preview key
+  via?: string;           // slug from the business's own link the client arrived through, if any
 }
 
 /** Indian mobile numbers to E.164: 98765 43210, 098765..., +91 98765... all become +919876543210. */
@@ -89,6 +92,11 @@ export async function createBooking(env: Env, input: NewBooking, now: Date = new
   await db.prepare("UPDATE clients SET name = ?, email = ? WHERE id = ?").bind(name, email, client.id).run();
 
   const needsDeposit = service.deposit_paise > 0;
+  // Incentives: no commission through the business's own link; founding partners' rates; the welcome offer on a first deposit.
+  const prov = (await db.prepare("SELECT slug, founding_no, live_since FROM providers WHERE id = ?").bind(service.provider_id).first<{ slug: string; founding_no: number | null; live_since: string | null }>())!;
+  const channel = input.via && input.via === prov.slug ? "own_link" : "";
+  const commission = commissionBp(prov, channel, ist.date);
+  const credit = needsDeposit ? await welcomeCredit(env, client.id, service.deposit_paise) : 0;
   const token = newToken();
   const tokenHash = await sha256Hex(token);
   const holdUntil = new Date(now.getTime() + POLICY.holdMinutes * 6e4).toISOString();
@@ -99,11 +107,11 @@ export async function createBooking(env: Env, input: NewBooking, now: Date = new
       const status = needsDeposit ? "held" : "confirmed";
       const stmts = [
         db.prepare(`INSERT INTO bookings (id, ref, provider_id, service_id, staff_id, client_id, date, start_min, dur_min, service_name, kind,
-            price_paise, deposit_paise, commission_bp, source, status, hold_expires_at, manage_token_hash, client_note, confirmed_at, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'marketplace', ?, ?, ?, ?, ?, ?, ?)`)
+            price_paise, deposit_paise, commission_bp, source, status, hold_expires_at, manage_token_hash, client_note, confirmed_at, created_at, updated_at, channel, credit_paise)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'marketplace', ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
           .bind(id, ref, service.provider_id, service.id, staffId, client.id, input.date, input.start, service.dur_min, service.name, service.kind,
-            service.price_paise, service.deposit_paise, POLICY.commissionBp, status, needsDeposit ? holdUntil : null, tokenHash, note,
-            needsDeposit ? null : ts, ts, ts),
+            service.price_paise, service.deposit_paise, commission, status, needsDeposit ? holdUntil : null, tokenHash, note,
+            needsDeposit ? null : ts, ts, ts, channel, credit),
         ...slotsFor(input.start, service.dur_min).map((slot) =>
           db.prepare("INSERT INTO staff_slots (staff_id, date, slot, booking_id) VALUES (?, ?, ?, ?)").bind(staffId, input.date, slot, id)),
         ...resources.flatMap((r) => slotsFor(input.start, service.dur_min).map((slot) =>
@@ -128,10 +136,12 @@ export async function createBooking(env: Env, input: NewBooking, now: Date = new
 async function openPayment(env: Env, booking: BookingRow) {
   const gw = gatewayFor(env);
   try {
-    const order = await gw.createOrder(booking.deposit_paise, booking.ref, { booking_id: booking.id, ref: booking.ref });
+    // The client pays the deposit less any welcome credit; Aestheva covers the credit when the business is paid.
+    const due = booking.deposit_paise - (booking.credit_paise ?? 0);
+    const order = await gw.createOrder(due, booking.ref, { booking_id: booking.id, ref: booking.ref });
     await env.DB.prepare("INSERT INTO payments (id, booking_id, gateway, order_id, amount_paise) VALUES (?, ?, ?, ?, ?)")
-      .bind(newId("pmt"), booking.id, gw.kind, order.id, booking.deposit_paise).run();
-    return { gateway: gw.kind, keyId: gw.keyId, orderId: order.id, amount: booking.deposit_paise };
+      .bind(newId("pmt"), booking.id, gw.kind, order.id, due).run();
+    return { gateway: gw.kind, keyId: gw.keyId, orderId: order.id, amount: due };
   } catch (e) {
     await releaseSlots(env.DB, booking.id, "expired", "system", "payment order could not be created");
     throw e;

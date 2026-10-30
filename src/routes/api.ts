@@ -7,6 +7,8 @@ import { loadInventory, slotsOn, type ServiceRow } from "../services/catalog";
 import { applyCapturedPayment, authorisedBooking, bookingByRef, cancelByClient, createBooking, type PaymentRow } from "../services/bookings";
 import { gatewayFor, previewAllowed } from "../services/gateway";
 import { COMPANY } from "../config";
+import { getCookie } from "hono/cookie";
+import { VIA_COOKIE } from "../services/incentives";
 import { afterConfirmed, alertBusiness, emailBookingCancelled, siteOf } from "../services/booking-emails";
 
 const api = new Hono<{ Bindings: Env }>();
@@ -63,14 +65,15 @@ api.post("/bookings", async (c) => {
     name: String(b.name ?? ""), phone: String(b.phone ?? ""), email: String(b.email ?? ""), note: String(b.note ?? ""),
     ackMedical: b.ackMedical === true, ackTreatment: b.ackTreatment === true,
     allowDraft: previewAllowed(c.env, b.preview),
+    via: getCookie(c, VIA_COOKIE),
   });
   const bk = created.booking;
   if (bk.status === "confirmed") c.executionCtx.waitUntil(afterConfirmed(c.env, bk.id, siteOf(c.env, c.req.raw)));
   const manageUrl = `${origin(c.env, c.req.raw)}/booking/${bk.ref}?t=${created.manageToken}`;
   return c.json({
-    ref: bk.ref, status: bk.status, manageUrl, holdExpiresAt: bk.hold_expires_at,
+    ref: bk.ref, status: bk.status, manageUrl, holdExpiresAt: bk.hold_expires_at, credit: bk.credit_paise ?? 0,
     payment: created.payment && {
-      ...created.payment, currency: "INR", name: COMPANY.brand, description: `Deposit · ${bk.service_name}`,
+      ...created.payment, currency: "INR", name: COMPANY.brand, description: `Deposit · ${bk.service_name}${bk.credit_paise ? ` · ₹${bk.credit_paise / 100} welcome offer applied` : ""}`,
       prefill: { name: String(b.name ?? ""), email: String(b.email ?? ""), contact: String(b.phone ?? "") },
     },
   }, 201);

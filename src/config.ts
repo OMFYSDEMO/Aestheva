@@ -18,6 +18,16 @@ export const POLICY = {
   commissionBp: 1000,      // 10% of the full price on completed marketplace bookings
 } as const;
 
+/** Phase 1 incentives. Change the numbers here; the site's wording follows them. */
+export const INCENTIVES = {
+  foundingPlaces: 50,       // the first 50 businesses to go live are founding partners
+  foundingFreeMonths: 3,    // 0% commission for their first 3 months live
+  foundingRateBp: 750,      // then 7.5% ...
+  foundingMonths: 12,       // ... until their first anniversary, then the standard rate
+  ownLinkDays: 30,          // a visit through a business's own link counts for 30 days
+  welcomeCreditPaise: 10000, // ₹100 off the deposit of a client's first booking, paid by Aestheva
+} as const;
+
 /** Where Aestheva works for now: Thiruvananthapuram and the towns around it. */
 export const SERVICE_AREA = { name: "Thiruvananthapuram", short: "Trivandrum", lat: 8.4875, lng: 76.952, radiusKm: 40 } as const;
 

@@ -1,9 +1,10 @@
 // Self-serve onboarding. A clinic builds its own listing in the portal (details, photos, team, treatments,
 // documents, terms), submits it, and the Aestheva team publishes it. Every function is scoped to one provider.
-import { AREAS, COMPANY, VENUE_TYPES } from "../config";
+import { AREAS, COMPANY, INCENTIVES, VENUE_TYPES } from "../config";
+import { assignFoundingNo, foundingTerms, ownLink } from "./incentives";
 import type { Env } from "../env";
 import { HttpError, audit, hash32, newId, nowIso } from "../db";
-import { nowIst } from "../domain/time";
+import { fmtDate, nowIst } from "../domain/time";
 import { normalisePhone } from "./bookings";
 import { createClinicUser, emailPasswordLink, issuePasswordLink, type ClinicUser } from "./clinic";
 import { getApplication } from "./applications";
@@ -307,9 +308,12 @@ export async function setVenueStage(env: Env, pid: string, action: "publish" | "
   note = note.trim().slice(0, 2000);
   if (action === "send_back" && note.length < 5) throw new HttpError(400, "Please write what needs changing. They see this note.");
   if (action === "publish") await db.batch([db.prepare("UPDATE providers SET status = 'live', live_since = COALESCE(live_since, date('now')), review_note = '' WHERE id = ?").bind(pid), audit(db, "ops", "provider.live", "provider", pid)]);
+  const founding = action === "publish" ? await assignFoundingNo(db, pid) : null;
+  const ft = founding ? foundingTerms({ founding_no: founding, live_since: (await db.prepare("SELECT live_since FROM providers WHERE id = ?").bind(pid).first<{ live_since: string }>())?.live_since }, nowIst().date) : null;
   if (action === "send_back") await db.batch([db.prepare("UPDATE providers SET submitted_at = NULL, review_note = ? WHERE id = ?").bind(note, pid), audit(db, "ops", "provider.sent_back", "provider", pid)]);
   if (action === "pause") await db.batch([db.prepare("UPDATE providers SET status = 'paused' WHERE id = ?").bind(pid), audit(db, "ops", "provider.paused", "provider", pid, { note })]);
-  const m = action === "publish" ? mail(`${p.name} is live on Aestheva`, ["Clients can now find you and book online. New bookings appear in your Aestheva portal under Today and Calendar. Phone and walk-in bookings you add there hold the time too.", "Tip: share your page on WhatsApp and Instagram so your regular clients can book you directly."], ["See your page", `${siteUrl}/p/${p.slug}`])
+  const m = action === "publish" ? mail(`${p.name} is live on Aestheva`, ["Clients can now find you and book online. New bookings appear in your Aestheva portal under Today and Calendar. Phone and walk-in bookings you add there hold the time too.", `Share your own booking link on Instagram, WhatsApp and Google Maps: ${ownLink(siteUrl, p.slug)}. Bookings from clients who arrive through it carry no commission.`,
+      ...(ft ? [`You're founding partner #${ft.no}: no commission for your first ${INCENTIVES.foundingFreeMonths} months (until ${fmtDate(ft.freeUntil, true)}), then ${INCENTIVES.foundingRateBp / 100}% until your first anniversary on ${fmtDate(ft.foundingUntil, true)}.`] : [])], ["See your page", `${siteUrl}/p/${p.slug}`])
     : action === "send_back" ? mail(`A few changes for ${p.name}`, ["Thanks for setting up your listing. Before we publish it, please look at this note from the Aestheva team:", note, "Make the changes in your Aestheva portal, then press Submit for review again."], ["Open your listing", `${siteUrl}/clinic/setup`])
     : mail(`${p.name} is paused on Aestheva`, ["Your listing is hidden from clients for now, and no new bookings can be made. Existing bookings stay as they are.", ...(note ? [note] : []), `Questions? Write to ${COMPANY.supportEmail}.`]);
   const subject = action === "publish" ? `You're live: ${p.name}` : action === "send_back" ? `Changes needed: ${p.name}` : `Paused: ${p.name}`;

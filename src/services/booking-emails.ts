@@ -91,12 +91,13 @@ async function logged(env: Env, bookingId: string, kind: string, r: { ok: boolea
 /** The client's confirmation email, from a loaded booking and its private links. */
 export function confirmationMail(d: Detail, manage: string, ics: string, site: string) {
   const direct = d.b.source === "direct";
-  const balance = d.b.price_paise - (d.paid && d.paid.status === "captured" ? d.paid.amount_paise : 0);
+  const credit = d.paid && d.paid.status === "captured" ? d.b.credit_paise ?? 0 : 0;
+  const balance = d.b.price_paise - (d.paid && d.paid.status === "captured" ? d.paid.amount_paise : 0) - credit;
   const rows: [string, string][] = [
     ["What", `<b>${esc(d.b.service_name)}</b>${d.staff ? ` with ${esc(d.staff.name)}` : ""}`],
     ["When", `<b>${esc(when(d.b))}</b> · ${d.b.dur_min} minutes`],
     ["Where", `<b>${esc(d.p.name)}</b><br>${esc(d.p.address)}<br><a href="${esc(maps(`${d.p.name}, ${d.p.address}`))}" style="color:#8A2E5C">Get directions</a>`],
-    ["Price", d.paid && d.paid.status === "captured" ? `${esc(inr(d.b.price_paise))} in full · ${esc(inr(d.paid.amount_paise))} deposit paid · <b>${esc(inr(balance))} to pay on the day</b>` : `<b>${esc(inr(d.b.price_paise))}</b>, paid on the day. Nothing to pay online.`],
+    ["Price", d.paid && d.paid.status === "captured" ? `${esc(inr(d.b.price_paise))} in full · ${esc(inr(d.paid.amount_paise))} deposit paid${credit ? ` (with ${esc(inr(credit))} off from Aestheva's welcome offer)` : ""} · <b>${esc(inr(balance))} to pay on the day</b>` : `<b>${esc(inr(d.b.price_paise))}</b>, paid on the day. Nothing to pay online.`],
     ["Booking", esc(d.b.ref)],
   ];
   const notes = [
@@ -167,6 +168,8 @@ export function businessMail(d: Detail, site: string, event: "new" | "cancelled"
       ["What", `${esc(d.b.service_name)}${d.staff ? ` with ${esc(d.staff.name)}` : ""}`],
       ["When", `<b>${esc(when(d.b))}</b> · ${d.b.dur_min} minutes`],
       ...(d.b.client_note && event === "new" ? [["Note", esc(d.b.client_note)] as [string, string]] : []),
+      ...(event === "new" && d.paid && d.paid.status === "captured" ? [["Deposit", `${esc(inr(d.paid.amount_paise))} paid by the client${d.b.credit_paise ? ` + ${esc(inr(d.b.credit_paise))} welcome offer, paid to you by Aestheva` : ""}`] as [string, string]] : []),
+      ...(event === "new" && d.b.channel === "own_link" ? [["Commission", "None: they came through your own Aestheva link"] as [string, string]] : []),
       ["Booking", esc(d.b.ref)],
     ],
     buttons: [["Open the booking", `${site}/clinic/bookings/${d.b.ref}`]], notes: [],

@@ -1,6 +1,8 @@
 import { Hono, type Context } from "hono";
 import type { Env } from "../env";
-import { AREAS, COMPANY, WAITLIST_CITIES, typeLabel } from "../config";
+import { AREAS, COMPANY, INCENTIVES, WAITLIST_CITIES, typeLabel } from "../config";
+import { setCookie } from "hono/cookie";
+import { VIA_COOKIE, foundingPlacesLeft, welcomeAmount } from "../services/incentives";
 import { breadcrumbs, business, faqPage, itemList, organisation, serviceOffer, website } from "../views/seo";
 import { TOPICS, topicBySlug, type Topic } from "../content/topics";
 import { topicIndexPage, topicPage, type TopicRow } from "../views/topics";
@@ -38,7 +40,7 @@ site.get("/", async (c) => {
     title: "Book beauty, wellness & care in Trivandrum · Aestheva",
     description: "Find salons, clinics, studios and independent beauty professionals near you in Thiruvananthapuram. See full prices and real free times, and book in a minute.",
     canonical: base(c) + "/", joinPromo: true, jsonLd: [organisation(base(c)), website(base(c))],
-  }, homePage({ providers, services, categories: cats, ratings: rt, next, today, joined: joined && (WAITLIST_CITIES as readonly string[]).includes(joined) ? joined : undefined }));
+  }, homePage({ providers, services, categories: cats, ratings: rt, next, today, welcome: welcomeAmount(c.env), joined: joined && (WAITLIST_CITIES as readonly string[]).includes(joined) ? joined : undefined }));
 });
 
 site.get("/search", async (c) => {
@@ -81,6 +83,14 @@ site.get("/search", async (c) => {
   }, searchPage({ f, results, outside: !f.area && !!near && !inServiceArea(near), categories: providers.length ? cats.filter((x) => services.some((s) => s.cat === x.id)) : cats, ratings: rt, next, today, anyLive: providers.length > 0 }));
 });
 
+/** A business's own booking link: remembers where the client came from for 30 days, then opens the business's page. */
+site.get("/b/:slug", async (c) => {
+  const p = await c.env.DB.prepare("SELECT slug FROM providers WHERE slug = ? AND status = 'live'").bind(c.req.param("slug")).first<{ slug: string }>();
+  if (!p) return c.redirect("/", 302);
+  setCookie(c, VIA_COOKIE, p.slug, { path: "/", maxAge: INCENTIVES.ownLinkDays * 86400, sameSite: "Lax", httpOnly: true, secure: new URL(c.req.url).protocol === "https:" });
+  return c.redirect(`/p/${p.slug}`, 302);
+});
+
 site.get("/p/:slug", async (c) => {
   const preview = previewAllowed(c.env, c.req.query("preview")) ? c.req.query("preview") : undefined;
   const db = c.env.DB, d = await providerBySlug(db, c.req.param("slug"), !!preview);
@@ -106,7 +116,7 @@ site.get("/book/:slug", async (c) => {
   try { gateway = gatewayFor(c.env).kind; } catch { /* production without keys: deposits can't be taken */ }
   const scripts = ["/book.js", ...(gateway === "razorpay" ? ["https://checkout.razorpay.com/v1/checkout.js"] : [])];
   return page(c, { title: `Book · ${d.provider.name} · Aestheva`, noindex: true, scripts },
-    bookPage(d, pre && d.services.some((s) => s.id === pre) ? pre : null, { gateway, mode: paymentMode(c.env) }, preview, await categories(c.env.DB)));
+    bookPage(d, pre && d.services.some((s) => s.id === pre) ? pre : null, { gateway, mode: paymentMode(c.env) }, preview, await categories(c.env.DB), welcomeAmount(c.env)));
 });
 
 async function renderManage(c: C, ref: string, token: string, message?: string) {
@@ -162,7 +172,7 @@ site.get("/policies/terms", (c) => page(c, { title: "Terms of use · Aestheva", 
 site.get("/policies/privacy", (c) => page(c, { title: "Privacy · Aestheva", canonical: base(c) + "/policies/privacy" }, privacyPage()));
 site.get("/contact", (c) => page(c, { title: "Contact · Aestheva", canonical: base(c) + "/contact" }, contactPage()));
 site.get("/about", (c) => page(c, { jsonLd: [organisation(base(c))], title: "Our story · Aestheva", description: `Why we built Aestheva, who runs it, and what you can count on when you book care in ${COMPANY.launchCity}.`, canonical: base(c) + "/about", nav: "story", joinPromo: true }, aboutPage()));
-site.get("/for-practitioners", async (c) => page(c, { title: "List your business · Aestheva", description: `Salons, studios, clinics and independent professionals: list your beauty, wellness or care business on Aestheva in ${COMPANY.launchCity}.`, canonical: base(c) + "/for-practitioners", nav: "practitioners" }, practitionersPage(await categories(c.env.DB))));
+site.get("/for-practitioners", async (c) => page(c, { title: "List your business · Aestheva", description: `Salons, studios, clinics and independent professionals: list your beauty, wellness or care business on Aestheva in ${COMPANY.launchCity}.`, canonical: base(c) + "/for-practitioners", nav: "practitioners" }, practitionersPage(await categories(c.env.DB), await foundingPlacesLeft(c.env.DB))));
 
 const applyMeta = (c: C) => ({ title: "Apply to join · Aestheva", description: `Apply to list your salon, studio, clinic or independent business on Aestheva in ${COMPANY.launchCity}.`, canonical: base(c) + "/for-practitioners/apply", nav: "practitioners" as const });
 site.get("/for-practitioners/apply", async (c) => {

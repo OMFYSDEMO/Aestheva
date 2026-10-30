@@ -1,5 +1,5 @@
 // The clinic's "Set up your listing" pages. Plain HTML forms; photos use public/setup.js to resize in the browser.
-import { AREAS, COMPANY, POLICY, VENUE_TYPES, VENUE_TYPE_CHOICES } from "../config";
+import { AREAS, COMPANY, INCENTIVES, POLICY, VENUE_TYPES, VENUE_TYPE_CHOICES } from "../config";
 import { fmtTime } from "../domain/time";
 import type { ProviderRow, ServiceRow, StaffRow } from "../services/catalog";
 import { AMENITY_IDEAS, DAY_NAMES, DAY_ORDER, DOC_KINDS, DURATIONS, LANGS, MAX_PHOTOS, type Errors, type Step } from "../services/onboarding";
@@ -175,7 +175,7 @@ export function termsPage(d: { p: ProviderRow; csrf: string; error?: string; acc
     <div class="card prose mt16" style="max-width:760px">
       <p>The essentials of listing ${esc(d.p.name)} on Aestheva, operated by ${esc(COMPANY.legalName)}. The full <a href="/policies/terms" target="_blank" rel="noopener">terms of use</a> and <a href="/policies/cancellation" target="_blank" rel="noopener">cancellation policy</a> apply.</p>
       <ul>
-        <li><b>Commission:</b> ${POLICY.commissionBp / 100}% of the full price, only on completed bookings that clients make through Aestheva. Bookings your team adds in the portal (phone, walk-in) carry no commission.</li>
+        <li><b>Commission:</b> ${POLICY.commissionBp / 100}% of the full price, only on completed bookings that clients make through Aestheva. Bookings from clients who arrive through your own Aestheva link, and bookings your team adds in the portal (phone, walk-in), carry no commission. Founding partners (the first ${INCENTIVES.foundingPlaces} businesses to go live) pay no commission for their first ${INCENTIVES.foundingFreeMonths} months, then ${INCENTIVES.foundingRateBp / 100}% until their first anniversary.</li>
         <li><b>Payments:</b> for now clients pay you on the day. When online deposits start, they're settled to your bank account weekly, less commission, after a short KYC with Razorpay.</li>
         <li><b>Cancellations:</b> clients can cancel free up to ${POLICY.freeCancelHours} hours before. If you cancel, any deposit is refunded to the client in full.</li>
         <li><b>Your care, your responsibility:</b> you provide the service and are responsible for it. For medical treatments, your practitioner decides whether a treatment suits each client.</li>

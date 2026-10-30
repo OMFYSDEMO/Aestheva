@@ -168,7 +168,12 @@ describe("self-serve onboarding, from application to a live listing", () => {
     const pub = await req("GET", `/p/${slug}`);
     expect(pub.status).toBe(200);
     for (const s of ["Glow Lounge", "Beautician certificates checked", "Professional (non-medical)", "Call Glow Lounge", `/media/${pid}/`]) expect(pub.text).toContain(s);
-    expect((await send("GET", "/clinic", undefined, { cookie: clinic })).status).toBe(200);   // now opens on Today
+    const todayPage = await send("GET", "/clinic", undefined, { cookie: clinic });   // now opens on Today
+    expect(todayPage.status).toBe(200);
+    expect(todayPage.text).toContain("Your booking link"); expect(todayPage.text).toContain(`/b/${slug}`);
+    expect(todayPage.text).toMatch(/Founding partner #\d+/);   // published while places remain
+    expect(sent[0].text).toMatch(/You're founding partner #\d+: no commission for your first 3 months/);
+    expect(sent[0].text).toContain(`/b/${slug}`);
   });
 
   it("clients can book the new venue online", async () => {

@@ -1,4 +1,4 @@
-import { COMPANY, POLICY } from "../config";
+import { COMPANY, INCENTIVES, POLICY } from "../config";
 import { fact } from "./layout";
 import { catTile, esc, ic } from "./ui";
 
@@ -36,6 +36,8 @@ export function termsPage() {
     <p>Each profile lists what Aestheva checked, its scope and when. Verification confirms documents within that scope on that date. It is not a guarantee of results.</p>
     <h2>Payments</h2>
     <p>Deposits are collected by ${esc(COMPANY.legalName)} through Razorpay and passed to the venue, less Aestheva's commission. The balance is paid to the venue directly. Cancellations and refunds follow the <a href="/policies/cancellation">cancellation policy</a>.</p>
+    <h2 id="offers">Offers</h2>
+    <p><b>Welcome offer.</b> ₹${INCENTIVES.welcomeCreditPaise / 100} off the deposit of your first booking on Aestheva that takes a deposit. It is paid by ${esc(COMPANY.legalName)}, not by the business, and the business still receives the full deposit. One per person, identified by mobile number. It applies automatically when you pay, cannot be exchanged for cash and cannot be combined with other offers. If the booking is cancelled, the offer stays available for your next booking. We may change or end the offer at any time; bookings already paid are not affected.</p>
     <h2>Reviews</h2>
     <p>Reviews must describe your own experience of a booking made on Aestheva.</p>
   </div>`;
@@ -128,7 +130,7 @@ export function aboutPage() {
   </div>`;
 }
 
-export function practitionersPage(cats: { id: string; name: string }[] = []) {
+export function practitionersPage(cats: { id: string; name: string }[] = [], placesLeft = 0) {
   const who = [
     ["users", "Independent professionals", "Beauticians, nail artists, makeup and bridal artists, tattoo and piercing artists, hair stylists, massage and wellness therapists."],
     ["brush", "Salons and studios", "Beauty parlours, unisex salons, nail bars, tattoo studios, barbers and grooming lounges."],
@@ -157,12 +159,21 @@ export function practitionersPage(cats: { id: string; name: string }[] = []) {
     </div>
     <aside class="story-facts" aria-label="Joining at a glance">
       <div><b>Listing</b><span>Free</span></div>
-      <div><b>Commission</b><span>${POLICY.commissionBp / 100}% only on completed bookings made through Aestheva. None on bookings you add yourself.</span></div>
+      <div><b>Commission</b><span>${POLICY.commissionBp / 100}% only on completed bookings made through Aestheva. None on bookings through your own link or that you add yourself.</span></div>
       <div><b>Set-up</b><span>About 30 minutes, at your own pace</span></div>
       <div><b>Working solo?</b><span>Welcome. Add just yourself, with your own hours</span></div>
     </aside>
   </section>
 
+  ${placesLeft ? `<section class="founding mt48"><div>
+      <div class="eyebrow" style="color:#F4D7E3">Founding partners · ${placesLeft} of ${INCENTIVES.foundingPlaces} places left</div>
+      <h2 class="mt8">${INCENTIVES.foundingFreeMonths} months with no commission. Then ${INCENTIVES.foundingRateBp / 100}% for the rest of your first year.</h2>
+      <p class="mt12">The first ${INCENTIVES.foundingPlaces} businesses to go live on Aestheva pay no commission for their first ${INCENTIVES.foundingFreeMonths} months, then ${INCENTIVES.foundingRateBp / 100}% instead of ${POLICY.commissionBp / 100}% until their first anniversary, and keep a "Founding partner" badge in their portal.</p>
+    </div><a class="btn btn-light" href="/for-practitioners/apply">Claim a founding place ${ic("arrowR", 16)}</a></section>` : ""}
+  <section class="mt48 grid g2 own-link-band"><div class="card"><div class="eyebrow">Your link, zero commission</div><h3 class="mt8">Bring your regulars. Keep every rupee.</h3>
+      <p class="small muted mt8">You get your own booking link to share on Instagram, WhatsApp and Google Maps. Clients who book you through it pay you directly through Aestheva, and you pay no commission on those bookings, ever. Free online booking, a calendar and deposits for the clients you already have.</p></div>
+    <div class="card"><div class="eyebrow">How it adds up</div><h3 class="mt8">A ₹2,000 booking</h3>
+      <ul class="ticks mt12"><li>${ic("check", 14)} <span>Through your own link: <b>₹0 commission</b></span></li><li>${ic("check", 14)} <span>From Aestheva search, as a founding partner, first ${INCENTIVES.foundingFreeMonths} months: <b>₹0</b></span></li><li>${ic("check", 14)} <span>Then, to your first anniversary: <b>₹${(2000 * INCENTIVES.foundingRateBp / 10000).toLocaleString("en-IN")}</b></span></li><li>${ic("check", 14)} <span>Phone and walk-in bookings you add: <b>₹0</b></span></li></ul></div></section>
   ${cats.length ? `<section class="mt48"><div class="eyebrow">Get started</div><h2 class="mt8">Select your business to get started</h2>
     <div class="tile-grid mt24">${cats.map((c) => `<a class="tile" href="/for-practitioners/apply?cat=${esc(c.id)}">${catTile(c.id, 22)}<b>${esc(c.name)}</b></a>`).join("")}</div></section>` : ""}
 

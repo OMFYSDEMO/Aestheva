@@ -18,6 +18,7 @@ export default defineConfig(async () => {
             RAZORPAY_WEBHOOK_SECRET: "test_webhook_secret",
             PREVIEW_KEY: "test-preview-key",
             OPS_KEY: "test-ops-key",
+            WELCOME_CREDIT_PAISE: "0",   // tests that cover the welcome offer turn it on themselves
           },
         },
       }),

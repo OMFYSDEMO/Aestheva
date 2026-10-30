@@ -151,9 +151,9 @@ export async function userFromSession(db: D1Database, key: string, cookie: strin
 export interface Appt {
   id: string; ref: string; date: string; start_min: number; dur_min: number; service_name: string; kind: string; status: BookingRow["status"];
   price_paise: number; deposit_paise: number; source: string; staff_id: string; staff_name: string; client_id: string; client_name: string; client_phone: string;
-  client_note: string; pay_status: string | null;
+  client_note: string; pay_status: string | null; channel: string; credit_paise: number;
 }
-const APPT_SQL = `SELECT b.id, b.ref, b.date, b.start_min, b.dur_min, b.service_name, b.kind, b.status, b.price_paise, b.deposit_paise, b.source,
+const APPT_SQL = `SELECT b.id, b.ref, b.date, b.start_min, b.dur_min, b.service_name, b.kind, b.status, b.price_paise, b.deposit_paise, b.source, b.channel, b.credit_paise,
   b.staff_id, t.name AS staff_name, b.client_id, c.name AS client_name, c.phone AS client_phone, b.client_note,
   (SELECT p.status FROM payments p WHERE p.booking_id = b.id AND p.status <> 'created' ORDER BY p.created_at DESC LIMIT 1) AS pay_status
   FROM bookings b JOIN staff t ON t.id = b.staff_id JOIN clients c ON c.id = b.client_id`;
@@ -359,13 +359,13 @@ export async function clinicClient(db: D1Database, providerId: string, clientId:
 }
 
 export async function monthMoney(db: D1Database, providerId: string, month: string) {
-  const rows = (await db.prepare(`SELECT b.ref, b.date, b.start_min, b.service_name, b.status, b.source, b.price_paise, b.commission_bp, c.name AS client_name,
+  const rows = (await db.prepare(`SELECT b.ref, b.date, b.start_min, b.service_name, b.status, b.source, b.price_paise, b.commission_bp, b.channel, b.credit_paise, c.name AS client_name,
       (SELECT COALESCE(SUM(p.amount_paise), 0) FROM payments p WHERE p.booking_id = b.id AND p.status IN ('captured','refunded','partially_refunded')) AS paid,
       (SELECT COALESCE(SUM(r.amount_paise), 0) FROM refunds r JOIN payments p ON p.id = r.payment_id WHERE p.booking_id = b.id AND r.status <> 'failed') AS refunded
     FROM bookings b JOIN clients c ON c.id = b.client_id
     WHERE b.provider_id = ? AND substr(b.date, 1, 7) = ? AND b.status IN ('confirmed','completed','no_show','cancelled')
     ORDER BY b.date, b.start_min`).bind(providerId, month)
-    .all<{ ref: string; date: string; start_min: number; service_name: string; status: string; source: string; price_paise: number; commission_bp: number; client_name: string; paid: number; refunded: number }>()).results;
+    .all<{ ref: string; date: string; start_min: number; service_name: string; status: string; source: string; price_paise: number; commission_bp: number; channel: string; credit_paise: number; client_name: string; paid: number; refunded: number }>()).results;
   const completed = rows.filter((r) => r.status === "completed");
   const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
   return {
@@ -375,7 +375,10 @@ export async function monthMoney(db: D1Database, providerId: string, month: stri
     depositsPaid: sum(rows.map((r) => r.paid)),
     refunded: sum(rows.map((r) => r.refunded)),
     keptOnCancellation: sum(rows.filter((r) => r.status === "cancelled" || r.status === "no_show").map((r) => r.paid - r.refunded)),
-    balanceAtClinic: sum(completed.map((r) => r.price_paise - (r.paid - r.refunded))),
+    // A welcome credit is part of the deposit: Aestheva pays it to the business, so the client owes that much less on the day.
+    balanceAtClinic: sum(completed.map((r) => r.price_paise - (r.paid - r.refunded) - (r.paid ? r.credit_paise : 0))),
+    welcomeCredits: sum(completed.filter((r) => r.paid).map((r) => r.credit_paise)),
+    ownLinkBookings: completed.filter((r) => r.channel === "own_link").length,
     commission: sum(completed.filter((r) => r.source === "marketplace").map((r) => Math.round((r.price_paise * r.commission_bp) / 10000))),
   };
 }

@@ -89,7 +89,7 @@ ops.get("/venues", async (c) => {
   const db = c.env.DB;
   const ps = (await db.prepare("SELECT id FROM providers ORDER BY created_at DESC").all<{ id: string }>()).results;
   const logins = new Map((await db.prepare("SELECT provider_id, COUNT(*) AS n FROM provider_users WHERE active = 1 GROUP BY provider_id").all<{ provider_id: string; n: number }>()).results.map((r) => [r.provider_id, r.n]));
-  const rows = await Promise.all(ps.map(async ({ id }) => { const l = await listing(db, id); return { id, name: l.p.name, type: l.p.type, area: l.p.area, stage: STAGE(l.p), missing: checklist(l).steps.filter((x) => !x.done).map((x) => x.title), submitted_at: l.p.submitted_at, logins: logins.get(id) ?? 0 }; }));
+  const rows = await Promise.all(ps.map(async ({ id }) => { const l = await listing(db, id); return { id, name: l.p.name, type: l.p.type, area: l.p.area, founding: (l.p as { founding_no?: number | null }).founding_no ?? null, stage: STAGE(l.p), missing: checklist(l).steps.filter((x) => !x.done).map((x) => x.title), submitted_at: l.p.submitted_at, logins: logins.get(id) ?? 0 }; }));
   return page(c, "Venues", opsVenuesPage({ rows }));
 });
 async function venuePage(c: C, id: string, extra: { message?: string; error?: string } = {}, status = 200) {

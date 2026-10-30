@@ -143,6 +143,7 @@
       const ok = D.gateway !== 'unavailable';
       html = `<h2>${s.deposit ? 'Hold your time with a deposit' : 'Confirm your booking'}</h2>
         <p class="muted mt8">${s.deposit ? `Pay ${inr(s.deposit)} now to confirm. The remaining ${inr(s.price - s.deposit)} is paid on the day.` : `Nothing to pay now. The ${inr(s.price)} is paid on the day, after your appointment.`}</p>
+        ${s.deposit && D.welcome ? `<div class="note n-sage mt12"><div><b>First booking with Aestheva?</b> We take ${inr(Math.min(D.welcome, s.deposit))} off the deposit automatically when you pay. <a href="/policies/terms#offers" target="_blank" rel="noopener">Offer terms</a></div></div>` : ''}
         <div class="card mt16 review-card"><b class="serif" style="font-size:20px">${esc(s.name)}</b>
           <dl class="kv mt12"><dt>When</dt><dd>${dParts(F.date).long} · ${esc(F.slot.label)}</dd><dt>With</dt><dd>${esc(staffById[F.slot.staffId].name)}, ${esc(staffById[F.slot.staffId].role)}</dd><dt>For</dt><dd>${esc(F.details.name)} · ${esc(F.details.phone)}<br>${esc(F.details.email)}</dd></dl></div>
         ${s.deposit ? `<p class="xs muted mt16">Payments are processed securely by Razorpay: UPI, cards, netbanking and wallets. We hold your time for ${D.holdMinutes} minutes while you pay.</p>` : ''}

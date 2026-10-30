@@ -12,12 +12,12 @@ const STAGE_BADGE: Record<string, [string, string]> = { setup: ["b-plain", "Sett
 const stageBadge = (s: string) => `<span class="badge ${STAGE_BADGE[s]?.[0] ?? "b-plain"}">${STAGE_BADGE[s]?.[1] ?? esc(s)}</span>`;
 const inrP = (p: number) => "₹" + (p / 100).toLocaleString("en-IN");
 
-export function opsVenuesPage(d: { rows: { id: string; name: string; type: string; area: string; stage: string; missing: string[]; submitted_at: string | null; logins: number }[] }) {
+export function opsVenuesPage(d: { rows: { id: string; name: string; type: string; area: string; founding?: number | null; stage: string; missing: string[]; submitted_at: string | null; logins: number }[] }) {
   const order = ["review", "setup", "live", "paused"];
   const rows = [...d.rows].sort((a, b) => order.indexOf(a.stage) - order.indexOf(b.stage));
   return shell(`<h1 class="mt8" style="font-size:40px">Venues</h1><p class="small muted mt8">Listings that are ready for review come first.</p>
     <div class="tbl-wrap mt16"><table class="tbl"><thead><tr><th>Venue</th><th>Stage</th><th>Checklist</th><th>Logins</th></tr></thead><tbody>
-    ${rows.map((r) => `<tr><td><a href="/ops/venues/${esc(r.id)}"><b>${esc(r.name)}</b></a><div class="xs muted">${esc(r.type)}${r.area ? ` · ${esc(r.area)}` : ""}</div></td><td>${stageBadge(r.stage)}${r.submitted_at && r.stage === "review" ? `<div class="xs muted">since ${when(r.submitted_at)}</div>` : ""}</td><td class="small">${r.missing.length ? `${6 - r.missing.length} of 6 done<div class="xs muted">To finish: ${esc(r.missing.join(", "))}</div>` : "Complete"}</td><td class="small">${r.logins}</td></tr>`).join("")}
+    ${rows.map((r) => `<tr><td><a href="/ops/venues/${esc(r.id)}"><b>${esc(r.name)}</b></a>${r.founding ? ` <span class="badge b-ok" style="font-size:11px">Founding #${r.founding}</span>` : ""}<div class="xs muted">${esc(r.type)}${r.area ? ` · ${esc(r.area)}` : ""}</div></td><td>${stageBadge(r.stage)}${r.submitted_at && r.stage === "review" ? `<div class="xs muted">since ${when(r.submitted_at)}</div>` : ""}</td><td class="small">${r.missing.length ? `${6 - r.missing.length} of 6 done<div class="xs muted">To finish: ${esc(r.missing.join(", "))}</div>` : "Complete"}</td><td class="small">${r.logins}</td></tr>`).join("")}
     </tbody></table></div>`);
 }
 

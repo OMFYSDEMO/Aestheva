@@ -51,3 +51,8 @@ document.querySelectorAll('form select[name=area]').forEach((sel) => sel.addEven
   pop.querySelector('[data-join-go]')?.addEventListener('click', remember);
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && shown && !pop.hidden) pop.querySelector('[data-join-close]').click(); });
 })();
+// Copy buttons (the business's booking link): copy, then say so for a moment.
+document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(b.dataset.copy); } catch { const i = b.parentElement.querySelector('input'); if (i) { i.select(); document.execCommand('copy'); } }
+  const t = b.textContent; b.textContent = 'Copied'; setTimeout(() => { b.textContent = t; }, 1600);
+}));

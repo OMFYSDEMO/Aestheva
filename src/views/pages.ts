@@ -44,7 +44,7 @@ const POPULAR = [
 // ---------- home ----------
 
 export function homePage(d: {
-  providers: ProviderRow[]; services: ServiceRow[]; categories: { id: string; name: string }[]; ratings: Map<string, Rating>; next: Next; today: string; joined?: string;
+  providers: ProviderRow[]; services: ServiceRow[]; categories: { id: string; name: string }[]; ratings: Map<string, Rating>; next: Next; today: string; joined?: string; welcome?: number;
 }) {
   const byProv = (id: string) => d.services.filter((s) => s.provider_id === id);
   const catName = (id: string) => d.categories.find((c) => c.id === id)?.name ?? id;
@@ -90,6 +90,7 @@ export function homePage(d: {
         <button class="btn btn-p" type="submit" style="padding:14px 26px">Find a time</button>
       </form>
       <div class="row wrap mt12" style="gap:10px;align-items:center">${nearBtn("btn btn-g btn-s near-link", "home-search")}<span class="xs muted" data-near-status role="status"></span></div>
+      ${d.welcome && anyDeposit ? `<p class="welcome-note mt16">${ic("star", 14)} <span><b>New to Aestheva?</b> ${inr(d.welcome)} off the deposit on your first booking. <a href="/policies/terms#offers">Terms</a></span></p>` : ""}
       ${popular.length ? `<div class="chips mt12"><span class="small muted" style="align-self:center">Popular:</span>${popular.map(([l, slug]) => `<a class="chip" href="/trivandrum/${slug}">${esc(l)}</a>`).join("")}<a class="chip chip-more" href="/trivandrum">All guides ${ic("arrowR", 13)}</a></div>` : ""}`
       : `<h1 class="mt16">Beauty, wellness and care in ${esc(SERVICE_AREA.short)}, <em>booked in a minute</em>.</h1>
       <p class="lede mt16">Salons, clinics, studios and independent professionals, with the price, the person and a genuinely free time on one page. We're checking our first listings now, and bookings open as each one goes live.</p>

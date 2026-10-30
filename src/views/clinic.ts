@@ -1,4 +1,5 @@
-import { COMPANY, POLICY } from "../config";
+import { COMPANY, INCENTIVES, POLICY } from "../config";
+import type { FoundingTerms } from "../services/incentives";
 import { addDays, fmtDate, fmtTime, relDay } from "../domain/time";
 import type { Appt, ClinicUser } from "../services/clinic";
 import type { ServiceRow, StaffRow } from "../services/catalog";
@@ -82,7 +83,7 @@ const apptRow = (a: Appt, today: string, showDate = false) => `<a class="appt-ro
   <span class="col" style="gap:4px;align-items:flex-end">${statusBadge(a.status)}${a.source === "direct" ? '<span class="xs soft">Added by you</span>' : a.pay_status === "captured" ? `<span class="xs" style="color:var(--ok)">Deposit ${inr(a.deposit_paise)} paid</span>` : ""}</span>
 </a>`;
 
-export function todayPage(o: { providerName: string; now: { date: string; min: number }; today: Appt[]; upcoming: Appt[]; newThisWeek: number; weekCount: number; depositsThisMonth: number; todo?: string[] }) {
+export function todayPage(o: { providerName: string; now: { date: string; min: number }; today: Appt[]; upcoming: Appt[]; newThisWeek: number; weekCount: number; depositsThisMonth: number; todo?: string[]; link?: string; founding?: FoundingTerms | null }) {
   const h = Math.floor(o.now.min / 60);
   const active = o.today.filter((a) => a.status !== "cancelled");
   const next = active.find((a) => a.status === "confirmed" && a.start_min + a.dur_min > o.now.min);
@@ -95,6 +96,7 @@ export function todayPage(o: { providerName: string; now: { date: string; min: n
       ${kpi("New this week", String(o.newThisWeek), "bookings made in the last 7 days")}
       ${kpi("Deposits this month", inr(o.depositsThisMonth), "paid online by clients")}
     </div>
+    ${o.link ? linkCard(o.link, o.providerName, o.founding ?? null) : ""}
     <div class="grid g2 mt24" style="align-items:start">
       <section class="card"><div class="row between"><h3 style="font-size:22px">Today's appointments</h3><a class="small" href="/clinic/calendar">Calendar</a></div>
         <div class="mt12">${active.length ? active.map((a) => apptRow(a, o.now.date)).join("") : `<p class="muted small mt8">No appointments today. Phone and walk-in bookings you add appear here too.</p>`}</div></section>
@@ -152,7 +154,8 @@ export function bookingDetailPage(d: { a: Appt; b: { status: string; date: strin
   const { a } = d;
   const paid = d.payment && d.payment.status !== "created" ? d.payment.amount_paise : 0;
   const refunded = d.refunds.filter((r) => r.status !== "failed").reduce((x, r) => x + r.amount_paise, 0);
-  const balance = a.price_paise - (paid - refunded);
+  const credit = paid && !refunded ? a.credit_paise : 0;   // Aestheva's welcome offer, paid to the business with the deposit
+  const balance = a.price_paise - (paid - refunded) - credit;
   const remind = `Hello ${d.client.name.split(" ")[0]}, a reminder of your ${a.service_name} at ${d.siteName} on ${fmtDate(a.date)} at ${fmtTime(a.start_min)} with ${a.staff_name}. Booking ${a.ref}.`;
   const actionable = a.status === "confirmed" || a.status === "held";
   const upcoming = actionable && !d.canMark;
@@ -165,7 +168,8 @@ export function bookingDetailPage(d: { a: Appt; b: { status: string; date: strin
           <dt>When</dt><dd>${fmtDate(a.date, true)}, ${fmtTime(a.start_min)} to ${fmtTime(a.start_min + a.dur_min)}</dd>
           <dt>With</dt><dd>${esc(a.staff_name)}</dd>
           <dt>Price</dt><dd>${inr(a.price_paise)}</dd>
-          <dt>Deposit</dt><dd>${paid ? `${inr(paid)} paid online${d.payment?.method ? ` (${esc(d.payment.method)})` : ""}${refunded ? ` · ${inr(refunded)} refunded` : ""}` : a.status === "held" ? "Waiting for the client to pay" : "None"}</dd>
+          <dt>Deposit</dt><dd>${paid ? `${inr(paid)} paid online${d.payment?.method ? ` (${esc(d.payment.method)})` : ""}${credit ? ` + ${inr(credit)} welcome offer paid by Aestheva` : ""}${refunded ? ` · ${inr(refunded)} refunded` : ""}` : a.status === "held" ? "Waiting for the client to pay" : "None"}</dd>
+          ${a.channel === "own_link" ? `<dt>Commission</dt><dd>None: the client came through your own link</dd>` : ""}
           ${a.status === "confirmed" || a.status === "completed" ? `<dt>To collect</dt><dd><b>${inr(Math.max(0, balance))}</b> on the day</dd>` : ""}
           ${a.client_note ? `<dt>Client's note</dt><dd>${esc(a.client_note)}</dd>` : ""}
           ${d.b.cancel_reason && a.status === "cancelled" ? `<dt>Cancelled</dt><dd>By ${esc(d.b.cancelled_by === "provider" ? "you" : d.b.cancelled_by ?? "")}: ${esc(d.b.cancel_reason)}</dd>` : ""}
@@ -251,7 +255,30 @@ export function servicesPage(d: { services: (ServiceRow & { staff: string[] })[]
     </tbody></table></div>`;
 }
 
-export function paymentsPage(d: { month: string; m: Awaited<ReturnType<typeof import("../services/clinic").monthMoney>>; prev: string; next: string | null }) {
+/** Commission in words for this business, today. */
+export function rateLine(f: FoundingTerms | null) {
+  if (!f) return `${POLICY.commissionBp / 100}% of the full price on completed bookings made through Aestheva.`;
+  if (f.phase === "free") return `Founding partner #${f.no}: 0% until ${fmtDate(f.freeUntil, true)}, then ${INCENTIVES.foundingRateBp / 100}% until ${fmtDate(f.foundingUntil, true)}, then ${POLICY.commissionBp / 100}%.`;
+  if (f.phase === "founding") return `Founding partner #${f.no}: ${INCENTIVES.foundingRateBp / 100}% until ${fmtDate(f.foundingUntil, true)}, then ${POLICY.commissionBp / 100}%.`;
+  return `${POLICY.commissionBp / 100}% of the full price on completed bookings made through Aestheva. Thank you for being founding partner #${f.no}.`;
+}
+
+/** "Your booking link": bookings through it carry no commission. */
+export function linkCard(link: string, name: string, f: FoundingTerms | null) {
+  const share = `https://wa.me/?text=${encodeURIComponent(`Book with ${name} online: ${link}`)}`;
+  return `<section class="card link-card mt24"><div class="row wrap between" style="gap:12px;align-items:flex-start">
+      <div style="max-width:560px"><h3 style="font-size:20px">Your booking link</h3>
+        <p class="small muted mt8">Share it on Instagram, WhatsApp and Google Maps. Bookings from clients who arrive through it carry <b>no commission</b>, ever.</p></div>
+      ${f && f.phase !== "standard" ? `<span class="badge b-ok">${ic("star", 12)} Founding partner #${f.no}</span>` : ""}
+    </div>
+    <div class="row wrap mt12" style="gap:8px"><input class="in grow" value="${esc(link)}" readonly aria-label="Your booking link" style="min-width:220px">
+      <button class="btn btn-p btn-s" type="button" data-copy="${esc(link)}">Copy link</button>
+      <a class="btn btn-o btn-s" href="${esc(share)}" target="_blank" rel="noopener">Share on WhatsApp</a></div>
+    <p class="xs muted mt8">Tip: put it in your Instagram bio and as the booking link on your Google Business Profile.${f ? ` ${esc(rateLine(f))}` : ""}</p>
+  </section>`;
+}
+
+export function paymentsPage(d: { month: string; m: Awaited<ReturnType<typeof import("../services/clinic").monthMoney>>; prev: string; next: string | null; founding?: FoundingTerms | null; link?: string }) {
   const label = new Date(d.month + "-01T00:00:00Z").toLocaleDateString("en-IN", { month: "long", year: "numeric", timeZone: "UTC" });
   const kpi = (l: string, v: string, s: string) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="d">${s}</div></div>`;
   return `<div class="ws-head"><div><div class="eyebrow">Payments</div><h2 class="mt8">${label}</h2></div><div class="row" style="gap:8px"><a class="btn btn-o btn-s" href="/clinic/payments?month=${d.prev}">${ic("chevL", 15)}</a>${d.next ? `<a class="btn btn-o btn-s" href="/clinic/payments?month=${d.next}">${ic("chevR", 15)}</a>` : ""}</div></div>
@@ -259,8 +286,10 @@ export function paymentsPage(d: { month: string; m: Awaited<ReturnType<typeof im
       ${kpi("Completed", String(d.m.completedCount), `appointments worth ${inr(d.m.completedValue)}`)}
       ${kpi("Deposits paid online", inr(d.m.depositsPaid), d.m.refunded ? `${inr(d.m.refunded)} refunded` : "nothing refunded")}
       ${kpi("Collected on the day", inr(d.m.balanceAtClinic), "balance on completed visits")}
-      ${kpi("Aestheva commission", inr(d.m.commission), `${POLICY.commissionBp / 100}% of completed online bookings`)}
+      ${kpi("Aestheva commission", inr(d.m.commission), d.m.ownLinkBookings ? `${d.m.ownLinkBookings} booking${d.m.ownLinkBookings === 1 ? "" : "s"} through your link: no commission` : "on completed online bookings")}
     </div>
+    <p class="small mt12"><b>Your rate:</b> ${esc(rateLine(d.founding ?? null))} Bookings through your own link${d.link ? ` (<a href="${esc(d.link)}">${esc(d.link.replace(/^https?:\/\//, ""))}</a>)` : ""} and bookings you add yourself carry no commission.</p>
+    ${d.m.welcomeCredits ? `<p class="small muted mt8">Welcome offers paid by Aestheva this month: <b>${inr(d.m.welcomeCredits)}</b>. Clients paid that much less online; you receive it with their deposits.</p>` : ""}
     ${d.m.keptOnCancellation ? `<p class="small muted mt12">Deposits kept on late cancellations and no-shows: <b>${inr(d.m.keptOnCancellation)}</b>.</p>` : ""}
     <p class="xs muted mt12">Bookings your team adds carry no commission. Settlement statements will appear here once payouts start.</p>
     ${d.m.rows.length ? `<div class="tbl-wrap mt16"><table class="tbl"><thead><tr><th>Date</th><th>Client</th><th>Service</th><th>Status</th><th>Price</th><th>Deposit</th></tr></thead><tbody>

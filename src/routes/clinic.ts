@@ -18,6 +18,7 @@ import {
 } from "../services/clinic";
 import { layout } from "../views/layout";
 import { emailBookingCancelled, emailBookingConfirmed } from "../services/booking-emails";
+import { foundingTerms, ownLink } from "../services/incentives";
 import {
   bookingCreatedPage, bookingDetailPage, bookingsPage, calendarPage, clientPage, clientsPage, clinicLoginPage, clinicShell, forgotPage, linkInvalidPage, newBookingPage, setPasswordPage,
   paymentsPage, servicesPage, signOutButton, todayPage, type Section,
@@ -110,10 +111,11 @@ clinic.use("*", async (c: C, next: Next) => {
 
 clinic.get("/", async (c) => {
   // Until the listing is live, the clinic starts on its setup checklist.
-  const p = await c.env.DB.prepare("SELECT status FROM providers WHERE id = ?").bind(pid(c)).first<{ status: string }>();
+  const p = await c.env.DB.prepare("SELECT status, slug, founding_no, live_since FROM providers WHERE id = ?").bind(pid(c)).first<{ status: string; slug: string; founding_no: number | null; live_since: string | null }>();
   if (p?.status !== "live" && c.req.query("today") !== "1") return c.redirect("/clinic/setup", 303);
   const todo = checklist(await listing(c.env.DB, pid(c))).steps.filter((s) => !s.done).map((s) => s.title);
-  return page(c, "Today", "today", todayPage({ providerName: c.get("providerName"), ...(await overview(c.env.DB, pid(c))), todo }));
+  return page(c, "Today", "today", todayPage({ providerName: c.get("providerName"), ...(await overview(c.env.DB, pid(c))), todo,
+    link: p?.status === "live" ? ownLink(base(c), p.slug) : undefined, founding: p ? foundingTerms(p, nowIst().date) : null }));
 });
 
 // ---------- set up your listing ----------
@@ -331,7 +333,9 @@ clinic.get("/payments", async (c) => {
   const thisMonth = nowIst().date.slice(0, 7), q = c.req.query("month") ?? "";
   const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(q) && q <= thisMonth ? q : thisMonth;
   const shift = (m: string, n: number) => addDays(`${m}-15`, n * 30).slice(0, 7);
-  return page(c, "Payments", "payments", paymentsPage({ month, m: await monthMoney(c.env.DB, pid(c), month), prev: shift(month, -1), next: month < thisMonth ? shift(month, 1) : null }));
+  const p = await c.env.DB.prepare("SELECT status, slug, founding_no, live_since FROM providers WHERE id = ?").bind(pid(c)).first<{ status: string; slug: string; founding_no: number | null; live_since: string | null }>();
+  return page(c, "Payments", "payments", paymentsPage({ month, m: await monthMoney(c.env.DB, pid(c), month), prev: shift(month, -1), next: month < thisMonth ? shift(month, 1) : null,
+    founding: p ? foundingTerms(p, nowIst().date) : null, link: p?.status === "live" ? ownLink(base(c), p.slug) : undefined }));
 });
 
 export default clinic;
