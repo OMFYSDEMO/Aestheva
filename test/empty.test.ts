@@ -6,8 +6,8 @@ describe("before the first venue goes live", () => {
   it("tells visitors bookings open soon and invites providers to join", async () => {
     const home = await req("GET", "/");
     expect(home.status).toBe(200);
-    expect(home.text).toContain("Thiruvananthapuram (Trivandrum) · Opening soon");
-    expect(home.text).not.toContain("Now booking");
+    expect(home.text).toContain("Namaskaram, Trivandrum · opening soon");
+    expect(home.text).not.toContain("next free time");
     expect(home.text).not.toContain("0 venues");
     expect(home.text).not.toContain("Try:");
     expect(home.text).toContain("Tell me when bookings open");

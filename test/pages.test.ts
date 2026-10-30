@@ -10,9 +10,9 @@ describe("public pages", () => {
     const r = await req("GET", "/");
     expect(r.status).toBe(200);
     expect(r.text).toContain("Book beauty, wellness and care <em>near you</em> in Trivandrum.");
-    expect(r.text).toContain('href="/p/lumiere-skin-and-laser-clinic"');
+    expect(r.text).toMatch(/class="vcard[^"]*" href="\/p\/[a-z-]+"/);   // which six lead depends on the time of day
     expect(r.text).toContain("Haswel Care Private Limited");
-    expect(r.text).toContain("Thiruvananthapuram (Trivandrum) · Now booking");
+    expect(r.text).toMatch(/Namaskaram, Trivandrum · <span class="nowrap">next free time (\d{1,2}:\d{2} [ap]m (today|tomorrow)|\w{3} \d+ \w{3}, \d{1,2}:\d{2} [ap]m)</);
     expect(r.text).toContain("Free times near you");
     expect(r.text).toContain("Use my location");
     expect(r.text).toContain('<optgroup label="Technopark side">');

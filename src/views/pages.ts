@@ -1,7 +1,7 @@
 import { COMPANY, LOCALITIES, POLICY, SERVICE_AREA, WAITLIST_CITIES, ZONES, typeLabel } from "../config";
 import { kmLabel } from "../domain/geo";
 import { TOPICS } from "../content/topics";
-import { fmtTime, relDay } from "../domain/time";
+import { addDays, fmtTime, relDay } from "../domain/time";
 import type { ProviderDetail, ProviderRow, Rating, ServiceRow } from "../services/catalog";
 import { isMedical } from "../services/catalog";
 import { CAT_META, MED_NOTE, avatar, catIcon, catTile, esc, ic, inr, linkPhones, mapsUrl, photoImg, photosOf, stars, venueMark, venueThumb } from "./ui";
@@ -53,6 +53,9 @@ export function homePage(d: {
   // Soonest free time first, so the venue you could walk into today leads.
   const soon = (id: string) => { const n = d.next.get(id); return n ? `${n.date} ${String(n.min).padStart(4, "0")}` : "9999"; };
   const featured = [...live].sort((a, b) => soon(a.id).localeCompare(soon(b.id))).slice(0, 6);
+  // The greeting's live line: the soonest free time anywhere, as "6:30 pm today", "10:00 am tomorrow" or "Thu 6 Nov, 10:00 am".
+  const n0 = featured.length ? d.next.get(featured[0].id) : undefined;
+  const firstFree = n0 ? (n0.date === d.today || n0.date === addDays(d.today, 1) ? `${fmtTime(n0.min)} ${relDay(n0.date, d.today).toLowerCase()}` : `${relDay(n0.date, d.today)}, ${fmtTime(n0.min)}`) : "";
   const names = [...new Set(d.services.map((s) => s.name))];
   const cats = d.categories.map((c) => ({ ...c, svcs: d.services.filter((s) => s.cat === c.id) })).filter((c) => c.svcs.length);
   const all: SearchQuery = { q: "", area: "", near: "", cat: "", kind: "all", sort: "rec" };
@@ -77,7 +80,7 @@ export function homePage(d: {
   return `<div class="page" style="padding-top:0">
   <section class="hero"><div class="hero-grid">
     <div>
-      <div class="eyebrow">${esc(COMPANY.launchCity)} (${esc(SERVICE_AREA.short)}) · ${open ? "Now booking" : "Opening soon"}</div>
+      <div class="eyebrow">Namaskaram, ${esc(SERVICE_AREA.short)} · ${open ? (firstFree ? `<span class="nowrap">next free time ${firstFree}</span>` : "bookings open") : "opening soon"}</div>
       ${open ? `<h1 class="mt16">Book beauty, wellness and care <em>near you</em> in ${esc(SERVICE_AREA.short)}.</h1>
       <p class="lede mt16">Salons, clinics, studios and independent artists in one place, from nails, makeup and tattoos to skin, hair and dental care. See the full price and who'll look after you, then book a free time in a minute. ${anyDeposit ? "Hold it with a small deposit." : "Nothing to pay online."}</p>
       <form class="searchbar" id="home-search" action="/search" method="get" role="search">
