@@ -93,6 +93,15 @@ describe("public pages", () => {
     for (const u of ["/search?cat=dental", "/p/lumiere-skin-and-laser-clinic", "/policies/privacy"]) expect(map.text).toContain(u);
   });
 
+  it("shows team photos when a business has added them, and initials otherwise", async () => {
+    await sql("UPDATE staff SET photo = '/venues/p1/team/meera' WHERE id = 's1'");
+    const v = await req("GET", "/p/lumiere-skin-and-laser-clinic");
+    expect(v.text).toContain('src="/venues/p1/team/meera-160.webp" srcset="/venues/p1/team/meera-160.webp 1x, /venues/p1/team/meera-320.webp 2x"');
+    expect((await req("GET", "/book/lumiere-skin-and-laser-clinic")).text).toContain('"photo":"/venues/p1/team/meera"');
+    expect(v.text).toMatch(/class="avatar" style="[^"]*"[^>]*>[A-Z]{1,2}</);   // others keep their initials
+    await sql("UPDATE staff SET photo = '' WHERE id = 's1'");
+  });
+
   it("understands everyday words for treatments", async () => {
     const [dental] = await sql("SELECT name FROM services WHERE provider_id = 'p7' AND name LIKE '%Scaling%' LIMIT 1");
     if (dental) expect((await req("GET", "/search?q=teeth+cleaning")).text).toContain("Veda Smile Studio");

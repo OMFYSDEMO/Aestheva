@@ -33,7 +33,9 @@ export function art(seed: string, idx?: number): string {
 }
 export const artBox = (seed: string, idx?: number, cls = "", style = "") => `<div class="art ${cls}" style="${style}">${art(seed, idx)}</div>`;
 
-export function avatar(name: string, size = 44, seed?: string) {
+export function avatar(name: string, size = 44, seed?: string, photo?: string) {
+  // A real photo when there is one: square WebP at 160 and 320 pixels, shown as a circle.
+  if (photo) return `<img class="avatar avatar-photo" src="${esc(photo)}-160.webp" srcset="${esc(photo)}-160.webp 1x, ${esc(photo)}-320.webp 2x" width="${size}" height="${size}" alt="" loading="lazy" decoding="async" style="width:${size}px;height:${size}px">`;
   const p = PAL[hash(seed || name) % PAL.length];
   const ini = name.replace(/^Dr\.\s*/, "").split(/\s+/).map((w) => w[0]).slice(0, 2).join("");
   return `<div class="avatar" style="width:${size}px;height:${size}px;background:${p[0]};color:${p[3]};font-size:${size * 0.4}px;border:1px solid ${p[1]}" aria-hidden="true">${esc(ini)}</div>`;

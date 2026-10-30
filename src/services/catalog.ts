@@ -12,7 +12,7 @@ export interface ServiceRow {
 }
 export interface StaffRow {
   id: string; provider_id: string; name: string; role: string; medical: number; quals_json: string; registration: string;
-  years: number; langs_json: string; bio: string; active: number;
+  years: number; langs_json: string; bio: string; active: number; photo?: string;
 }
 export interface ReviewRow { id: number; provider_id: string; staff_id: string | null; author: string; rating: number; service_name: string; body: string; created_on: string }
 export interface Rating { avg: number; n: number }

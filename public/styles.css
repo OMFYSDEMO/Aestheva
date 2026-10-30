@@ -739,3 +739,6 @@ html{overflow-x:clip}
 /* Footer sketch of Trivandrum: full width on desktop, centred on the gopuram on phones */
 .footer-art{display:block;width:calc(100% + 48px);height:auto;aspect-ratio:1260/200;margin:-12px -24px 36px;color:#F4D7E3;opacity:.42;stroke-width:1}
 @media (max-width:760px){.footer-art{aspect-ratio:auto;height:150px;margin-bottom:28px}}
+/* Team photos */
+.avatar-photo{display:block;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid var(--line-2);background:var(--canvas)}
+.opt-photo{width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid var(--line-2)}

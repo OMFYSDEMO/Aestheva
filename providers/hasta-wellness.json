@@ -42,7 +42,8 @@
       "bio": "",
       "hours": {
         "mon-sat": "15:00-20:00"
-      }
+      },
+      "photo": "/venues/hasta-wellness/team/dr-sooraj"
     },
     {
       "id": "hasta-dr-akshara",
@@ -63,7 +64,8 @@
       "hours": {
         "mon-fri": "17:00-20:00",
         "sat": "13:00-20:00"
-      }
+      },
+      "photo": "/venues/hasta-wellness/team/dr-akshara"
     }
   ],
   "services": [

@@ -80,10 +80,10 @@ ON CONFLICT(id) DO UPDATE SET slug=excluded.slug, name=excluded.name, type=exclu
 sql.push(`DELETE FROM verifications WHERE provider_id = ${q(v.id)};`);
 (v.verifications ?? []).forEach((x, i) => sql.push(`INSERT INTO verifications (provider_id, label, scope, checked_on, sort) VALUES (${[v.id, x.label, x.scope, x.checked_on, i].map(q).join(', ')});`));
 for (const s of v.staff) {
-  sql.push(`INSERT INTO staff (id, provider_id, name, role, medical, quals_json, registration, years, langs_json, bio, active)
-VALUES (${[s.id, v.id, s.name, s.role, s.medical ? 1 : 0, JSON.stringify(s.quals ?? []), s.registration ?? '', s.years ?? 0, JSON.stringify(s.langs ?? []), s.bio ?? ''].map(q).join(', ')}, 1)
+  sql.push(`INSERT INTO staff (id, provider_id, name, role, medical, quals_json, registration, years, langs_json, bio, photo, active)
+VALUES (${[s.id, v.id, s.name, s.role, s.medical ? 1 : 0, JSON.stringify(s.quals ?? []), s.registration ?? '', s.years ?? 0, JSON.stringify(s.langs ?? []), s.bio ?? '', s.photo ?? ''].map(q).join(', ')}, 1)
 ON CONFLICT(id) DO UPDATE SET name=excluded.name, role=excluded.role, medical=excluded.medical, quals_json=excluded.quals_json, registration=excluded.registration,
-  years=excluded.years, langs_json=excluded.langs_json, bio=excluded.bio, active=1;`);
+  years=excluded.years, langs_json=excluded.langs_json, bio=excluded.bio, photo=excluded.photo, active=1;`);
   sql.push(`DELETE FROM staff_hours WHERE staff_id = ${q(s.id)};`);
   for (const [dow, [a, b]] of rotas.get(s.id)) sql.push(`INSERT INTO staff_hours (staff_id, dow, start_min, end_min) VALUES (${q(s.id)}, ${dow}, ${a}, ${b});`);
 }

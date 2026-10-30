@@ -16,7 +16,7 @@ export function bookPage(d: ProviderDetail, preselect: string | null, payments: 
   const data = {
     provider: { slug: p.slug, name: p.name, area: p.area, city: p.city },
     services: d.services.map((s) => ({ id: s.id, name: s.name, kind: s.kind, cat: s.cat, dur: s.dur_min, price: s.price_paise, deposit: s.deposit_paise, staff: s.staff })),
-    staff: d.staff.map((t) => ({ id: t.id, name: t.name, role: t.role, medical: !!t.medical, quals: (() => { try { return (JSON.parse(t.quals_json || "[]") as string[]).join(", "); } catch { return ""; } })() })),
+    staff: d.staff.map((t) => ({ id: t.id, name: t.name, role: t.role, photo: t.photo || "", medical: !!t.medical, quals: (() => { try { return (JSON.parse(t.quals_json || "[]") as string[]).join(", "); } catch { return ""; } })() })),
     categories: categories.filter((c) => d.services.some((s) => s.cat === c.id)),
     preselect, gateway: payments.gateway, freeCancelHours: POLICY.freeCancelHours, holdMinutes: POLICY.holdMinutes, preview: preview ?? null,
   };
