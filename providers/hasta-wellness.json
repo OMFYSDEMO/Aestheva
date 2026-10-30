@@ -1,5 +1,5 @@
 {
-  "_about": "Hasta Wellness, Aestheva's first venue. Venue facts from hastawellnessclinic.com; services, durations, prices and doctors from Dr Sooraj (October 2026). Confirmed by the owner: tooth brightening takes 60 minutes; the clinic has one laser machine, shared by all laser services including laser tooth brightening; Dr Akshara offers dental services only. Soft launch, October 2026: live with no deposits (clients pay at the clinic) until Razorpay live payments are approved. Then restore deposits of 20% of the price, rounded to the nearest ₹100, minimum ₹300.",
+  "_about": "Hasta Wellness, Aestheva's first venue. Venue facts from hastawellnessclinic.com; services, durations, prices and doctors from Dr Sooraj (October 2026). Confirmed by the owner: tooth brightening takes 60 minutes; the clinic has one laser machine, shared by all laser services including laser tooth brightening; Dr Akshara offers dental services only. Soft launch, October 2026: live with no deposits (clients paid at the clinic). Razorpay live payments were approved on 30 October 2026, and deposits were switched on: 20% of the price, rounded to the nearest ₹100, minimum ₹300.",
   "id": "hasta-wellness",
   "slug": "hasta-wellness-kazhakkoottam",
   "name": "Hasta Wellness",
@@ -74,7 +74,7 @@
       "kind": "treatment",
       "dur": 20,
       "price": 2000,
-      "deposit": 0,
+      "deposit": 400,
       "staff": [
         "hasta-dr-sooraj",
         "hasta-dr-akshara"
@@ -88,7 +88,7 @@
       "kind": "treatment",
       "dur": 30,
       "price": 1200,
-      "deposit": 0,
+      "deposit": 300,
       "staff": [
         "hasta-dr-sooraj",
         "hasta-dr-akshara"
@@ -102,7 +102,7 @@
       "kind": "treatment",
       "dur": 20,
       "price": 2500,
-      "deposit": 0,
+      "deposit": 500,
       "staff": [
         "hasta-dr-sooraj",
         "hasta-dr-akshara"
@@ -116,7 +116,7 @@
       "kind": "treatment",
       "dur": 60,
       "price": 7500,
-      "deposit": 0,
+      "deposit": 1500,
       "staff": [
         "hasta-dr-sooraj",
         "hasta-dr-akshara"
@@ -130,7 +130,7 @@
       "kind": "treatment",
       "dur": 60,
       "price": 9500,
-      "deposit": 0,
+      "deposit": 1900,
       "staff": [
         "hasta-dr-sooraj",
         "hasta-dr-akshara"
@@ -147,7 +147,7 @@
       "kind": "treatment",
       "dur": 30,
       "price": 4000,
-      "deposit": 0,
+      "deposit": 800,
       "staff": [
         "hasta-dr-sooraj"
       ],
@@ -163,7 +163,7 @@
       "kind": "treatment",
       "dur": 15,
       "price": 1500,
-      "deposit": 0,
+      "deposit": 300,
       "staff": [
         "hasta-dr-sooraj"
       ],
@@ -179,7 +179,7 @@
       "kind": "treatment",
       "dur": 20,
       "price": 2500,
-      "deposit": 0,
+      "deposit": 500,
       "staff": [
         "hasta-dr-sooraj"
       ],
@@ -195,7 +195,7 @@
       "kind": "treatment",
       "dur": 20,
       "price": 2500,
-      "deposit": 0,
+      "deposit": 500,
       "staff": [
         "hasta-dr-sooraj"
       ],
@@ -211,7 +211,7 @@
       "kind": "treatment",
       "dur": 20,
       "price": 1500,
-      "deposit": 0,
+      "deposit": 300,
       "staff": [
         "hasta-dr-sooraj"
       ],
@@ -224,7 +224,7 @@
       "kind": "treatment",
       "dur": 20,
       "price": 1500,
-      "deposit": 0,
+      "deposit": 300,
       "staff": [
         "hasta-dr-sooraj"
       ],
@@ -237,7 +237,7 @@
       "kind": "treatment",
       "dur": 15,
       "price": 1500,
-      "deposit": 0,
+      "deposit": 300,
       "staff": [
         "hasta-dr-sooraj"
       ],
@@ -250,7 +250,7 @@
       "kind": "treatment",
       "dur": 20,
       "price": 1500,
-      "deposit": 0,
+      "deposit": 300,
       "staff": [
         "hasta-dr-sooraj"
       ],
@@ -266,7 +266,7 @@
       "kind": "treatment",
       "dur": 30,
       "price": 2300,
-      "deposit": 0,
+      "deposit": 500,
       "staff": [
         "hasta-dr-sooraj"
       ],
@@ -282,7 +282,7 @@
       "kind": "treatment",
       "dur": 30,
       "price": 2300,
-      "deposit": 0,
+      "deposit": 500,
       "staff": [
         "hasta-dr-sooraj"
       ],
@@ -298,7 +298,7 @@
       "kind": "treatment",
       "dur": 30,
       "price": 2500,
-      "deposit": 0,
+      "deposit": 500,
       "staff": [
         "hasta-dr-sooraj"
       ],
@@ -311,7 +311,7 @@
       "kind": "treatment",
       "dur": 30,
       "price": 4500,
-      "deposit": 0,
+      "deposit": 900,
       "staff": [
         "hasta-dr-sooraj"
       ],
@@ -324,7 +324,7 @@
       "kind": "treatment",
       "dur": 30,
       "price": 2500,
-      "deposit": 0,
+      "deposit": 500,
       "staff": [
         "hasta-dr-sooraj"
       ],
@@ -337,7 +337,7 @@
       "kind": "treatment",
       "dur": 60,
       "price": 6500,
-      "deposit": 0,
+      "deposit": 1300,
       "staff": [
         "hasta-dr-sooraj"
       ],
@@ -350,7 +350,7 @@
       "kind": "treatment",
       "dur": 45,
       "price": 5500,
-      "deposit": 0,
+      "deposit": 1100,
       "staff": [
         "hasta-dr-sooraj"
       ],
@@ -363,7 +363,7 @@
       "kind": "treatment",
       "dur": 30,
       "price": 2500,
-      "deposit": 0,
+      "deposit": 500,
       "staff": [
         "hasta-dr-sooraj"
       ],
