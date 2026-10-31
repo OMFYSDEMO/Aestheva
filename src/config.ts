@@ -27,8 +27,11 @@ export const POLICY = {
 
 /**
  * Commission invoices and tax. Commission is deducted from what the business receives; clients never pay it.
- * TDS (Income-tax Act, e-commerce operators) and GST TCS (CGST Act s.52) are worked out on every statement but only
- * deducted once `withholding` is switched on, after the company's chartered accountant confirms rates and bases.
+ * Withholding confirmed by the company's chartered accountant on 2026-10-31:
+ *   TDS (Income-tax Act, e-commerce operators): 0.1% of the gross value of each completed booking, before commission and
+ *     including what the client pays directly at the venue; not for businesses the team marks exempt.
+ *   GST TCS (CGST Act s.52): 0.5% of the value excluding GST, for GST-registered businesses' taxable services, only where
+ *     Aestheva collects the client's money (an online deposit).
  */
 export const BILLING = {
   gstBp: 1800,              // GST on Aestheva's commission: CGST 9% + SGST 9% within Kerala, IGST 18% otherwise
@@ -36,7 +39,7 @@ export const BILLING = {
   sac: "998599",            // service code on the invoice; confirm with the CA
   tdsBp: 10,                // 0.1% of the gross value of completed bookings
   tcsBp: 50,                // 0.5% of the net value, only for GST-registered businesses
-  withholding: false,
+  withholding: true,
   invoicePrefix: "AEV",
   issueDay: 3,              // statements for a month are issued on this day of the next month (after auto-complete)
 } as const;

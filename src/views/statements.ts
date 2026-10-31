@@ -45,8 +45,8 @@ export function statementPage(d: Detail & { gstin: string; back: string; draftNo
     ["Held by Aestheva for you (deposits kept and welcome credits)", inr(s.collected_paise)],
     ["Aestheva commission", `−${inr(s.commission_paise)}`],
     ["GST on commission", `−${inr(s.gst_paise)}`],
-    ...(s.tds_paise ? [["Income-tax TDS", `−${inr(s.tds_paise)}`]] : []),
-    ...(s.tcs_paise ? [["GST TCS", `−${inr(s.tcs_paise)}`]] : []),
+    ...(s.tds_paise ? [["Income-tax TDS, 0.1% of the gross value", `−${inr(s.tds_paise)}`]] : []),
+    ...(s.tcs_paise ? [["GST TCS, 0.5% of the value excluding GST", `−${inr(s.tcs_paise)}`]] : []),
   ];
   return `<div class="page narrow statement">
     <div class="row between wrap no-print" style="gap:8px"><a class="btn btn-g btn-s" href="${esc(d.back)}" style="margin-left:-10px">${ic("chevL", 16)} Payments</a><button class="btn btn-o btn-s" type="button" onclick="window.print()">Print or save as PDF</button></div>
@@ -56,6 +56,7 @@ export function statementPage(d: Detail & { gstin: string; back: string; draftNo
     <section class="card mt16"><h3 style="font-size:20px">Summary</h3><dl class="kv mt12">${summary.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}
       <dt><b>${s.net_paise >= 0 ? "Due to you" : "You pay Aestheva"}</b></dt><dd><b>${inr(Math.abs(s.net_paise))}</b></dd></dl>
       ${s.status === "issued" && s.payment_link_url ? `<a class="btn btn-p mt16 no-print" href="${esc(s.payment_link_url)}" target="_blank" rel="noopener">Pay ${inr(due)} online</a><p class="xs muted mt8 no-print">UPI, cards or netbanking, through Razorpay. This statement updates by itself once paid.</p>` : ""}
+      ${s.tds_paise || s.tcs_paise ? `<p class="xs muted mt12">TDS and TCS aren't charges. They are tax Aestheva deducts on your behalf, as a marketplace must, and pays to the government against your ${s.tds_paise ? `PAN${p.pan ? ` (${esc(p.pan)})` : ""}` : ""}${s.tds_paise && s.tcs_paise ? " and " : ""}${s.tcs_paise ? "GSTIN" : ""}. You can claim it in your returns.${s.tds_paise && !p.pan ? " <b>Add your PAN under Your listing, Details, so the TDS is credited to you.</b>" : ""}</p>` : ""}
       ${s.status === "paid" && s.paid_at ? `<p class="small mt12" style="color:var(--sage-d)">${ic("check", 14)} Paid on ${fmtDate(s.paid_at.slice(0, 10), true)}. Thank you.</p>` : ""}
     </section>
     <section class="card mt16"><h3 style="font-size:20px">Bookings</h3>
@@ -68,12 +69,14 @@ export function statementPage(d: Detail & { gstin: string; back: string; draftNo
 }
 
 /** The team's view of every statement. */
-export function opsMoneyPage(d: { rows: (StatementRow & { name: string })[]; gstinSet: boolean }) {
+export function opsMoneyPage(d: { rows: (StatementRow & { name: string })[]; gstinSet: boolean; noPan?: string[] }) {
   const total = (k: "commission_paise" | "gst_paise") => d.rows.reduce((a, r) => a + r[k], 0);
   return `<h1 class="mt8" style="font-size:40px">Statements and invoices</h1>
     <p class="small muted mt8">Made automatically on the ${BILLING.issueDay}rd of each month for the month before, issued with a numbered GST invoice and, when a business owes commission, a Razorpay payment link. Paid links are marked by themselves.</p>
     ${d.gstinSet ? "" : `<div class="note n-warn mt12">${ic("alert", 16)}<div><b>Haswel Care's GSTIN isn't set.</b> Statements are prepared but no invoice is issued until it is. Add it to COMPANY.gstin in src/config.ts, or as the COMPANY_GSTIN variable in Cloudflare.</div></div>`}
-    <p class="small mt12">Commission invoiced: <b>${inr(total("commission_paise"))}</b> · GST: <b>${inr(total("gst_paise"))}</b></p>
+    ${d.noPan?.length ? `<div class="note n-warn mt12">${ic("alert", 16)}<div><b>No PAN yet:</b> ${esc(d.noPan.join(", "))}. TDS deducted for them can't be credited until they add it in their listing details.</div></div>` : ""}
+    <p class="small mt12">Commission invoiced: <b>${inr(total("commission_paise"))}</b> · GST: <b>${inr(total("gst_paise"))}</b> · TDS: <b>${inr(d.rows.reduce((a, r) => a + r.tds_paise, 0))}</b> · TCS: <b>${inr(d.rows.reduce((a, r) => a + r.tcs_paise, 0))}</b></p>
+    ${d.rows.length ? `<p class="small mt8">Tax files for the CA (TDS and TCS returns): ${[...new Set(d.rows.map((r) => r.month))].map((m) => `<a href="/ops/money.csv?month=${m}">${monthLabel(m)}</a>`).join(" · ")}</p>` : ""}
     ${d.rows.length ? `<div class="tbl-wrap mt16"><table class="tbl"><thead><tr><th>Month</th><th>Business</th><th>Invoice</th><th>Commission + GST</th><th>Net</th><th>Status</th></tr></thead><tbody>
       ${d.rows.map((r) => `<tr><td class="small">${monthLabel(r.month)}</td><td><a href="/ops/statements/${esc(r.id)}"><b>${esc(r.name)}</b></a><div class="xs muted">${esc(r.payout_mode)}</div></td><td class="small">${r.invoice_no ? esc(r.invoice_no) : "—"}</td>
         <td class="small">${inr(r.commission_paise + r.gst_paise)}</td><td class="small">${r.net_paise < 0 ? `owes ${inr(-r.net_paise)}` : r.net_paise > 0 ? `due ${inr(r.net_paise)}` : "—"}</td><td>${badge(r.status)}</td></tr>`).join("")}

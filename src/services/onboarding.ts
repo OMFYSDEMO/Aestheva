@@ -58,7 +58,7 @@ export function validateDetails(f: Form) {
   const e: Errors = {};
   const v = { name: str(f, "name"), type: str(f, "type"), area: str(f, "area"), address: str(f, "address"), phone: str(f, "phone"),
     tagline: str(f, "tagline"), about: str(f, "about"), hours_text: str(f, "hours_text"), amenities: lines(str(f, "amenities")),
-    gstin: str(f, "gstin").replace(/\s/g, "").toUpperCase() };
+    gstin: str(f, "gstin").replace(/\s/g, "").toUpperCase(), pan: str(f, "pan").replace(/\s/g, "").toUpperCase(), gst_rate_bp: Number(str(f, "gst_rate_bp")) || 0 };
   if (v.name.length < 2 || v.name.length > 120) e.name = "Please enter your business name as clients know it.";
   if (!(VENUE_TYPES as readonly string[]).includes(v.type)) e.type = "Please choose what kind of business you are.";
   if (!(AREAS as readonly string[]).includes(v.area)) e.area = "Please choose your area.";
@@ -68,6 +68,9 @@ export function validateDetails(f: Form) {
   if (v.tagline.length < 10 || v.tagline.length > 90) e.tagline = "One line of 10 to 90 characters, for example “Skin and hair care near Technopark”.";
   if (v.about.length < 60 || v.about.length > 700) e.about = `Two or three sentences, 60 to 700 characters (now ${v.about.length}).`;
   if (v.hours_text.length < 5 || v.hours_text.length > 120) e.hours_text = "For example “Mon–Sat · 10:00–19:00 · Sunday closed”.";
+  if (v.pan && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(v.pan)) e.pan = "That doesn't look like a PAN: 10 characters, for example ABCDE1234F.";
+  if (![0, 500, 1800].includes(v.gst_rate_bp)) e.gst_rate_bp = "Please choose the GST you charge.";
+  else if (v.gst_rate_bp && !v.gstin) e.gst_rate_bp = "Add your GSTIN above if you charge GST.";
   if (v.gstin && !isGstin(v.gstin)) e.gstin = "That doesn't look like a GSTIN: 15 characters, for example 32ABCDE1234F1Z5. Leave it empty if you're not registered.";
   if (v.amenities.length > 6 || v.amenities.some((x) => x.length > 80)) e.amenities = "Up to 6 short lines of up to 80 characters each.";
   if (Object.keys(e).length) throw new FormError(e);
@@ -75,8 +78,8 @@ export function validateDetails(f: Form) {
 }
 export async function saveDetails(db: D1Database, pid: string, v: ReturnType<typeof validateDetails>, actor: string) {
   await db.batch([
-    db.prepare(`UPDATE providers SET name = ?, type = ?, area = ?, address = ?, phone = ?, tagline = ?, about = ?, hours_text = ?, amenities_json = ?, gstin = ? WHERE id = ?`)
-      .bind(v.name, v.type, v.area, v.address, v.phone, v.tagline, v.about, v.hours_text, JSON.stringify(v.amenities), v.gstin, pid),
+    db.prepare(`UPDATE providers SET name = ?, type = ?, area = ?, address = ?, phone = ?, tagline = ?, about = ?, hours_text = ?, amenities_json = ?, gstin = ?, pan = ?, gst_rate_bp = ? WHERE id = ?`)
+      .bind(v.name, v.type, v.area, v.address, v.phone, v.tagline, v.about, v.hours_text, JSON.stringify(v.amenities), v.gstin, v.pan, v.gstin ? v.gst_rate_bp : 0, pid),
     audit(db, actor, "listing.details", "provider", pid),
   ]);
 }

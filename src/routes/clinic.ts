@@ -145,7 +145,7 @@ clinic.get("/setup/preview", async (c) => {
 
 clinic.get("/setup/details", async (c) => {
   const p = (await listing(c.env.DB, pid(c))).p;
-  const v = { name: p.name, type: p.type, area: p.area, address: p.address, phone: p.phone, tagline: p.tagline, about: p.about, hours_text: p.hours_text, amenities: (JSON.parse(p.amenities_json || "[]") as string[]).join("\n"), gstin: p.gstin ?? "" };
+  const v = { name: p.name, type: p.type, area: p.area, address: p.address, phone: p.phone, tagline: p.tagline, about: p.about, hours_text: p.hours_text, amenities: (JSON.parse(p.amenities_json || "[]") as string[]).join("\n"), gstin: p.gstin ?? "", pan: p.pan ?? "", gst_rate_bp: String(p.gst_rate_bp ?? 0) };
   return page(c, "Your clinic", "setup", detailsPage({ v, e: {}, csrf: c.get("csrf") }));
 });
 clinic.post("/setup/details", async (c) => {

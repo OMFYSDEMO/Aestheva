@@ -9,7 +9,7 @@ import { layout } from "../views/layout";
 import { opsClinicsPage, opsDetailPage, opsListPage, opsLoginPage, opsOffersPage, opsVenuePage, opsVenuesPage, type ClinicLoginRow } from "../views/ops";
 import { offerAmount, offerServices, opsSetOffer, placesTaken, whenLabel, type OfferRow } from "../services/offers";
 import { nowIst } from "../domain/time";
-import { companyGstin, statementWithLines, type StatementRow } from "../services/statements";
+import { companyGstin, statementWithLines, taxFile, type StatementRow } from "../services/statements";
 import { opsMoneyPage, statementPage } from "../views/statements";
 import { shell } from "../views/ops";
 import { STAGE, addDocument, addVerification, approveApplication, checklist, listing, removeVerification, setVenueStage } from "../services/onboarding";
@@ -92,7 +92,16 @@ ops.post("/applications/:ref/approve", async (c) => {
 
 ops.get("/money", async (c) => {
   const rows = (await c.env.DB.prepare("SELECT s.*, p.name FROM statements s JOIN providers p ON p.id = s.provider_id ORDER BY s.month DESC, p.name").all<StatementRow & { name: string }>()).results;
-  return page(c, "Statements", shell(opsMoneyPage({ rows, gstinSet: !!companyGstin(c.env) })));
+  const noPan = (await c.env.DB.prepare("SELECT name FROM providers WHERE payout_mode <> 'own' AND status = 'live' AND pan = '' AND tds_exempt = 0 ORDER BY name").all<{ name: string }>()).results.map((r) => r.name);
+  return page(c, "Statements", shell(opsMoneyPage({ rows, gstinSet: !!companyGstin(c.env), noPan })));
+});
+ops.get("/money.csv", async (c) => {
+  const month = c.req.query("month") ?? "";
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new HttpError(400, "Choose a month");
+  c.header("cache-control", "no-store");
+  c.header("content-type", "text/csv; charset=utf-8");
+  c.header("content-disposition", `attachment; filename="aestheva-tax-${month}.csv"`);
+  return c.body("\ufeff" + (await taxFile(c.env.DB, month)));
 });
 ops.get("/statements/:id", async (c) => {
   const d = await statementWithLines(c.env.DB, c.req.param("id"));

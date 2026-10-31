@@ -26,13 +26,17 @@ describe("money rules", () => {
     expect(depositFor("route", { price_paise: 220000, deposit_paise: 60000 })).toBe(60000); // the business asked for more
   });
 
-  it("charges commission and GST to the business, only on completed bookings", () => {
+  it("charges commission and GST to the business, only on completed bookings, and withholds TDS and TCS", () => {
     const b = { source: "marketplace", price_paise: 100000, commission_bp: 750, credit_paise: 0, paid: 0, refunded: 0 };
-    expect(lineFor({ ...b, status: "completed" }, { gstRegistered: false })).toMatchObject({ outcome: "completed", commission: 7500, gst: 1350, tds: 0, tcs: 0, net: -8850 });
-    // A deposit held for the business: commission and GST come out of it.
-    expect(lineFor({ ...b, status: "completed", commission_bp: 1000, paid: 20000 }, { gstRegistered: true })).toMatchObject({ collected: 20000, commission: 10000, gst: 1800, net: 8200 });
+    // Paid at the venue: TDS on the full ₹1,000 still applies; no TCS, as Aestheva collected nothing.
+    expect(lineFor({ ...b, status: "completed" }, { gstRegistered: true, gstRateBp: 500 })).toMatchObject({ outcome: "completed", commission: 7500, gst: 1350, tds: 100, tcs: 0, net: -8950 });
+    // A deposit held for the business: commission, GST, TDS and TCS come out of it. TCS is 0.5% of the value excluding 5% GST.
+    expect(lineFor({ ...b, status: "completed", commission_bp: 1000, paid: 20000 }, { gstRegistered: true, gstRateBp: 500 })).toMatchObject({ taxable: 95238, collected: 20000, commission: 10000, gst: 1800, tds: 100, tcs: 476, net: 7624 });
+    // Not registered, or exempt healthcare: no TCS. An exempt business: no TDS.
+    expect(lineFor({ ...b, status: "completed", paid: 20000 }, { gstRegistered: true, gstRateBp: 0 })).toMatchObject({ tcs: 0, tds: 100 });
+    expect(lineFor({ ...b, status: "completed", paid: 20000 }, { gstRegistered: false, gstRateBp: 500, tdsExempt: true })).toMatchObject({ tcs: 0, tds: 0 });
     // Aestheva's welcome credit is owed to the business on top of what the client paid.
-    expect(lineFor({ ...b, status: "completed", commission_bp: 0, paid: 10000, credit_paise: 10000 }, { gstRegistered: false })).toMatchObject({ collected: 20000, commission: 0, net: 20000 });
+    expect(lineFor({ ...b, status: "completed", commission_bp: 0, paid: 10000, credit_paise: 10000 }, { gstRegistered: false })).toMatchObject({ collected: 20000, commission: 0, tds: 100, net: 19900 });
     expect(lineFor({ ...b, status: "no_show", paid: 20000 }, { gstRegistered: false })).toMatchObject({ outcome: "no_show", commission: 0, net: 20000 });
     expect(lineFor({ ...b, status: "cancelled", cancelled_by: "client", paid: 20000 }, { gstRegistered: false })).toMatchObject({ outcome: "late_cancel", net: 20000 });
     expect(lineFor({ ...b, status: "cancelled", cancelled_by: "client", paid: 20000, refunded: 20000 }, { gstRegistered: false })).toBeNull();
@@ -115,7 +119,7 @@ describe("monthly statements", () => {
     expect(await makeStatements(env, now)).toBe(2);
     expect(await makeStatements(env, now)).toBe(0);   // never twice
     const [s] = await sql("SELECT * FROM statements WHERE provider_id = 'p6' AND month = '2026-11'");
-    expect(s).toMatchObject({ payout_mode: "invoice", bookings: 3, gross_paise: 250000, collected_paise: 0, commission_paise: 11000 + 10500, gst_paise: 1980 + 1890, net_paise: -(21500 + 3870), status: "draft" });
+    expect(s).toMatchObject({ payout_mode: "invoice", bookings: 3, gross_paise: 250000, collected_paise: 0, commission_paise: 11000 + 10500, gst_paise: 1980 + 1890, tds_paise: 110 + 140, tcs_paise: 0, net_paise: -(21500 + 3870 + 250), status: "draft" });
     const [own] = await sql("SELECT status, commission_paise FROM statements WHERE provider_id = 'p1'");
     expect(own).toEqual({ status: "nothing_due", commission_paise: 42000 });
   });
@@ -126,11 +130,11 @@ describe("monthly statements", () => {
       const [s] = await sql("SELECT * FROM statements WHERE provider_id = 'p6'");
       expect(s).toMatchObject({ status: "issued", invoice_no: "AEV/2627/0001" });
       const link = rp.links.get(s.payment_link_id)!;
-      expect(link).toMatchObject({ amount: 25370, reference_id: "AEV/2627/0001" });
+      expect(link).toMatchObject({ amount: 25620, reference_id: "AEV/2627/0001" });
       expect(link.customer).toMatchObject({ name: "Thalam Nail & Brow Bar", email: "desk@thalam.example" });
       const mail = sent.find((m) => m.to === "desk@thalam.example")!;
       expect(mail.subject).toBe("Aestheva statement, November 2026 · AEV/2627/0001");
-      expect(mail.text).toContain("Amount due: ₹253.70");
+      expect(mail.text).toContain("Amount due: ₹256.20");
       expect(mail.text).toContain(link.short_url);
       expect(await issueStatements(env, "https://aestheva.test", now)).toBe(0);   // already issued
 
@@ -138,7 +142,7 @@ describe("monthly statements", () => {
       const opsCookie = (await send("POST", "/ops/login", { key: "test-ops-key" })).headers.get("set-cookie")!.split(";")[0];
       expect((await send("GET", "/ops/money", undefined, opsCookie)).text).toContain("AEV/2627/0001");
       const page = await send("GET", `/ops/statements/${s.id}`, undefined, opsCookie);
-      for (const t of ["Tax invoice", "GSTIN 32AAHCH7753F1ZL", "CIN U47720KL2025PTC092343", "CGST 9%", "SGST 9%", "₹215", "₹38.70", "Invoice total", "₹253.70", "No-show"]) expect(page.text, t).toContain(t);
+      for (const t of ["Tax invoice", "GSTIN 32AAHCH7753F1ZL", "CIN U47720KL2025PTC092343", "CGST 9%", "SGST 9%", "₹215", "₹38.70", "Invoice total", "₹253.70", "No-show", "Income-tax TDS, 0.1% of the gross value", "₹2.50", "You pay Aestheva", "₹256.20"]) expect(page.text, t).toContain(t);
     }
   });
 
@@ -147,6 +151,14 @@ describe("monthly statements", () => {
     const r = await webhook("payment_link.paid", { payment_link: { entity: { id: s.payment_link_id, status: "paid" } } }, "evt_plink_1");
     expect(r.status).toBe(200);
     expect((await sql("SELECT status, paid_at FROM statements WHERE id = ?", s.id))[0].status).toBe("paid");
+  });
+
+  it("gives the CA a tax file for the month", async () => {
+    const opsCookie = (await send("POST", "/ops/login", { key: "test-ops-key" })).headers.get("set-cookie")!.split(";")[0];
+    const r = await send("GET", "/ops/money.csv?month=2026-11", undefined, opsCookie);
+    expect(r.headers.get("content-type")).toContain("text/csv");
+    expect(r.text).toContain("Gross value (₹),Value excl. GST (₹)");
+    expect(r.text).toMatch(/AEV\/2627\/0001,Thalam Nail & Brow Bar,,,AE-T\d+,2026-11-10,completed,1100\.00,1100\.00,0\.00,110\.00,19\.80,1\.10,0\.00,-130\.90/);
   });
 
   it("also finds paid links by asking Razorpay, in case a webhook is missed", async () => {

@@ -72,7 +72,7 @@ export function privacyPage() {
       ["You cancel or ask for a refund review", "The reason you give, if any."],
       ["You join a waiting list", "Your email address and the city you're waiting for."],
       ["You apply to list a business", "Your business and contact details, the services you describe and any registration numbers you share. To stop automated spam we keep a scrambled code made from your network address, never the address itself, for up to 7 days."],
-      ["A business sets up and uses its portal", "Each login's name and email and a scrambled form of the password; the business's listing, team profiles, photos and hours; verification documents."],
+      ["A business sets up and uses its portal", "Each login's name and email and a scrambled form of the password; the business's listing, team profiles, photos and hours; verification documents; its PAN and GSTIN, for invoices and the tax Aestheva must deduct and report."],
       ["You browse", "No advertising or analytics trackers. See cookies below. Our hosting provider processes standard technical data, such as IP address and browser type, to deliver the site and protect it from attacks."],
     ])}
 

@@ -31,7 +31,8 @@ export interface LineInput {
   status: string; source: string; price_paise: number; commission_bp: number; credit_paise: number;
   paid: number; refunded: number; cancelled_by?: string | null;
 }
-export interface Line { outcome: "completed" | "no_show" | "late_cancel"; price: number; collected: number; commissionBp: number; commission: number; gst: number; tds: number; tcs: number; net: number }
+export interface Line { outcome: "completed" | "no_show" | "late_cancel"; price: number; taxable: number; collected: number; commissionBp: number; commission: number; gst: number; tds: number; tcs: number; net: number }
+export interface TaxProfile { gstRegistered: boolean; gstRateBp?: number; tdsExempt?: boolean }
 
 /**
  * The money for one finished marketplace booking.
@@ -39,7 +40,7 @@ export interface Line { outcome: "completed" | "no_show" | "late_cancel"; price:
  * Commission (and GST on it) applies only to completed bookings, on the price the client paid. TDS and TCS are
  * worked out on completed bookings only, and only while BILLING.withholding is on.
  */
-export function lineFor(b: LineInput, opts: { gstRegistered: boolean }): Line | null {
+export function lineFor(b: LineInput, opts: TaxProfile): Line | null {
   if (b.source !== "marketplace") return null;
   const kept = Math.max(0, b.paid - b.refunded);
   const outcome = b.status === "completed" ? "completed" : b.status === "no_show" ? "no_show" : b.status === "cancelled" && b.cancelled_by === "client" && kept > 0 ? "late_cancel" : null;
@@ -48,9 +49,13 @@ export function lineFor(b: LineInput, opts: { gstRegistered: boolean }): Line | 
   const done = outcome === "completed";
   const commission = done ? bp(b.price_paise, b.commission_bp) : 0;
   const gst = bp(commission, BILLING.gstBp);
-  const tds = done && BILLING.withholding ? bp(b.price_paise, BILLING.tdsBp) : 0;
-  const tcs = done && BILLING.withholding && opts.gstRegistered ? bp(b.price_paise, BILLING.tcsBp) : 0;
-  return { outcome, price: b.price_paise, collected, commissionBp: done ? b.commission_bp : 0, commission, gst, tds, tcs, net: collected - commission - gst - tds - tcs };
+  // TDS on the gross value, before commission, including what the client paid at the venue.
+  const tds = done && BILLING.withholding && !opts.tdsExempt ? bp(b.price_paise, BILLING.tdsBp) : 0;
+  // TCS on the value excluding GST, for a registered business's taxable service, where Aestheva collected the client's money.
+  const rate = opts.gstRegistered ? opts.gstRateBp ?? 0 : 0;
+  const taxable = done ? Math.round((b.price_paise * 10000) / (10000 + rate)) : 0;
+  const tcs = done && BILLING.withholding && rate > 0 && kept > 0 ? bp(taxable, BILLING.tcsBp) : 0;
+  return { outcome, price: b.price_paise, taxable, collected, commissionBp: done ? b.commission_bp : 0, commission, gst, tds, tcs, net: collected - commission - gst - tds - tcs };
 }
 
 export const isGstin = (s: string) => /^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(s);
@@ -86,7 +91,7 @@ export async function statementWithLines(db: D1Database, id: string, providerId?
   const s = await db.prepare(`SELECT * FROM statements WHERE id = ?${providerId ? " AND provider_id = ?" : ""}`).bind(...(providerId ? [id, providerId] : [id])).first<StatementRow>();
   if (!s) return null;
   const [p, lines] = await Promise.all([
-    db.prepare("SELECT id, name, address, gstin, payout_mode FROM providers WHERE id = ?").bind(s.provider_id).first<{ id: string; name: string; address: string; gstin: string; payout_mode: string }>(),
+    db.prepare("SELECT id, name, address, gstin, pan, payout_mode FROM providers WHERE id = ?").bind(s.provider_id).first<{ id: string; name: string; address: string; gstin: string; pan: string; payout_mode: string }>(),
     db.prepare(`SELECT l.*, b.ref, b.date, b.service_name FROM statement_lines l JOIN bookings b ON b.id = l.booking_id WHERE l.statement_id = ? ORDER BY b.date, b.start_min`).bind(id)
       .all<{ ref: string; date: string; service_name: string; outcome: string; price_paise: number; collected_paise: number; commission_bp: number; commission_paise: number; gst_paise: number; tds_paise: number; tcs_paise: number; net_paise: number }>(),
   ]);
@@ -95,6 +100,19 @@ export async function statementWithLines(db: D1Database, id: string, providerId?
 
 export const providerStatements = async (db: D1Database, providerId: string) =>
   (await db.prepare("SELECT * FROM statements WHERE provider_id = ? ORDER BY month DESC").bind(providerId).all<StatementRow>()).results;
+
+/** Every statement line for a month, with the business's tax details: the file the CA uses for TDS and TCS returns. */
+export async function taxFile(db: D1Database, month: string) {
+  const rows = (await db.prepare(`SELECT s.month, s.invoice_no, p.name, p.pan, p.gstin, b.ref, b.date, l.outcome, l.price_paise, l.taxable_paise, l.collected_paise,
+      l.commission_paise, l.gst_paise, l.tds_paise, l.tcs_paise, l.net_paise
+    FROM statement_lines l JOIN statements s ON s.id = l.statement_id JOIN providers p ON p.id = s.provider_id JOIN bookings b ON b.id = l.booking_id
+    WHERE s.month = ? ORDER BY p.name, b.date`).bind(month).all<Record<string, string | number | null>>()).results;
+  const rupees = (k: string) => (v: unknown) => k.endsWith("_paise") ? (Number(v) / 100).toFixed(2) : String(v ?? "");
+  const cols = ["month", "invoice_no", "name", "pan", "gstin", "ref", "date", "outcome", "price_paise", "taxable_paise", "collected_paise", "commission_paise", "gst_paise", "tds_paise", "tcs_paise", "net_paise"];
+  const head = ["Month", "Invoice", "Business", "PAN", "GSTIN", "Booking", "Date", "Outcome", "Gross value (₹)", "Value excl. GST (₹)", "Collected by Aestheva (₹)", "Commission (₹)", "GST on commission (₹)", "TDS (₹)", "TCS (₹)", "Net to business (₹)"];
+  const cell = (s: string) => /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  return [head.join(","), ...rows.map((r) => cols.map((k) => cell(rupees(k)(r[k]))).join(","))].join("\r\n") + "\r\n";
+}
 
 // ---------- scheduled work ----------
 
@@ -117,13 +135,13 @@ export async function makeStatements(env: Env, now: Date = new Date()) {
   const db = env.DB, today = nowIst(now).date;
   if (Number(today.slice(8, 10)) < BILLING.issueDay) return 0;
   const month = monthBefore(today);
-  const providers = (await db.prepare(`SELECT p.id, p.payout_mode, p.gstin FROM providers p WHERE NOT EXISTS (SELECT 1 FROM statements s WHERE s.provider_id = p.id AND s.month = ?)
+  const providers = (await db.prepare(`SELECT p.id, p.payout_mode, p.gstin, p.gst_rate_bp, p.tds_exempt FROM providers p WHERE NOT EXISTS (SELECT 1 FROM statements s WHERE s.provider_id = p.id AND s.month = ?)
       AND EXISTS (SELECT 1 FROM bookings b WHERE b.provider_id = p.id AND substr(b.date, 1, 7) = ? AND b.source = 'marketplace')`).bind(month, month)
-    .all<{ id: string; payout_mode: PayoutMode; gstin: string }>()).results;
+    .all<{ id: string; payout_mode: PayoutMode; gstin: string; gst_rate_bp: number; tds_exempt: number }>()).results;
   let made = 0;
   for (const p of providers) {
     const rows = (await db.prepare(FINISHED_SQL).bind(p.id, month).all<LineInput & { id: string }>()).results;
-    const lines = rows.map((r) => ({ id: r.id, l: lineFor(r, { gstRegistered: isGstin(p.gstin) }) })).filter((x): x is { id: string; l: Line } => !!x.l);
+    const lines = rows.map((r) => ({ id: r.id, l: lineFor(r, { gstRegistered: isGstin(p.gstin), gstRateBp: p.gst_rate_bp, tdsExempt: !!p.tds_exempt }) })).filter((x): x is { id: string; l: Line } => !!x.l);
     if (!lines.length) continue;   // nothing finished that month: no statement
     const sum = (k: keyof Line) => lines.reduce((a, x) => a + (x.l[k] as number), 0);
     const t = { gross: lines.filter((x) => x.l.outcome === "completed").reduce((a, x) => a + x.l.price, 0), collected: sum("collected"), commission: sum("commission"), gst: sum("gst"), tds: sum("tds"), tcs: sum("tcs"), net: sum("net") };
@@ -134,8 +152,8 @@ export async function makeStatements(env: Env, now: Date = new Date()) {
       await db.batch([
         db.prepare(`INSERT INTO statements (id, provider_id, month, payout_mode, bookings, gross_paise, collected_paise, commission_paise, gst_paise, tds_paise, tcs_paise, net_paise, status)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(id, p.id, month, p.payout_mode, lines.length, t.gross, t.collected, t.commission, t.gst, t.tds, t.tcs, t.net, status),
-        ...lines.map(({ id: bid, l }) => db.prepare(`INSERT INTO statement_lines (statement_id, booking_id, outcome, price_paise, collected_paise, commission_bp, commission_paise, gst_paise, tds_paise, tcs_paise, net_paise)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(id, bid, l.outcome, l.price, l.collected, l.commissionBp, l.commission, l.gst, l.tds, l.tcs, l.net)),
+        ...lines.map(({ id: bid, l }) => db.prepare(`INSERT INTO statement_lines (statement_id, booking_id, outcome, price_paise, taxable_paise, collected_paise, commission_bp, commission_paise, gst_paise, tds_paise, tcs_paise, net_paise)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(id, bid, l.outcome, l.price, l.taxable, l.collected, l.commissionBp, l.commission, l.gst, l.tds, l.tcs, l.net)),
         audit(db, "system", "statement.created", "statement", id, { provider: p.id, month, ...t }),
       ]);
       made++;
