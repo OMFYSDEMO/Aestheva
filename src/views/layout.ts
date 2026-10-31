@@ -82,7 +82,7 @@ ${o.app ? `<footer class="footer app-foot"><p>Aestheva for business · Help: <a 
   <nav aria-label="Policies"><h2>Policies</h2><a href="/policies/cancellation">Cancellation &amp; refunds</a><a href="/policies/terms">Terms of use</a><a href="/policies/privacy">Privacy</a><a href="/policies/data-protection">Data protection for businesses</a></nav>
 </div>
 <div class="footer-base">
-  <p>© ${new Date().getFullYear()} ${esc(COMPANY.legalName)} · <a href="mailto:${esc(COMPANY.supportEmail)}">${esc(COMPANY.supportEmail)}</a></p>
+  <p>© ${new Date().getFullYear()} ${esc(COMPANY.legalName)} · CIN ${esc(COMPANY.cin)} · <a href="mailto:${esc(COMPANY.supportEmail)}">${esc(COMPANY.supportEmail)}</a></p>
   <p class="mt8">Verification labels describe what was checked and its scope. They are not a guarantee of results.</p>
 </div></footer>`}
 ${o.joinPromo ? `<aside class="join-pop" id="join-pop" aria-label="List your business on Aestheva" hidden>

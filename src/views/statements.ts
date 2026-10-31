@@ -30,7 +30,7 @@ export function statementPage(d: Detail & { gstin: string; back: string; draftNo
   const invoice = s.invoice_no ? `<section class="invoice card mt16">
       <div class="row between wrap" style="gap:16px;align-items:flex-start">
         <div><div class="eyebrow">Tax invoice</div><h2 class="mt8" style="font-size:26px">${esc(s.invoice_no)}</h2><p class="small muted mt8">Date: ${s.issued_at ? fmtDate(s.issued_at.slice(0, 10), true) : ""}</p></div>
-        <div class="small" style="text-align:right"><b>${esc(COMPANY.legalName)}</b><br>${esc(COMPANY.registeredAddress)}<br>GSTIN ${esc(d.gstin)}</div>
+        <div class="small" style="text-align:right"><b>${esc(COMPANY.legalName)}</b><br>${esc(COMPANY.registeredAddress)}<br>GSTIN ${esc(d.gstin)} · CIN ${esc(COMPANY.cin)}</div>
       </div>
       <div class="grid g2 mt16 small"><div><div class="xs muted">Billed to</div><b>${esc(p.name)}</b><br>${esc(p.address)}${p.gstin ? `<br>GSTIN ${esc(p.gstin)}` : ""}</div>
         <div><div class="xs muted">Place of supply</div>Kerala (${BILLING.homeState})</div></div>

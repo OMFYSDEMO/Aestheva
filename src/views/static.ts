@@ -30,7 +30,7 @@ export function termsPage() {
   return `<div class="page narrow prose">
     <div class="eyebrow">Policies</div><h1 class="mt8" style="font-size:44px">Terms of use</h1>${DRAFT}
     <h2>Who we are</h2>
-    <p>Aestheva is a marketplace operated by ${esc(COMPANY.legalName)} (registered office: ${fact(COMPANY.registeredAddress, "Registered address")}). It lists independent salons, studios, clinics, wellness centres and professionals, and lets you book and pay a deposit for their services.</p>
+    <p>Aestheva is a marketplace operated by ${esc(COMPANY.legalName)} (CIN ${esc(COMPANY.cin)}, GSTIN ${esc(COMPANY.gstin)}; registered office: ${fact(COMPANY.registeredAddress, "Registered address")}). It lists independent salons, studios, clinics, wellness centres and professionals, and lets you book and pay a deposit for their services.</p>
     <h2>Who provides the service</h2>
     <p>The business or professional you book provides the service and is responsible for it. Aestheva is not a healthcare provider. For medical services, your practitioner decides at assessment whether any treatment is suitable for you.</p>
     <h2>Verification</h2>
@@ -237,7 +237,7 @@ export function contactPage() {
       <div class="contact-card">${ic("pin", 22)}<b>Office</b><span>${fact(COMPANY.registeredAddress, "Registered address")}</span></div>
     </div>
     <p class="mt24">About a booking? Include your booking reference, which starts with AE-, and we can help faster.</p>
-    <p class="small muted">Aestheva is operated by <b>${esc(COMPANY.legalName)}</b>.</p>
+    <p class="small muted">Aestheva is operated by <b>${esc(COMPANY.legalName)}</b> · CIN ${esc(COMPANY.cin)} · GSTIN ${esc(COMPANY.gstin)}.</p>
   </div>`;
 }
 

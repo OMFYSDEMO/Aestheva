@@ -120,10 +120,8 @@ describe("monthly statements", () => {
     expect(own).toEqual({ status: "nothing_due", commission_paise: 42000 });
   });
 
-  it("waits for Haswel Care's GSTIN, then issues a numbered invoice with a payment link and emails it", async () => {
-    expect(await issueStatements(env, "https://aestheva.test", now)).toBe(0);
-    (env as { COMPANY_GSTIN?: string }).COMPANY_GSTIN = "32AAACH1234A1Z5";
-    try {
+  it("issues a numbered GST invoice with a payment link and emails it", async () => {
+    {
       expect(await issueStatements(env, "https://aestheva.test", now)).toBe(1);
       const [s] = await sql("SELECT * FROM statements WHERE provider_id = 'p6'");
       expect(s).toMatchObject({ status: "issued", invoice_no: "AEV/2627/0001" });
@@ -140,8 +138,8 @@ describe("monthly statements", () => {
       const opsCookie = (await send("POST", "/ops/login", { key: "test-ops-key" })).headers.get("set-cookie")!.split(";")[0];
       expect((await send("GET", "/ops/money", undefined, opsCookie)).text).toContain("AEV/2627/0001");
       const page = await send("GET", `/ops/statements/${s.id}`, undefined, opsCookie);
-      for (const t of ["Tax invoice", "GSTIN 32AAACH1234A1Z5", "CGST 9%", "SGST 9%", "₹215", "₹38.70", "Invoice total", "₹253.70", "No-show"]) expect(page.text, t).toContain(t);
-    } finally { delete (env as { COMPANY_GSTIN?: string }).COMPANY_GSTIN; }
+      for (const t of ["Tax invoice", "GSTIN 32AAHCH7753F1ZL", "CIN U47720KL2025PTC092343", "CGST 9%", "SGST 9%", "₹215", "₹38.70", "Invoice total", "₹253.70", "No-show"]) expect(page.text, t).toContain(t);
+    }
   });
 
   it("marks the statement paid when Razorpay says the link was paid", async () => {

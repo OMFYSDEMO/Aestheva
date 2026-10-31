@@ -10,7 +10,8 @@ export const COMPANY = {
   launchCity: "Thiruvananthapuram",
   // Data protection: the person named as Grievance Officer in the privacy notice (required by the IT (SPDI) Rules, 2011).
   grievanceOfficer: "Shaji Anandan",
-  gstin: "",                // Haswel Care's GSTIN, printed on commission invoices. Invoices stay as drafts until it is set.
+  gstin: "32AAHCH7753F1ZL", // Haswel Care's GSTIN, printed on commission invoices. Invoices stay as drafts while it is empty.
+  cin: "U47720KL2025PTC092343",  // Corporate Identity Number: on invoices and wherever the company is named (Companies Act, s.12)
   privacyUpdated: "31 October 2026",
 } as const;
 
