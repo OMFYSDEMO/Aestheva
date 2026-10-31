@@ -24,7 +24,7 @@ export const POLICY = {
 /** Phase 1 incentives. Change the numbers here; the site's wording follows them. */
 export const INCENTIVES = {
   foundingPlaces: 50,       // the first 50 businesses to go live are founding partners
-  foundingFreeMonths: 3,    // 0% commission for their first 3 months live
+  foundingFreeMonths: 1,    // 0% commission for their first month live (3 months until 2026-10-31)
   foundingRateBp: 750,      // then 7.5% ...
   foundingMonths: 12,       // ... until their first anniversary, then the standard rate
   ownLinkDays: 30,          // a visit through a business's own link counts for 30 days

@@ -1,3 +1,4 @@
+import { freePeriod } from "../services/incentives";
 import { COMPANY, INCENTIVES, POLICY } from "../config";
 import { fact } from "./layout";
 import { catTile, esc, ic } from "./ui";
@@ -334,13 +335,13 @@ export function practitionersPage(cats: { id: string; name: string }[] = [], pla
 
   ${placesLeft ? `<section class="founding mt48"><div>
       <div class="eyebrow" style="color:#F4D7E3">Founding partners · ${placesLeft} of ${INCENTIVES.foundingPlaces} places left</div>
-      <h2 class="mt8">${INCENTIVES.foundingFreeMonths} months with no commission. Then ${INCENTIVES.foundingRateBp / 100}% for the rest of your first year.</h2>
-      <p class="mt12">The first ${INCENTIVES.foundingPlaces} businesses to go live on Aestheva pay no commission for their first ${INCENTIVES.foundingFreeMonths} months, then ${INCENTIVES.foundingRateBp / 100}% instead of ${POLICY.commissionBp / 100}% until their first anniversary, and keep a "Founding partner" badge in their portal.</p>
+      <h2 class="mt8">${INCENTIVES.foundingFreeMonths === 1 ? "Your first month" : `${INCENTIVES.foundingFreeMonths} months`} with no commission. Then ${INCENTIVES.foundingRateBp / 100}% for the rest of your first year.</h2>
+      <p class="mt12">The first ${INCENTIVES.foundingPlaces} businesses to go live on Aestheva pay no commission for their first ${freePeriod()}, then ${INCENTIVES.foundingRateBp / 100}% instead of ${POLICY.commissionBp / 100}% until their first anniversary, and keep a "Founding partner" badge in their portal.</p>
     </div><a class="btn btn-light" href="/for-practitioners/apply">Claim a founding place ${ic("arrowR", 16)}</a></section>` : ""}
   <section class="mt48 grid g2 own-link-band"><div class="card"><div class="eyebrow">Your link, zero commission</div><h3 class="mt8">Bring your regulars. Keep every rupee.</h3>
       <p class="small muted mt8">You get your own booking link to share on Instagram, WhatsApp and Google Maps. Clients who book you through it pay you directly through Aestheva, and you pay no commission on those bookings, ever. Free online booking, a calendar and deposits for the clients you already have.</p></div>
     <div class="card"><div class="eyebrow">How it adds up</div><h3 class="mt8">A ₹2,000 booking</h3>
-      <ul class="ticks mt12"><li>${ic("check", 14)} <span>Through your own link: <b>₹0 commission</b></span></li><li>${ic("check", 14)} <span>From Aestheva search, as a founding partner, first ${INCENTIVES.foundingFreeMonths} months: <b>₹0</b></span></li><li>${ic("check", 14)} <span>Then, to your first anniversary: <b>₹${(2000 * INCENTIVES.foundingRateBp / 10000).toLocaleString("en-IN")}</b></span></li><li>${ic("check", 14)} <span>Phone and walk-in bookings you add: <b>₹0</b></span></li></ul></div></section>
+      <ul class="ticks mt12"><li>${ic("check", 14)} <span>Through your own link: <b>₹0 commission</b></span></li><li>${ic("check", 14)} <span>From Aestheva search, as a founding partner, first ${freePeriod()}: <b>₹0</b></span></li><li>${ic("check", 14)} <span>Then, to your first anniversary: <b>₹${(2000 * INCENTIVES.foundingRateBp / 10000).toLocaleString("en-IN")}</b></span></li><li>${ic("check", 14)} <span>Phone and walk-in bookings you add: <b>₹0</b></span></li></ul></div></section>
   ${cats.length ? `<section class="mt48"><div class="eyebrow">Get started</div><h2 class="mt8">Select your business to get started</h2>
     <div class="tile-grid mt24">${cats.map((c) => `<a class="tile" href="/for-practitioners/apply?cat=${esc(c.id)}">${catTile(c.id, 22)}<b>${esc(c.name)}</b></a>`).join("")}</div></section>` : ""}
 

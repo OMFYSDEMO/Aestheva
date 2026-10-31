@@ -172,7 +172,7 @@ describe("self-serve onboarding, from application to a live listing", () => {
     expect(todayPage.status).toBe(200);
     expect(todayPage.text).toContain("Your booking link"); expect(todayPage.text).toContain(`/b/${slug}`);
     expect(todayPage.text).toMatch(/Founding partner #\d+/);   // published while places remain
-    expect(sent[0].text).toMatch(/You're founding partner #\d+: no commission for your first 3 months/);
+    expect(sent[0].text).toMatch(/You're founding partner #\d+: no commission for your first month \(until/);
     expect(sent[0].text).toContain(`/b/${slug}`);
   });
 

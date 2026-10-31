@@ -25,15 +25,15 @@ async function slot(service: string, date: string) {
 beforeAll(seed);
 
 describe("founding partners", () => {
-  it("charge 0% for three months, 7.5% to the first anniversary, then the standard 10%", () => {
+  it("charge 0% for the first month, 7.5% to the first anniversary, then the standard 10%", () => {
     const live = "2026-10-29";
     expect(addMonths(live, 3)).toBe("2027-01-29");
-    expect(foundingTerms({ founding_no: 1, live_since: live }, "2026-12-01")).toMatchObject({ no: 1, phase: "free", rateBp: 0, freeUntil: "2027-01-29", foundingUntil: "2027-10-29" });
-    expect(commissionBp({ founding_no: 1, live_since: live }, "", "2027-01-28")).toBe(0);
-    expect(commissionBp({ founding_no: 1, live_since: live }, "", "2027-01-29")).toBe(750);
+    expect(foundingTerms({ founding_no: 1, live_since: live }, "2026-11-15")).toMatchObject({ no: 1, phase: "free", rateBp: 0, freeUntil: "2026-11-29", foundingUntil: "2027-10-29" });
+    expect(commissionBp({ founding_no: 1, live_since: live }, "", "2026-11-28")).toBe(0);
+    expect(commissionBp({ founding_no: 1, live_since: live }, "", "2026-11-29")).toBe(750);
     expect(commissionBp({ founding_no: 1, live_since: live }, "", "2027-10-29")).toBe(1000);
-    expect(commissionBp({ founding_no: null, live_since: live }, "", "2026-12-01")).toBe(1000);
-    expect(commissionBp({ founding_no: null, live_since: live }, "own_link", "2026-12-01")).toBe(0);
+    expect(commissionBp({ founding_no: null, live_since: live }, "", "2026-11-15")).toBe(1000);
+    expect(commissionBp({ founding_no: null, live_since: live }, "own_link", "2026-11-15")).toBe(0);
   });
 
   it("number businesses as they go live, until the places run out", async () => {

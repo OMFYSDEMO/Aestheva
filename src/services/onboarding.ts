@@ -1,7 +1,7 @@
 // Self-serve onboarding. A clinic builds its own listing in the portal (details, photos, team, treatments,
 // documents, terms), submits it, and the Aestheva team publishes it. Every function is scoped to one provider.
 import { AREAS, COMPANY, INCENTIVES, VENUE_TYPES } from "../config";
-import { assignFoundingNo, foundingTerms, ownLink } from "./incentives";
+import { assignFoundingNo, foundingTerms, freePeriod, ownLink } from "./incentives";
 import type { Env } from "../env";
 import { HttpError, audit, hash32, newId, nowIso } from "../db";
 import { fmtDate, nowIst } from "../domain/time";
@@ -313,7 +313,7 @@ export async function setVenueStage(env: Env, pid: string, action: "publish" | "
   if (action === "send_back") await db.batch([db.prepare("UPDATE providers SET submitted_at = NULL, review_note = ? WHERE id = ?").bind(note, pid), audit(db, "ops", "provider.sent_back", "provider", pid)]);
   if (action === "pause") await db.batch([db.prepare("UPDATE providers SET status = 'paused' WHERE id = ?").bind(pid), audit(db, "ops", "provider.paused", "provider", pid, { note })]);
   const m = action === "publish" ? mail(`${p.name} is live on Aestheva`, ["Clients can now find you and book online. New bookings appear in your Aestheva portal under Today and Calendar. Phone and walk-in bookings you add there hold the time too.", `Share your own booking link on Instagram, WhatsApp and Google Maps: ${ownLink(siteUrl, p.slug)}. Bookings from clients who arrive through it carry no commission.`,
-      ...(ft ? [`You're founding partner #${ft.no}: no commission for your first ${INCENTIVES.foundingFreeMonths} months (until ${fmtDate(ft.freeUntil, true)}), then ${INCENTIVES.foundingRateBp / 100}% until your first anniversary on ${fmtDate(ft.foundingUntil, true)}.`] : [])], ["See your page", `${siteUrl}/p/${p.slug}`])
+      ...(ft ? [`You're founding partner #${ft.no}: no commission for your first ${freePeriod()} (until ${fmtDate(ft.freeUntil, true)}), then ${INCENTIVES.foundingRateBp / 100}% until your first anniversary on ${fmtDate(ft.foundingUntil, true)}.`] : [])], ["See your page", `${siteUrl}/p/${p.slug}`])
     : action === "send_back" ? mail(`A few changes for ${p.name}`, ["Thanks for setting up your listing. Before we publish it, please look at this note from the Aestheva team:", note, "Make the changes in your Aestheva portal, then press Submit for review again."], ["Open your listing", `${siteUrl}/clinic/setup`])
     : mail(`${p.name} is paused on Aestheva`, ["Your listing is hidden from clients for now, and no new bookings can be made. Existing bookings stay as they are.", ...(note ? [note] : []), `Questions? Write to ${COMPANY.supportEmail}.`]);
   const subject = action === "publish" ? `You're live: ${p.name}` : action === "send_back" ? `Changes needed: ${p.name}` : `Paused: ${p.name}`;

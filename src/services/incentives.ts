@@ -56,6 +56,9 @@ export async function foundingPlacesLeft(db: D1Database) {
   return Math.max(0, INCENTIVES.foundingPlaces - (r?.n ?? 0));
 }
 
+/** The founding free period in words: "month" or "3 months", as in "your first month". */
+export const freePeriod = () => INCENTIVES.foundingFreeMonths === 1 ? "month" : `${INCENTIVES.foundingFreeMonths} months`;
+
 // ---------- the business's own link ----------
 
 export const VIA_COOKIE = "ae_via";
