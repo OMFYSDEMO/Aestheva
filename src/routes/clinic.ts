@@ -22,6 +22,8 @@ import { foundingTerms, ownLink } from "../services/incentives";
 import { OfferFormError, offerOf, offerStats, providerOffers, saveOffer, setOfferStatus, validateOffer } from "../services/offers";
 import { offerDefaults, offerForm, offerToForm, offersPage } from "../views/offers";
 import type { ServiceRow } from "../services/catalog";
+import { companyGstin, depositFor, monthLabel, providerStatements, statementWithLines } from "../services/statements";
+import { statementPage, statementsCard } from "../views/statements";
 import {
   bookingCreatedPage, bookingDetailPage, bookingsPage, calendarPage, clientPage, clientsPage, clinicLoginPage, clinicShell, forgotPage, linkInvalidPage, newBookingPage, setPasswordPage,
   paymentsPage, servicesPage, signOutButton, todayPage, type Section,
@@ -143,7 +145,7 @@ clinic.get("/setup/preview", async (c) => {
 
 clinic.get("/setup/details", async (c) => {
   const p = (await listing(c.env.DB, pid(c))).p;
-  const v = { name: p.name, type: p.type, area: p.area, address: p.address, phone: p.phone, tagline: p.tagline, about: p.about, hours_text: p.hours_text, amenities: (JSON.parse(p.amenities_json || "[]") as string[]).join("\n") };
+  const v = { name: p.name, type: p.type, area: p.area, address: p.address, phone: p.phone, tagline: p.tagline, about: p.about, hours_text: p.hours_text, amenities: (JSON.parse(p.amenities_json || "[]") as string[]).join("\n"), gstin: p.gstin ?? "" };
   return page(c, "Your clinic", "setup", detailsPage({ v, e: {}, csrf: c.get("csrf") }));
 });
 clinic.post("/setup/details", async (c) => {
@@ -328,7 +330,8 @@ clinic.get("/services", async (c) => {
     db.prepare("SELECT ss.service_id, ss.staff_id FROM service_staff ss JOIN services s ON s.id = ss.service_id WHERE s.provider_id = ?").bind(pid(c)).all<{ service_id: string; staff_id: string }>(),
     categories(db),
   ]);
-  const services = svc.results.map((s) => ({ ...s, staff: links.results.filter((l) => l.service_id === s.id).map((l) => l.staff_id) }));
+  const mode = (await db.prepare("SELECT payout_mode FROM providers WHERE id = ?").bind(pid(c)).first<{ payout_mode: string }>())?.payout_mode;
+  const services = svc.results.map((s) => ({ ...s, deposit_paise: depositFor(mode, s), staff: links.results.filter((l) => l.service_id === s.id).map((l) => l.staff_id) }));
   return page(c, "Services & hours", "services", servicesPage({ services, staff, hours, catName: (id) => cats.find((x) => x.id === id)?.name ?? id }));
 });
 
@@ -375,7 +378,13 @@ clinic.get("/payments", async (c) => {
   const shift = (m: string, n: number) => addDays(`${m}-15`, n * 30).slice(0, 7);
   const p = await c.env.DB.prepare("SELECT status, slug, founding_no, live_since FROM providers WHERE id = ?").bind(pid(c)).first<{ status: string; slug: string; founding_no: number | null; live_since: string | null }>();
   return page(c, "Payments", "payments", paymentsPage({ month, m: await monthMoney(c.env.DB, pid(c), month), prev: shift(month, -1), next: month < thisMonth ? shift(month, 1) : null,
-    founding: p ? foundingTerms(p, nowIst().date) : null, link: p?.status === "live" ? ownLink(base(c), p.slug) : undefined }));
+    founding: p ? foundingTerms(p, nowIst().date) : null, link: p?.status === "live" ? ownLink(base(c), p.slug) : undefined })
+    + statementsCard(await providerStatements(c.env.DB, pid(c))));
+});
+clinic.get("/statements/:id", async (c) => {
+  const d = await statementWithLines(c.env.DB, c.req.param("id"), pid(c));
+  if (!d) throw new HttpError(404, "We couldn't find that statement.");
+  return page(c, `Statement ${monthLabel(d.s.month)}`, "payments", statementPage({ ...d, gstin: companyGstin(c.env), back: "/clinic/payments", draftNote: d.s.status === "draft" }));
 });
 
 export default clinic;

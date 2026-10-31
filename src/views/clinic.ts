@@ -286,13 +286,13 @@ export function paymentsPage(d: { month: string; m: Awaited<ReturnType<typeof im
       ${kpi("Completed", String(d.m.completedCount), `appointments worth ${inr(d.m.completedValue)}`)}
       ${kpi("Deposits paid online", inr(d.m.depositsPaid), d.m.refunded ? `${inr(d.m.refunded)} refunded` : "nothing refunded")}
       ${kpi("Collected on the day", inr(d.m.balanceAtClinic), "balance on completed visits")}
-      ${kpi("Aestheva commission", inr(d.m.commission), d.m.ownLinkBookings ? `${d.m.ownLinkBookings} booking${d.m.ownLinkBookings === 1 ? "" : "s"} through your link: no commission` : "on completed online bookings")}
+      ${kpi("Aestheva commission", inr(d.m.commission), d.m.commission ? `plus ${inr(d.m.commissionGst)} GST` : d.m.ownLinkBookings ? `${d.m.ownLinkBookings} booking${d.m.ownLinkBookings === 1 ? "" : "s"} through your link: no commission` : "on completed online bookings")}
     </div>
     <p class="small mt12"><b>Your rate:</b> ${esc(rateLine(d.founding ?? null))} Bookings through your own link${d.link ? ` (<a href="${esc(d.link)}">${esc(d.link.replace(/^https?:\/\//, ""))}</a>)` : ""} and bookings you add yourself carry no commission.</p>
     ${d.m.offerBookings ? `<p class="small muted mt8">Quiet-hour offers this month: <b>${d.m.offerBookings}</b> completed booking${d.m.offerBookings === 1 ? "" : "s"}, <b>${inr(d.m.offersGiven)}</b> off in total. Prices below are what clients paid, and commission is on those. <a href="/clinic/offers">Your offers</a></p>` : ""}
     ${d.m.welcomeCredits ? `<p class="small muted mt8">Welcome offers paid by Aestheva this month: <b>${inr(d.m.welcomeCredits)}</b>. Clients paid that much less online; you receive it with their deposits.</p>` : ""}
     ${d.m.keptOnCancellation ? `<p class="small muted mt12">Deposits kept on late cancellations and no-shows: <b>${inr(d.m.keptOnCancellation)}</b>.</p>` : ""}
-    <p class="xs muted mt12">Bookings your team adds carry no commission. Settlement statements will appear here once payouts start.</p>
+    <p class="xs muted mt12">Bookings your team adds carry no commission. Your monthly statement and GST invoice are below.</p>
     ${d.m.rows.length ? `<div class="tbl-wrap mt16"><table class="tbl"><thead><tr><th>Date</th><th>Client</th><th>Service</th><th>Status</th><th>Price</th><th>Deposit</th></tr></thead><tbody>
       ${d.m.rows.map((r) => `<tr><td class="small" style="white-space:nowrap"><a href="/clinic/bookings/${esc(r.ref)}">${fmtDate(r.date)}</a></td><td class="small">${esc(r.client_name)}</td><td class="small">${esc(r.service_name)}${r.source === "direct" ? '<div class="xs soft">Booked by clinic</div>' : ""}</td><td>${statusBadge(r.status)}</td><td>${inr(r.price_paise)}${r.offer_paise ? `<div class="xs" style="color:var(--offer)">${inr(r.offer_paise)} offer</div>` : ""}</td><td class="small">${r.paid ? inr(r.paid) + (r.refunded ? ` <span class="soft">(−${inr(r.refunded)})</span>` : "") : "—"}</td></tr>`).join("")}
     </tbody></table></div>` : `<div class="card mt16" style="text-align:center;padding:40px"><p class="muted">No appointments this month yet.</p></div>`}`;

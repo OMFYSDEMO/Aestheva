@@ -8,6 +8,7 @@ import clinic from "./routes/clinic";
 import site from "./routes/site";
 import { expireHolds } from "./services/bookings";
 import { pruneApplications } from "./services/applications";
+import { moneyJobs } from "./services/statements";
 import { paymentMode } from "./services/gateway";
 import { layout } from "./views/layout";
 import { notFoundPage } from "./views/pages";
@@ -75,6 +76,7 @@ export default {
   async scheduled(_evt: ScheduledController, env: Env, ctx: ExecutionContext) {
     ctx.waitUntil(expireHolds(env).then((n) => { if (n) console.log(`released ${n} unpaid holds`); }));
     ctx.waitUntil(pruneApplications(env.DB).catch((e) => console.error("retention clean-up failed", e)));
+    ctx.waitUntil(moneyJobs(env).then((r) => { if (r.completed || r.made || r.issued || r.paid) console.log("money", r); }, (e) => console.error("money jobs failed", e)));
   },
 } satisfies ExportedHandler<Env>;
 

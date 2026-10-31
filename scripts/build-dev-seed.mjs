@@ -32,6 +32,9 @@ out.push('INSERT INTO service_staff (service_id, staff_id) VALUES\n' + ss.join('
 out.push('INSERT INTO reviews (provider_id, staff_id, author, rating, service_name, body, created_on) VALUES\n' +
   D.reviews.map(r => row([r.providerId, r.staffId, r.name, r.rating, r.service, r.text, r.date])).join(',\n') + ';');
 
+// The sample venues keep the deposits set on each service, like a business Haswel Care runs itself.
+out.push("UPDATE providers SET payout_mode = 'own';");
+
 fs.mkdirSync(path.join(root, 'seed'), { recursive: true });
 fs.writeFileSync(path.join(root, 'seed/dev-sample.sql'), out.join('\n\n') + '\n');
 console.log(`seed/dev-sample.sql: ${D.providers.length} providers, ${D.staff.length} staff, ${D.services.length} services, ${D.reviews.length} reviews`);

@@ -7,6 +7,7 @@ import { canStart, isMedical, loadInventory, type ServiceRow } from "./catalog";
 import { gatewayFor } from "./gateway";
 import { commissionBp, welcomeCredit } from "./incentives";
 import { offerForBooking } from "./offers";
+import { depositFor } from "./statements";
 import { inr } from "../domain/money";
 
 export interface BookingRow {
@@ -102,10 +103,11 @@ export async function createBooking(env: Env, input: NewBooking, now: Date = new
       : `The quiet-hour offer for this time has just been taken. The time is still free at the full price of ${inr(service.price_paise)}.`);
   }
   const off = offer.offer?.off ?? 0;
-  const price = service.price_paise - off, deposit = Math.min(service.deposit_paise, price);
+  const prov = (await db.prepare("SELECT slug, founding_no, live_since, payout_mode FROM providers WHERE id = ?").bind(service.provider_id).first<{ slug: string; founding_no: number | null; live_since: string | null; payout_mode: string }>())!;
+  // The deposit is worked out on the full price (as shown to the client), and never exceeds what the client pays.
+  const price = service.price_paise - off, deposit = Math.min(depositFor(prov.payout_mode, service), price);
   const needsDeposit = deposit > 0;
   // Incentives: no commission through the business's own link; founding partners' rates; the welcome offer on a first deposit.
-  const prov = (await db.prepare("SELECT slug, founding_no, live_since FROM providers WHERE id = ?").bind(service.provider_id).first<{ slug: string; founding_no: number | null; live_since: string | null }>())!;
   const channel = input.via && input.via === prov.slug ? "own_link" : "";
   const commission = commissionBp(prov, channel, ist.date);
   const credit = needsDeposit ? await welcomeCredit(env, client.id, deposit) : 0;

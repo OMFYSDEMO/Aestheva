@@ -802,3 +802,6 @@ html{overflow-x:clip}
 .prose .tbl tr:last-child td{border-bottom:0}
 .prose ol{padding-left:20px}
 .prose .faq details p{margin-top:0}
+/* Statements print cleanly: no site header, footer or buttons */
+@media print{.topbar,.footer,.envbar,.no-print,.ws .side,.mob-nav,.join-pop{display:none!important}.ws-main{padding:0!important}.statement .card{break-inside:avoid;border-color:#ddd}body{background:#fff}}
+.invoice .tbl td,.invoice .tbl th{font-size:14px}

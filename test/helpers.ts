@@ -32,6 +32,7 @@ export function fakeRazorpay() {
   const calls: { method: string; path: string; body: any }[] = [];
   const orders = new Map<string, number>();
   const payments = new Map<string, { id: string; order_id: string; amount: number; status: string; method: string }>();
+  const links = new Map<string, { id: string; short_url: string; status: string; amount: number; reference_id: string; customer: any }>();
   let n = 0;
   const tag = crypto.randomUUID().slice(0, 6);   // ids stay unique across fakes sharing one database
   const fetchImpl = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -46,11 +47,14 @@ export function fakeRazorpay() {
     if (m) { const p = payments.get(m[1])!; p.status = "captured"; return ok(p); }
     m = path.match(/^\/payments\/([^/]+)\/refund$/);
     if (m) return ok({ id: `rfnd_${tag}${++n}`, status: "processed", amount: body.amount });
+    if (method === "POST" && path === "/payment_links") { const id = `plink_${tag}${++n}`; const l = { id, short_url: `https://rzp.io/i/${id}`, status: "created", amount: body.amount, reference_id: body.reference_id, customer: body.customer }; links.set(id, l); return ok(l); }
+    m = path.match(/^\/payment_links\/([^/]+)$/);
+    if (m && method === "GET") return links.has(m[1]) ? ok(links.get(m[1])) : new Response(JSON.stringify({ error: { description: "not found" } }), { status: 400 });
     return new Response("{}", { status: 404 });
   }) as typeof fetch;
   const gw = new RazorpayGateway("rzp_test_key", "test_key_secret", fetchImpl);
   return {
-    calls, orders,
+    calls, orders, links,
     /** Make this fake the gateway the Worker uses (call in beforeAll of each describe). */
     install: () => setGatewayForTests(gw),
     /** The client pays: Razorpay now knows the payment, and Checkout hands back this signed response. */

@@ -1,10 +1,12 @@
 import { addDays, dowOf, nowIst, type IstNow } from "../domain/time";
 import { freeStarts, slotsFor, type Hours } from "../domain/availability";
+import { depositFor } from "./statements";
 
 export interface ProviderRow {
   id: string; slug: string; name: string; type: string; city: string; area: string; address: string; tagline: string; about: string;
   hours_text: string; amenities_json: string; art: number; status: string; live_since: string | null; razorpay_account_id: string | null;
   photos_json: string; phone: string; submitted_at: string | null; review_note: string; terms_accepted_at: string | null; terms_accepted_by: string | null;
+  payout_mode?: string; gstin?: string;
 }
 export interface ServiceRow {
   id: string; provider_id: string; name: string; cat: string; kind: "consult" | "treatment" | "beauty"; dur_min: number;
@@ -56,7 +58,8 @@ export async function providerBySlug(db: D1Database, slug: string, includeDraft 
     if (!staffIds.has(l.staff_id)) continue;
     byService.set(l.service_id, [...(byService.get(l.service_id) ?? []), l.staff_id]);
   }
-  const svc = (services.results as ServiceRow[]).map((s) => ({ ...s, staff: byService.get(s.id) ?? [] })).filter((s) => s.staff.length);
+  // Deposits shown and charged follow how the business is paid (see depositFor).
+  const svc = (services.results as ServiceRow[]).map((s) => ({ ...s, deposit_paise: depositFor(p.payout_mode, s), staff: byService.get(s.id) ?? [] })).filter((s) => s.staff.length);
   const rv = reviews.results as ReviewRow[];
   const rating: Rating | null = rv.length ? { avg: rv.reduce((a, r) => a + r.rating, 0) / rv.length, n: rv.length } : null;
   return { provider: p, services: svc, staff: staffRows, verifications: verifications.results as { label: string; scope: string; checked_on: string }[], reviews: rv, rating };

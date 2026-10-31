@@ -9,6 +9,7 @@ export interface Env {
   RAZORPAY_WEBHOOK_SECRET?: string;
   PREVIEW_KEY?: string;             // secret: unlocks draft venues at /p/<slug>?preview=<key>
   WELCOME_CREDIT_PAISE?: string;    // optional: overrides the welcome offer (paise); "0" pauses it without a deploy
+  COMPANY_GSTIN?: string;           // optional: Haswel Care's GSTIN for invoices, if not set in src/config.ts
   OPS_KEY?: string;                 // secret: the team's password for /ops (applications review)
   MEDIA?: R2Bucket;                 // venue photos and verification documents (wrangler.jsonc)
   EMAIL?: SendEmail;                // Cloudflare Email Service binding (wrangler.jsonc); absent in local dev

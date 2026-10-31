@@ -251,3 +251,5 @@ INSERT INTO reviews (provider_id, staff_id, author, rating, service_name, body, 
 ('p7', 's15', 'Lekha S.', 4, 'Scaling & polishing', 'Gentle and on time.', '2026-09-17'),
 ('p8', 's16', 'Abhijith M.', 5, 'Precision haircut', 'Clean fade, no wait.', '2026-10-20'),
 ('p8', 's17', 'Sanjay V.', 4, 'De-tan facial', 'Good value for the price.', '2026-10-03');
+
+UPDATE providers SET payout_mode = 'own';

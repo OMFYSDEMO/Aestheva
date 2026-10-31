@@ -1,6 +1,6 @@
 // The clinic portal's data and actions. Every function takes the signed-in user's provider id and only ever
 // touches that provider's rows, so one clinic can never see or change another's.
-import { POLICY } from "../config";
+import { BILLING, POLICY } from "../config";
 import type { Env } from "../env";
 import { HttpError, audit, hmacSha256Hex, isUniqueViolation, newId, newRef, newToken, nowIso, safeEqual, sha256Hex } from "../db";
 import { addDays, dowOf, hoursUntil, isIsoDate, nowIst } from "../domain/time";
@@ -383,6 +383,7 @@ export async function monthMoney(db: D1Database, providerId: string, month: stri
     offerBookings: completed.filter((r) => r.offer_paise > 0).length,
     offersGiven: sum(completed.map((r) => r.offer_paise)),
     commission: sum(completed.filter((r) => r.source === "marketplace").map((r) => Math.round((r.price_paise * r.commission_bp) / 10000))),
+    commissionGst: sum(completed.filter((r) => r.source === "marketplace").map((r) => Math.round((Math.round((r.price_paise * r.commission_bp) / 10000) * BILLING.gstBp) / 10000))),
   };
 }
 

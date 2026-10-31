@@ -9,6 +9,9 @@ import { layout } from "../views/layout";
 import { opsClinicsPage, opsDetailPage, opsListPage, opsLoginPage, opsOffersPage, opsVenuePage, opsVenuesPage, type ClinicLoginRow } from "../views/ops";
 import { offerAmount, offerServices, opsSetOffer, placesTaken, whenLabel, type OfferRow } from "../services/offers";
 import { nowIst } from "../domain/time";
+import { companyGstin, statementWithLines, type StatementRow } from "../services/statements";
+import { opsMoneyPage, statementPage } from "../views/statements";
+import { shell } from "../views/ops";
 import { STAGE, addDocument, addVerification, approveApplication, checklist, listing, removeVerification, setVenueStage } from "../services/onboarding";
 import { photosOf } from "../views/ui";
 import { createClinicUser, emailPasswordLink, issuePasswordLink, setClinicUserActive, type ClinicUser } from "../services/clinic";
@@ -85,6 +88,16 @@ ops.post("/applications/:ref/approve", async (c) => {
   const r = await approveApplication(c.env, ref, c.env.SITE_URL || new URL(c.req.url).origin);
   const a = await getApplication(db, ref), cats = await categories(db);
   return page(c, a.business_name, opsDetailPage(a, c.get("csrf"), venueDraft(a), (id) => cats.find((x) => x.id === id)?.name ?? id, false, r));
+});
+
+ops.get("/money", async (c) => {
+  const rows = (await c.env.DB.prepare("SELECT s.*, p.name FROM statements s JOIN providers p ON p.id = s.provider_id ORDER BY s.month DESC, p.name").all<StatementRow & { name: string }>()).results;
+  return page(c, "Statements", shell(opsMoneyPage({ rows, gstinSet: !!companyGstin(c.env) })));
+});
+ops.get("/statements/:id", async (c) => {
+  const d = await statementWithLines(c.env.DB, c.req.param("id"));
+  if (!d) throw new HttpError(404, "Statement not found");
+  return page(c, "Statement", statementPage({ ...d, gstin: companyGstin(c.env), back: "/ops/money", draftNote: d.s.status === "draft" }));
 });
 
 ops.get("/offers", async (c) => {

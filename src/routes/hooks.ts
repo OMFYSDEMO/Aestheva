@@ -4,11 +4,13 @@ import { audit } from "../db";
 import { applyCapturedPayment } from "../services/bookings";
 import { afterPayment } from "./api";
 import { gatewayFor, verifyWebhook } from "../services/gateway";
+import { markLinkPaid } from "../services/statements";
 
 const hooks = new Hono<{ Bindings: Env }>();
 
 /**
- * Razorpay webhook. Subscribe to payment.captured, payment.authorized, order.paid and refund.processed.
+ * Razorpay webhook. Subscribe to payment.captured, payment.authorized, order.paid, refund.processed, refund.failed
+ * and payment_link.paid (commission invoices).
  * Confirms bookings whose client closed the browser before the checkout callback, and records refund outcomes.
  * Each event id is processed once; Razorpay retries anything that does not get a 2xx.
  */
@@ -42,6 +44,9 @@ hooks.post("/razorpay", async (c) => {
       const p = await gatewayFor(c.env).capture(pay.id, known.amount_paise);
       if (p.status === "captured") { const r = await applyCapturedPayment(c.env, { orderId: pay.order_id, paymentId: pay.id, amount: p.amount, method: p.method }, "razorpay"); afterPayment(c, r); result = r; }
     }
+  } else if (evt.event === "payment_link.paid") {
+    const link = evt.payload?.payment_link?.entity;
+    if (link?.id) result = (await markLinkPaid(db, link.id, "razorpay")) ? "statement paid" : "no open statement";
   } else if (evt.event === "refund.processed" || evt.event === "refund.failed") {
     const rf = evt.payload?.refund?.entity;
     if (rf?.id) {

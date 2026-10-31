@@ -10,6 +10,7 @@ export const COMPANY = {
   launchCity: "Thiruvananthapuram",
   // Data protection: the person named as Grievance Officer in the privacy notice (required by the IT (SPDI) Rules, 2011).
   grievanceOfficer: "Shaji Anandan",
+  gstin: "",                // Haswel Care's GSTIN, printed on commission invoices. Invoices stay as drafts until it is set.
   privacyUpdated: "31 October 2026",
 } as const;
 
@@ -19,6 +20,24 @@ export const POLICY = {
   leadMinutes: 60,         // earliest bookable start is this far from now
   windowDays: 60,          // how far ahead clients can book
   commissionBp: 1000,      // 10% of the price the client pays, on completed marketplace bookings
+  depositBp: 2000,         // online deposit: 20% of the full price, rounded up to ₹10, for businesses paid through Aestheva
+  autoCompleteHours: 48,   // a confirmed booking not marked within this long after it ends counts as completed
+} as const;
+
+/**
+ * Commission invoices and tax. Commission is deducted from what the business receives; clients never pay it.
+ * TDS (Income-tax Act, e-commerce operators) and GST TCS (CGST Act s.52) are worked out on every statement but only
+ * deducted once `withholding` is switched on, after the company's chartered accountant confirms rates and bases.
+ */
+export const BILLING = {
+  gstBp: 1800,              // GST on Aestheva's commission: CGST 9% + SGST 9% within Kerala, IGST 18% otherwise
+  homeState: "32",          // Kerala's GST state code
+  sac: "998599",            // service code on the invoice; confirm with the CA
+  tdsBp: 10,                // 0.1% of the gross value of completed bookings
+  tcsBp: 50,                // 0.5% of the net value, only for GST-registered businesses
+  withholding: false,
+  invoicePrefix: "AEV",
+  issueDay: 3,              // statements for a month are issued on this day of the next month (after auto-complete)
 } as const;
 
 /** Phase 1 incentives. Change the numbers here; the site's wording follows them. */

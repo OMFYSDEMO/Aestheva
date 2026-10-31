@@ -3,6 +3,11 @@ import { HttpError, hmacSha256Hex, newId, safeEqual } from "../db";
 
 export interface GatewayPayment { id: string; order_id: string; amount: number; status: string; method: string | null }
 export interface GatewayRefund { id: string; status: "pending" | "processed" | "failed" }
+export interface PaymentLinkInput {
+  amount: number; reference_id: string; description: string; expire_by: number;
+  customer: { name: string; email?: string; contact?: string }; notes: Record<string, string>;
+}
+export interface PaymentLink { id: string; short_url: string; status: string }
 
 /** What the booking flow needs from a payment gateway. Amounts are paise. */
 export interface Gateway {
@@ -13,6 +18,9 @@ export interface Gateway {
   fetchPayment(paymentId: string): Promise<GatewayPayment>;
   capture(paymentId: string, amount: number): Promise<GatewayPayment>;
   refund(paymentId: string, amount: number, notes: Record<string, string>): Promise<GatewayRefund>;
+  /** A Razorpay Payment Link: used to collect commission invoices from businesses whose clients pay at the venue. */
+  createPaymentLink(input: PaymentLinkInput): Promise<PaymentLink>;
+  fetchPaymentLink(id: string): Promise<PaymentLink>;
 }
 
 const API = "https://api.razorpay.com/v1";
@@ -59,6 +67,18 @@ export class RazorpayGateway implements Gateway {
     const r = await this.call<any>("POST", `/payments/${encodeURIComponent(paymentId)}/refund`, { amount, speed: "normal", notes });
     return { id: r.id, status: (r.status === "processed" ? "processed" : r.status === "failed" ? "failed" : "pending") as GatewayRefund["status"] };
   }
+  async createPaymentLink(i: PaymentLinkInput) {
+    const customer = Object.fromEntries(Object.entries(i.customer).filter(([, v]) => v));
+    const l = await this.call<any>("POST", "/payment_links", {
+      amount: i.amount, currency: "INR", accept_partial: false, reference_id: i.reference_id.slice(0, 40), description: i.description.slice(0, 2048),
+      expire_by: i.expire_by, customer, notify: { email: !!i.customer.email, sms: !!i.customer.contact }, reminder_enable: true, notes: i.notes,
+    });
+    return { id: l.id, short_url: l.short_url, status: l.status };
+  }
+  async fetchPaymentLink(id: string) {
+    const l = await this.call<any>("GET", `/payment_links/${encodeURIComponent(id)}`);
+    return { id: l.id, short_url: l.short_url, status: l.status };
+  }
 }
 
 /** Stand-in used in development and tests when no Razorpay keys are configured. Never used in production. */
@@ -71,6 +91,8 @@ export class SimulatedGateway implements Gateway {
   async fetchPayment(paymentId: string) { return { id: paymentId, order_id: "", amount: 0, status: "captured", method: "upi" }; }
   async capture(paymentId: string, amount: number) { return { id: paymentId, order_id: "", amount, status: "captured", method: "upi" }; }
   async refund() { return { id: newId("sim_rfnd"), status: "processed" as const }; }
+  async createPaymentLink() { const id = newId("sim_plink"); return { id, short_url: `https://rzp.io/sim/${id}`, status: "created" }; }
+  async fetchPaymentLink(id: string) { return { id, short_url: `https://rzp.io/sim/${id}`, status: "created" }; }
 }
 
 let override: Gateway | null = null;
