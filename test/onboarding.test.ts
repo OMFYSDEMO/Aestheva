@@ -73,7 +73,7 @@ describe("self-serve onboarding, from application to a live listing", () => {
     expect(bad.status).toBe(400);
     for (const s of ["Please check", "full address", "10-digit mobile", "One line of 10 to 90", "60 to 700 characters (now 9)"]) expect(bad.text).toContain(s);
     expect(bad.text).toContain('value="Glow Lounge"');
-    const ok = await send("POST", "/clinic/setup/details", { csrf, name: "Glow Lounge", type: "Salon & studio", area: "Pattom", address: "Near Pattom Junction, Thiruvananthapuram 695004", phone: "98950 33333",
+    const ok = await send("POST", "/clinic/setup/details", { csrf, name: "Glow Lounge", type: "Salon & studio", area: "Pattom", address: "Near Pattom Junction, Thiruvananthapuram 695004", phone: "98950 33333", pan: "ABCDE1234F",
       tagline: "Facials, nails and brows in Pattom", about: "A calm studio for facials, manicures and brows, run by certified beauticians who take time to understand your skin.", hours_text: "Tue–Sun · 10:00–19:00 · Monday closed", amenities: "Parking\nUPI and cards accepted" }, { cookie: clinic });
     expect(ok.status).toBe(303);
   });
@@ -206,7 +206,7 @@ describe("self-serve onboarding, from application to a live listing", () => {
 
   it("accepts the longer notes that existing listings already have", async () => {
     const [p] = await sql("SELECT name, type, area, address, tagline, about, hours_text FROM providers WHERE id = ?", pid);
-    const r = await send("POST", "/clinic/setup/details", { csrf, ...p, phone: "9895077777", amenities: "Fibe healthcare finance enquiries for eligible dental treatment" }, { cookie: clinic });
+    const r = await send("POST", "/clinic/setup/details", { csrf, ...p, phone: "9895077777", pan: "ABCDE1234F", amenities: "Fibe healthcare finance enquiries for eligible dental treatment" }, { cookie: clinic });
     expect(r.status).toBe(303);
   });
 

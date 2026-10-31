@@ -275,7 +275,9 @@ export function checklist(l: Awaited<ReturnType<typeof listing>>) {
   const medical = l.staff.some((s) => s.medical) || l.services.some((s) => s.kind !== "beauty");
   const bookable = l.services.filter((s) => s.staff.length);
   const steps: Step[] = [
-    { key: "details", title: "Your business", done: !!(l.p.tagline && l.p.about && l.p.hours_text && l.p.area && l.p.phone), summary: l.p.tagline ? `${l.p.area || "Area not chosen"} · ${l.p.hours_text || "hours to add"}` : "Name, address, phone, hours and a short introduction" },
+    // A business Aestheva invoices needs a PAN, so the tax deducted on its bookings is credited to it.
+    { key: "details", title: "Your business", done: !!(l.p.tagline && l.p.about && l.p.hours_text && l.p.area && l.p.phone && (l.p.pan || l.p.payout_mode === "own")),
+      summary: l.p.tagline ? `${l.p.area || "Area not chosen"} · ${l.p.hours_text || "hours to add"}${!l.p.pan && l.p.payout_mode !== "own" ? " · PAN needed" : ""}` : "Name, address, phone, hours, a short introduction and your PAN" },
     { key: "photos", title: "Photos", done: photos > 0, summary: photos ? `${photos} photo${photos === 1 ? "" : "s"}${photos < 3 ? " · 3 or more look best" : ""}` : "At least one; your space or your work works well" },
     { key: "team", title: "You and your team", done: l.staff.length > 0 && l.staff.every((s) => l.hours.some((h) => h.staff_id === s.id)), summary: l.staff.length ? l.staff.map((s) => s.name).join(", ") : "Who clients can book (just you is fine), with their hours" },
     { key: "treatments", title: "Services & prices", done: bookable.length > 0, summary: l.services.length ? `${l.services.length} service${l.services.length === 1 ? "" : "s"}${bookable.length < l.services.length ? ` · ${l.services.length - bookable.length} without anyone to do them` : ""}` : "What clients can book, how long it takes and the full price" },
