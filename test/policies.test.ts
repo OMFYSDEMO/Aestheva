@@ -10,7 +10,7 @@ describe("privacy and data protection", () => {
     const r = await req("GET", "/policies/privacy");
     expect(r.status).toBe(200);
     for (const s of ["Who is responsible", "data fiduciary", "We don't sell or rent personal data", "Razorpay Software Private Limited", "Cloudflare, Inc.",
-      "Asia-Pacific region", "8 years after the booking", "Grievance Officer", "Data Protection Board of India", "ae_via", "Children"]) expect(r.text, s).toContain(s);
+      "Asia-Pacific region", "8 years after the booking", "Grievance Officer", "Shaji Anandan, Haswel Care Private Limited", "Data Protection Board of India", "ae_via", "Children"]) expect(r.text, s).toContain(s);
   });
 
   it("publishes data protection terms for businesses that keep clinical records with the business", async () => {

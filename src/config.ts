@@ -9,7 +9,7 @@ export const COMPANY = {
   registeredAddress: "1st floor, Anjali Arcade, near Nippon Toyota, Technopark Phase 3 Service Road, Kazhakkoottam, Thiruvananthapuram, Kerala 695583",
   launchCity: "Thiruvananthapuram",
   // Data protection: the person named as Grievance Officer in the privacy notice (required by the IT (SPDI) Rules, 2011).
-  grievanceOfficer: "",
+  grievanceOfficer: "Shaji Anandan",
   privacyUpdated: "31 October 2026",
 } as const;
 
