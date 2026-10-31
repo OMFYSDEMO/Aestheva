@@ -17,8 +17,6 @@ export interface PageOpts {
   jsonLd?: object[];          // schema.org structured data for search engines
 }
 
-// Body font (Manrope) and the heading and wordmark font (Outfit).
-const FONTS = "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap";
 /** JSON-LD, with "<" escaped so a name can never close the script tag. */
 const ld = (o: object) => `<script type="application/ld+json">${JSON.stringify(o).replace(/</g, "\\u003c")}</script>`;
 
@@ -53,10 +51,8 @@ ${o.canonical ? `<meta property="og:url" content="${esc(o.canonical)}">` : ""}
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="${FONTS}" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="${FONTS}"></noscript>
+<link rel="preload" href="/fonts/manrope-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/outfit-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/styles.css">
 ${(o.jsonLd ?? []).map(ld).join("\n")}
 ${o.head ?? ""}

@@ -93,7 +93,6 @@ export function privacyPage() {
       ["The business you book", "Your name, mobile number, email, appointment and note, so it can provide the service and contact you about it."],
       ["Razorpay Software Private Limited", "Payment and refund details, to process deposits and refunds. Razorpay handles payment data under its own privacy policy and the Reserve Bank of India's rules."],
       ["Cloudflare, Inc.", "Hosts the website, database and files and sends our emails, acting only on our instructions."],
-      ["Google (fonts)", "Your browser downloads the site's fonts from Google, which receives your IP address with that request. No other data."],
       ["Authorities", "Only when the law requires us to, for example a court order."],
     ])}
     <p>Links you choose to open, such as WhatsApp, Google Maps or Google Calendar, take you to those services under their own terms. If Aestheva is ever sold or merged, personal data would move with it under the same promises.</p>
