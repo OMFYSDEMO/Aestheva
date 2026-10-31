@@ -3,12 +3,15 @@ import { fmtDate, fmtTime, istToUtc } from "../domain/time";
 import type { ProviderDetail } from "../services/catalog";
 import { isMedical } from "../services/catalog";
 import type { BookingRow, PaymentRow } from "../services/bookings";
+import type { publicOffers } from "../services/offers";
+
+export type PublicOffer = ReturnType<typeof publicOffers>[number];
 import { MED_NOTE, esc, ic, inr, mapsUrl, venueThumb } from "./ui";
 
 const STEPS = ["Service", "Who", "Date & time", "Your details"];
 
 /** The booking flow. The page carries the provider's services and team as JSON; /book.js drives the steps. */
-export function bookPage(d: ProviderDetail, preselect: string | null, payments: { gateway: string; mode: string }, preview?: string, categories: { id: string; name: string }[] = [], welcome = 0) {
+export function bookPage(d: ProviderDetail, preselect: string | null, payments: { gateway: string; mode: string }, preview?: string, categories: { id: string; name: string }[] = [], welcome = 0, offers: PublicOffer[] = []) {
   const p = d.provider;
   // A venue that takes no deposits (for example before online payments are switched on) ends with "Confirm".
   const takesDeposits = d.services.some((s) => s.deposit_paise > 0);
@@ -19,6 +22,7 @@ export function bookPage(d: ProviderDetail, preselect: string | null, payments: 
     staff: d.staff.map((t) => ({ id: t.id, name: t.name, role: t.role, photo: t.photo || "", medical: !!t.medical, quals: (() => { try { return (JSON.parse(t.quals_json || "[]") as string[]).join(", "); } catch { return ""; } })() })),
     categories: categories.filter((c) => d.services.some((s) => s.cat === c.id)),
     preselect, gateway: payments.gateway, freeCancelHours: POLICY.freeCancelHours, holdMinutes: POLICY.holdMinutes, preview: preview ?? null, welcome,
+    offers: offers.map((o) => ({ amount: o.amount, when: o.when, until: fmtDate(o.until), from: o.from ? fmtDate(o.from) : null, services: o.services.map((x) => x.id) })),
   };
   const json = JSON.stringify(data).replace(/</g, "\\u003c");
   return `<div class="page">
@@ -75,7 +79,9 @@ export function managePage(d: {
         ${paid ? `<div class="line"><span>Deposit paid</span><span>${inr(paid)}</span></div>` : ""}
         ${refunded ? `<div class="line"><span>Deposit refunded</span><span>−${inr(pay!.amount_paise)}</span></div>` : ""}
         <div class="line tot"><span>Nothing to pay at the venue</span><span>${inr(0)}</span></div>`
-    : `<div class="line"><span>Service price</span><span>${inr(b.price_paise)}</span></div>
+    : `${b.offer_paise ? `<div class="line"><span>Full price</span><span>${inr(b.price_paise + b.offer_paise)}</span></div>
+        <div class="line small" style="color:var(--offer)"><span>Quiet-hour offer from ${esc(d.provider.name)}</span><span>−${inr(b.offer_paise)}</span></div>
+        <div class="line"><span>Your price</span><span>${inr(b.price_paise)}</span></div>` : `<div class="line"><span>Service price</span><span>${inr(b.price_paise)}</span></div>`}
         ${b.deposit_paise ? `<div class="line"><span>Deposit ${paid ? "paid" : "due"}</span><span>${inr(b.deposit_paise)}</span></div>` : ""}
         ${b.credit_paise ? `<div class="line small" style="color:var(--sage-d)"><span>Welcome offer, paid by Aestheva</span><span>−${inr(b.credit_paise)}</span></div><div class="line small muted"><span>You ${paid ? "paid" : "pay"} online</span><span>${inr(b.deposit_paise - b.credit_paise)}</span></div>` : ""}
         <div class="line tot"><span>Pay on the day</span><span>${inr(b.price_paise - b.deposit_paise)}</span></div>`;

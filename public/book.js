@@ -63,6 +63,11 @@
   const MED_NOTE = document.getElementById('tpl-med').innerHTML;
   const F = { svc: null, staff: null, date: null, slot: null, details: { name: '', phone: '', email: '', note: '', ackMed: false, ackTreat: false }, step: 1, days: null, error: '' };
   const svcOf = (id) => D.services.find((s) => s.id === id);
+  // Quiet-hour offers: the price and deposit for the chosen time (a deposit never exceeds the discounted price).
+  const off = () => (F.slot && F.slot.offer) || 0;
+  const priceNow = () => F.svc.price - off();
+  const depositNow = () => Math.min(F.svc.deposit, priceNow());
+  const offersFor = (id) => (D.offers || []).filter((o) => o.services.includes(id));
 
   function chooseService(id) {
     F.svc = svcOf(id); F.staff = F.svc.staff.length === 1 ? F.svc.staff[0] : null; F.date = null; F.slot = null; F.days = null;
@@ -82,10 +87,12 @@
     while (head.nextSibling) head.nextSibling.remove();
     const s = F.svc;
     const who = F.slot ? staffById[F.slot.staffId] : F.staff && F.staff !== 'any' ? staffById[F.staff] : null;
-    head.insertAdjacentHTML('afterend', s ? `<div class="line"><span>${esc(s.name)}<div class="xs muted">${s.dur} min${who ? ' · ' + esc(who.name) : F.staff === 'any' ? ' · anyone available' : ''}</div></span><b>${inr(s.price)}</b></div>
+    const price = s ? priceNow() : 0, dep = s ? depositNow() : 0;
+    head.insertAdjacentHTML('afterend', s ? `<div class="line"><span>${esc(s.name)}<div class="xs muted">${s.dur} min${who ? ' · ' + esc(who.name) : F.staff === 'any' ? ' · anyone available' : ''}</div></span><b>${off() ? `<s class="muted" style="font-weight:500">${inr(s.price)}</s> ` : ''}${inr(price)}</b></div>
+      ${off() ? `<div class="line small offer-line"><span>Quiet-hour offer</span><span>−${inr(off())}</span></div>` : ''}
       ${F.date && F.slot ? `<div class="line small muted"><span>${dParts(F.date).long}</span><span>${esc(F.slot.label)}</span></div>` : ''}
-      ${s.deposit ? `<div class="line tot"><span>Due now (deposit)</span><span>${inr(s.deposit)}</span></div><div class="line small muted"><span>Pay on the day</span><span>${inr(s.price - s.deposit)}</span></div>`
-        : `<div class="line tot"><span>Pay on the day</span><span>${inr(s.price)}</span></div><div class="line small muted"><span>Nothing to pay online</span><span></span></div>`}
+      ${dep ? `<div class="line tot"><span>Due now (deposit)</span><span>${inr(dep)}</span></div><div class="line small muted"><span>Pay on the day</span><span>${inr(price - dep)}</span></div>`
+        : `<div class="line tot"><span>Pay on the day</span><span>${inr(price)}</span></div><div class="line small muted"><span>Nothing to pay online</span><span></span></div>`}
       <div class="mt8">${kindBadge(s)}</div>` : '<p class="small muted">Select a service to see pricing.</p>');
   }
   const nav = (canNext) => `<div class="row between mt32">${F.step > 1 ? '<button class="btn btn-o" type="button" data-act="back">Back</button>' : '<span></span>'}<button class="btn btn-p" type="button" data-act="next" ${canNext ? '' : 'disabled'}>Continue</button></div>`;
@@ -104,7 +111,7 @@
     const s = F.svc;
     let html = '';
     if (F.step === 1) {
-      const opt = (x) => `<button type="button" class="opt ${s && s.id === x.id ? 'on' : ''}" role="radio" aria-checked="${!!(s && s.id === x.id)}" data-act="svc" data-id="${esc(x.id)}"><div class="col" style="gap:4px;text-align:left"><b>${esc(x.name)}</b><div class="row wrap" style="gap:8px">${kindBadge(x)}<span class="xs muted">${x.dur} min${x.deposit ? ' · ' + inr(x.deposit) + ' deposit' : ''}</span></div></div><b>${inr(x.price)}</b></button>`;
+      const opt = (x) => `<button type="button" class="opt ${s && s.id === x.id ? 'on' : ''}" role="radio" aria-checked="${!!(s && s.id === x.id)}" data-act="svc" data-id="${esc(x.id)}"><div class="col" style="gap:4px;text-align:left"><b>${esc(x.name)}</b><div class="row wrap" style="gap:8px">${kindBadge(x)}<span class="xs muted">${x.dur} min${x.deposit ? ' · ' + inr(x.deposit) + ' deposit' : ''}</span>${offersFor(x.id).length ? `<span class="badge b-offer">${esc(offersFor(x.id)[0].amount)} at quiet times</span>` : ''}</div></div><b>${inr(x.price)}</b></button>`;
       const groups = (D.categories || []).map((c) => [c.name, D.services.filter((x) => x.cat === c.id)]).filter(([, xs]) => xs.length);
       const known = new Set((D.categories || []).map((c) => c.id)), rest = D.services.filter((x) => !known.has(x.cat));
       if (rest.length || !groups.length) groups.push([groups.length ? 'Other' : '', rest.length ? rest : D.services]);
@@ -119,10 +126,14 @@
       if (!F.days) { main.innerHTML = '<h2>Pick a date &amp; time</h2><p class="muted mt16">Loading availability…</p>'; loadDays().then(render, (e) => { main.innerHTML = `<h2>Pick a date &amp; time</h2>${errBox(e.message)}${nav(false)}`; }); return; }
       const day = F.days.find((d) => d.date === F.date);
       const parts = [['Morning', 0, 720], ['Afternoon', 720, 1020], ['Evening', 1020, 1440]];
+      const anyOffer = F.days.some((d) => d.slots.some((x) => x.offer));
+      const os = offersFor(s.id);
+      const slotBtn = (x) => `<button type="button" class="slot ${x.offer ? 'q' : ''} ${F.slot && F.slot.min === x.min ? 'on' : ''}" data-act="slot" data-min="${x.min}" data-staff="${esc(x.staffId)}" data-label="${esc(x.label)}" data-offer="${x.offer || 0}"${x.offer ? ` aria-label="${esc(x.label)}, ${inr(x.offer)} off"` : ''}>${esc(x.label)}${x.offer ? `<small>${inr(x.offer)} off</small>` : ''}</button>`;
       html = `<h2>Pick a date &amp; time</h2><p class="muted mt8">${esc(s.name)} · ${s.dur} min · ${F.staff === 'any' ? 'anyone available' : 'with ' + esc(staffById[F.staff].name)}</p>
-        <div class="dates mt24" role="radiogroup" aria-label="Date">${F.days.map((d, i) => { const p = dParts(d.date); return `<button type="button" class="date ${F.date === d.date ? 'on' : ''}" ${d.slots.length ? '' : 'disabled'} role="radio" aria-checked="${F.date === d.date}" aria-label="${p.long}${d.slots.length ? '' : ', fully booked'}" data-act="date" data-d="${d.date}"><span>${i === 0 ? 'Today' : p.dow}</span><b>${p.day}</b><span>${p.mon}</span></button>`; }).join('')}</div>
+        <div class="dates mt24" role="radiogroup" aria-label="Date">${F.days.map((d, i) => { const p = dParts(d.date); return `<button type="button" class="date ${F.date === d.date ? 'on' : ''} ${d.slots.some((x) => x.offer) ? 'has-offer' : ''}" ${d.slots.length ? '' : 'disabled'} role="radio" aria-checked="${F.date === d.date}" aria-label="${p.long}${d.slots.length ? (d.slots.some((x) => x.offer) ? ', quiet-hour offer times' : '') : ', fully booked'}" data-act="date" data-d="${d.date}"><span>${i === 0 ? 'Today' : p.dow}</span><b>${p.day}</b><span>${p.mon}</span></button>`; }).join('')}</div>
+        ${anyOffer ? `<div class="offer-note mt16"><span class="offer-swatch" aria-hidden="true"></span><div><b>Gold times have a quiet-hour offer${os.length === 1 ? `: ${esc(os[0].amount)}` : ''}.</b> <span class="small">${os.map((o) => esc(o.when)).join(' · ')}. Offered by ${esc(D.provider.name)}; one booking per mobile number. Dates with a gold dot have offer times.</span></div></div>` : ''}
         <p class="small mt16"><b>${dParts(F.date).long}</b></p>
-        ${day && day.slots.length ? parts.map(([lbl, a, b]) => { const xs = day.slots.filter((x) => x.min >= a && x.min < b); return xs.length ? `<p class="xs muted mt16" style="text-transform:uppercase;letter-spacing:.1em;font-weight:700">${lbl}</p><div class="slots mt8">${xs.map((x) => `<button type="button" class="slot ${F.slot && F.slot.min === x.min ? 'on' : ''}" data-act="slot" data-min="${x.min}" data-staff="${esc(x.staffId)}" data-label="${esc(x.label)}">${esc(x.label)}</button>`).join('')}</div>` : ''; }).join('')
+        ${day && day.slots.length ? parts.map(([lbl, a, b]) => { const xs = day.slots.filter((x) => x.min >= a && x.min < b); return xs.length ? `<p class="xs muted mt16" style="text-transform:uppercase;letter-spacing:.1em;font-weight:700">${lbl}</p><div class="slots mt8">${xs.map(slotBtn).join('')}</div>` : ''; }).join('')
           : `<div class="note n-plain mt16">No times left on this day. Try another date.</div>`}
         ${F.error ? errBox(F.error) : ''}${nav(!!F.slot)}`;
     }
@@ -134,22 +145,23 @@
           <label class="f">Email<input class="in" type="email" name="email" required autocomplete="email" value="${esc(d.email)}"></label>
           <label class="f">Anything they should know? <span class="hint">Optional, for example access needs or a design idea. Please keep health details to share in person.</span><textarea class="in" name="note" maxlength="240">${esc(d.note)}</textarea></label>
           ${isMed(s) ? `<label class="check consent"><input type="checkbox" name="ackMed" required ${d.ackMed ? 'checked' : ''}> <span>${s.kind === 'consult' ? 'I understand this is a consultation with a registered practitioner, who will advise me on what suits me.' : 'I understand this is a medical treatment. My practitioner will first check it suits me, and may suggest a consultation or a different treatment instead.'}</span></label>` : ''}
-          <div class="note n-plain"><div>${s.deposit ? `Free cancellation up to ${D.freeCancelHours} hours before. Within ${D.freeCancelHours} hours the deposit is normally kept; you can ask for a review.` : "Nothing to pay now; you pay on the day. If your plans change, please cancel from your booking page so someone else can have the time."} <a href="/policies/cancellation" target="_blank" rel="noopener">Cancellation policy</a></div></div>
+          <div class="note n-plain"><div>${depositNow() ? `Free cancellation up to ${D.freeCancelHours} hours before. Within ${D.freeCancelHours} hours the deposit is normally kept; you can ask for a review.` : "Nothing to pay now; you pay on the day. If your plans change, please cancel from your booking page so someone else can have the time."} <a href="/policies/cancellation" target="_blank" rel="noopener">Cancellation policy</a></div></div>
           ${F.error ? errBox(F.error) : ''}
-          <div class="row between mt8"><button type="button" class="btn btn-o" data-act="back">Back</button><button class="btn btn-p" type="submit">Continue to ${s.deposit ? 'deposit' : 'confirm'}</button></div>
+          <div class="row between mt8"><button type="button" class="btn btn-o" data-act="back">Back</button><button class="btn btn-p" type="submit">Continue to ${depositNow() ? 'deposit' : 'confirm'}</button></div>
         </form>`;
     }
     if (F.step === 5) {
-      const ok = D.gateway !== 'unavailable';
-      html = `<h2>${s.deposit ? 'Hold your time with a deposit' : 'Confirm your booking'}</h2>
-        <p class="muted mt8">${s.deposit ? `Pay ${inr(s.deposit)} now to confirm. The remaining ${inr(s.price - s.deposit)} is paid on the day.` : `Nothing to pay now. The ${inr(s.price)} is paid on the day, after your appointment.`}</p>
-        ${s.deposit && D.welcome ? `<div class="note n-sage mt12"><div><b>First booking with Aestheva?</b> We take ${inr(Math.min(D.welcome, s.deposit))} off the deposit automatically when you pay. <a href="/policies/terms#offers" target="_blank" rel="noopener">Offer terms</a></div></div>` : ''}
+      const ok = D.gateway !== 'unavailable', price = priceNow(), dep = depositNow();
+      html = `<h2>${dep ? 'Hold your time with a deposit' : 'Confirm your booking'}</h2>
+        <p class="muted mt8">${dep ? `Pay ${inr(dep)} now to confirm. The remaining ${inr(price - dep)} is paid on the day.` : `Nothing to pay now. The ${inr(price)} is paid on the day, after your appointment.`}</p>
+        ${off() ? `<div class="offer-note mt12"><span class="offer-swatch" aria-hidden="true"></span><div><b>Quiet-hour offer: ${inr(off())} off.</b> <span class="small">You pay ${inr(price)} instead of ${inr(s.price)}. Offered by ${esc(D.provider.name)}. <a href="/policies/terms#offers" target="_blank" rel="noopener">Offer terms</a></span></div></div>` : ''}
+        ${dep && D.welcome ? `<div class="note n-sage mt12"><div><b>First booking with Aestheva?</b> We take ${inr(Math.min(D.welcome, dep))} off the deposit automatically when you pay. <a href="/policies/terms#offers" target="_blank" rel="noopener">Offer terms</a></div></div>` : ''}
         <div class="card mt16 review-card"><b class="serif" style="font-size:20px">${esc(s.name)}</b>
           <dl class="kv mt12"><dt>When</dt><dd>${dParts(F.date).long} · ${esc(F.slot.label)}</dd><dt>With</dt><dd>${esc(staffById[F.slot.staffId].name)}, ${esc(staffById[F.slot.staffId].role)}</dd><dt>For</dt><dd>${esc(F.details.name)} · ${esc(F.details.phone)}<br>${esc(F.details.email)}</dd></dl></div>
-        ${s.deposit ? `<p class="xs muted mt16">Payments are processed securely by Razorpay: UPI, cards, netbanking and wallets. We hold your time for ${D.holdMinutes} minutes while you pay.</p>` : ''}
-        ${!ok && s.deposit ? errBox('Online payments are not available yet. Please try again later.') : ''}
+        ${dep ? `<p class="xs muted mt16">Payments are processed securely by Razorpay: UPI, cards, netbanking and wallets. We hold your time for ${D.holdMinutes} minutes while you pay.</p>` : ''}
+        ${!ok && dep ? errBox('Online payments are not available yet. Please try again later.') : ''}
         <div id="pay-mount" class="mt16"></div><div id="pay-err">${F.error ? errBox(F.error) : ''}</div>
-        <div class="row between mt24"><button type="button" class="btn btn-o" data-act="back">Back</button><button type="button" class="btn btn-p" data-act="confirm" ${ok || !s.deposit ? '' : 'disabled'}>${s.deposit ? `Pay ${inr(s.deposit)} &amp; confirm` : 'Confirm booking'}</button></div>`;
+        <div class="row between mt24"><button type="button" class="btn btn-o" data-act="back">Back</button><button type="button" class="btn btn-p" data-act="confirm" ${ok || !dep ? '' : 'disabled'}>${dep ? `Pay ${inr(dep)} &amp; confirm` : 'Confirm booking'}</button></div>`;
     }
     main.innerHTML = html;
     const h = main.querySelector('h2'); if (h && document.activeElement && document.activeElement !== document.body && !main.contains(document.activeElement)) { h.tabIndex = -1; h.focus(); }
@@ -163,7 +175,7 @@
     if (act === 'staff') { F.staff = el.dataset.id; F.days = null; F.date = null; F.slot = null; render(); return; }
     if (act === 'date') { F.date = el.dataset.d; F.slot = null; render(); return; }
     if (act === 'slot') {
-      F.slot = { min: +el.dataset.min, staffId: el.dataset.staff, label: el.dataset.label }; render();
+      F.slot = { min: +el.dataset.min, staffId: el.dataset.staff, label: el.dataset.label, offer: +el.dataset.offer || 0 }; render();
       // On a phone the Continue button is below the fold once a time is picked; bring it into view.
       if (window.innerWidth < 760) main.querySelector('[data-act=next]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
@@ -181,11 +193,13 @@
       el.disabled = true; el.textContent = 'Reserving your time…';
       const fail = (m) => { const box = document.getElementById('pay-err'); if (box) box.innerHTML = errBox(m); el.disabled = false; el.textContent = 'Try again'; };
       try {
-        if (!created) created = await post('/api/bookings', { serviceId: F.svc.id, staffId: F.staff === 'any' ? 'any' : F.slot.staffId, date: F.date, start: F.slot.min, ...F.details, ackMedical: F.details.ackMed, ackTreatment: F.details.ackTreat, preview: D.preview || undefined });
+        if (!created) created = await post('/api/bookings', { serviceId: F.svc.id, staffId: F.staff === 'any' ? 'any' : F.slot.staffId, date: F.date, start: F.slot.min, ...F.details, ackMedical: F.details.ackMed, ackTreatment: F.details.ackTreat, expectOffer: off() > 0, preview: D.preview || undefined });
         if (!created.payment) { location.href = created.manageUrl; return; }
         el.textContent = 'Waiting for payment…';
         pay(created, document.getElementById('pay-mount'), fail);
       } catch (err) {
+        // The offer ran out (or was already used) between picking the time and booking: show the full price and let them decide.
+        if (/quiet-hour offer/i.test(err.message)) { F.slot.offer = 0; F.error = err.message; render(); return; }
         if (/no longer available|just taken/i.test(err.message)) { F.step = 3; F.days = null; F.slot = null; F.error = err.message; render(); return; }
         fail(err.message);
       }

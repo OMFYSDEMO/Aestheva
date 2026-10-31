@@ -2,7 +2,8 @@ import { COMPANY, LOCALITIES, POLICY, SERVICE_AREA, WAITLIST_CITIES, ZONES, type
 import { kmLabel } from "../domain/geo";
 import { TOPICS } from "../content/topics";
 import { campaignBanner } from "./campaign";
-import { addDays, fmtTime, relDay } from "../domain/time";
+import { addDays, fmtDate, fmtTime, relDay } from "../domain/time";
+import type { PublicOffer } from "./booking";
 import type { ProviderDetail, ProviderRow, Rating, ServiceRow } from "../services/catalog";
 import { isMedical } from "../services/catalog";
 import { CAT_META, MED_NOTE, avatar, catIcon, catTile, esc, ic, inr, linkPhones, mapsUrl, photoImg, photosOf, stars, venueMark, venueThumb } from "./ui";
@@ -147,7 +148,7 @@ export function homePage(d: {
 
 // ---------- search ----------
 
-export interface SearchQuery { q: string; area: string; near: string; cat: string; kind: "all" | "medical" | "beauty"; sort: "rec" | "price" | "rating" | "near" }
+export interface SearchQuery { q: string; area: string; near: string; cat: string; kind: "all" | "medical" | "beauty"; sort: "rec" | "price" | "rating" | "near"; offers?: "" | "1" }
 
 /** Everyday words people type, and the words listings use for the same thing. */
 const SYNONYMS: [RegExp, string[]][] = [
@@ -192,6 +193,7 @@ export function matchServices(svcs: ServiceRow[], p: ProviderRow, f: SearchQuery
 export function searchPage(d: {
   f: SearchQuery; results: { p: ProviderRow; svcs: ServiceRow[]; verifications: number; km?: number }[]; categories: { id: string; name: string }[];
   ratings: Map<string, Rating>; next: Next; today: string; anyLive: boolean; outside?: boolean; welcome?: number; beauty?: boolean;
+  offerSvcs?: Map<string, number>;   // service → biggest quiet-hour discount on it now
 }) {
   const { f } = d;
   const catName = (id: string) => d.categories.find((c) => c.id === id)?.name ?? id;
@@ -199,6 +201,7 @@ export function searchPage(d: {
   const qs = (patch: Partial<SearchQuery>) => { const u = new URLSearchParams(); const m = { ...f, ...patch }; for (const [k, v] of Object.entries(m)) if (v && !(k === "kind" && v === "all") && !(k === "sort" && (v === "rec" || v === "near"))) u.set(k, v); const s = u.toString(); return s ? "/search?" + s : "/search"; };
   const fromLabel = f.area ? esc(f.area) : f.near ? "you" : "";
   const radio = (name: string, val: string, label: string, cur: string) => `<label class="check"><input type="radio" name="${name}" value="${val}" ${cur === val ? "checked" : ""}> ${label}</label>`;
+  const offers = d.offerSvcs ?? new Map<string, number>();
   const list = d.results.map(({ p, svcs, verifications, km }, i) => {
     const r = d.ratings.get(p.id), na = d.next.get(p.id);
     return `<article class="rcard">
@@ -207,6 +210,7 @@ export function searchPage(d: {
         <span class="eyebrow" style="color:var(--muted)">${esc(typeLabel(p.type))}</span>
         <h3><a href="/p/${esc(p.slug)}" style="color:inherit;text-decoration:none">${esc(p.name)}</a></h3><p class="small muted">${esc(p.tagline)}</p>
         <div class="row wrap small muted" style="gap:14px">${r ? stars(r.avg, r.n) : "<span>No reviews yet</span>"}<span class="row" style="gap:4px">${ic("pin", 14)} ${esc(p.area)}${km !== undefined && fromLabel ? ` · <b style="color:var(--charcoal);font-weight:600">${kmLabel(km)}</b>` : ""}</span>${verifications ? `<span class="row" style="gap:4px;color:var(--sage-d)">${ic("shield", 14)} ${verifications} checks by scope</span>` : ""}</div>
+        ${svcs.some((s) => offers.has(s.id)) ? `<span class="badge b-offer" style="align-self:flex-start">${ic("clock", 12)} Quiet-hour offers: up to ${inr(Math.max(...svcs.map((s) => offers.get(s.id) ?? 0)))} off</span>` : ""}
         <div class="mt8">${svcs.slice(0, 3).map((s) => `<div class="svc-line"><span>${esc(s.name)} ${isMedical(s) ? '<span class="badge b-med" style="padding:1px 7px;font-size:10.5px">Medical</span>' : ""}</span><span class="muted" style="white-space:nowrap">${s.dur_min} min · <b style="color:var(--charcoal)">${inr(s.price_paise)}</b></span></div>`).join("")}${svcs.length > 3 ? `<div class="xs muted mt8">+ ${svcs.length - 3} more matching</div>` : ""}</div>
         <div class="row between wrap mt8"><span class="small" style="color:var(--sage-d);font-weight:600">${na ? ic("clock", 14) + " Next available: " + nextLabel(na, d.today) : "No availability in the next 10 days"}</span>
           <a class="btn btn-p btn-s" href="/p/${esc(p.slug)}">See services &amp; times</a></div>
@@ -215,16 +219,17 @@ export function searchPage(d: {
   return `<div class="page">
     ${d.anyLive ? campaignBanner(d.today, d.welcome ?? 0, true, d.beauty) : ""}
     <div class="row between wrap" style="gap:16px">
-      <div><div class="eyebrow">${esc(COMPANY.launchCity)}${f.area ? " · " + esc(f.area) : f.near ? " · Near you" : ""}</div><h1 class="mt8" style="font-size:clamp(30px,3.6vw,40px)">${title}</h1>${fromLabel ? `<p class="small muted mt8">Nearest to ${fromLabel} first. Distances are straight-line and approximate.</p>` : f.cat && !f.q && CAT_META[f.cat] ? `<p class="muted mt8">${esc(CAT_META[f.cat].line)} Compare full prices and book a free time online.</p>` : ""}</div>
+      <div><div class="eyebrow">${esc(COMPANY.launchCity)}${f.area ? " · " + esc(f.area) : f.near ? " · Near you" : ""}</div><h1 class="mt8" style="font-size:clamp(30px,3.6vw,40px)">${title}</h1>${f.offers ? `<p class="small muted mt8">Showing services with a quiet-hour offer. Pick a gold time when you book.</p>` : ""}${fromLabel ? `<p class="small muted mt8">Nearest to ${fromLabel} first. Distances are straight-line and approximate.</p>` : f.cat && !f.q && CAT_META[f.cat] ? `<p class="muted mt8">${esc(CAT_META[f.cat].line)} Compare full prices and book a free time online.</p>` : ""}</div>
       <button class="btn btn-o btn-s filter-toggle" type="button" data-toggle="filters" aria-expanded="false" aria-controls="filters">${ic("filter", 16)} Filters</button>
     </div>
-    <div class="chips mt16 scroll-x" style="flex-wrap:nowrap">${d.categories.map((c) => `<a class="chip chip-ic ${f.cat === c.id ? "on" : ""}" href="${qs({ cat: f.cat === c.id ? "" : c.id })}">${catTile(c.id, 14)} ${esc(c.name)}</a>`).join("")}</div>
+    <div class="chips mt16 scroll-x" style="flex-wrap:nowrap">${offers.size || f.offers ? `<a class="chip chip-offer ${f.offers ? "on" : ""}" href="${qs({ offers: f.offers ? "" : "1" })}">${ic("clock", 14)} Quiet-hour offers</a>` : ""}${d.categories.map((c) => `<a class="chip chip-ic ${f.cat === c.id ? "on" : ""}" href="${qs({ cat: f.cat === c.id ? "" : c.id })}">${catTile(c.id, 14)} ${esc(c.name)}</a>`).join("")}</div>
     <div class="results-layout mt24">
       <form class="filters" id="filters" method="get" action="/search" data-autosubmit role="search" aria-label="Filters">
         <div><div class="filter-h"><label for="sq">Search</label></div><input class="in" id="sq" name="q" value="${esc(f.q)}" placeholder="Service or business"></div>
         <div><div class="filter-h"><label for="sa">Where are you?</label></div><select class="in" id="sa" name="area">${areaOptions(f.area, f.near ? "Near me" : "All of Trivandrum")}</select><input type="hidden" name="near" value="${esc(f.near)}">${nearBtn("btn btn-o btn-s mt8")}<p class="xs muted mt8" data-near-status role="status"></p></div>
         <div><div class="filter-h"><label for="sc">Category</label></div><select class="in" id="sc" name="cat"><option value="">All categories</option>${d.categories.map((c) => `<option value="${c.id}" ${f.cat === c.id ? "selected" : ""}>${esc(c.name)}</option>`).join("")}</select></div>
         <fieldset style="border:0;padding:0;margin:0"><legend class="filter-h">Service type</legend>${radio("kind", "all", "All services", f.kind)}${radio("kind", "medical", "Medical consultations &amp; treatments", f.kind)}${radio("kind", "beauty", "Beauty &amp; wellness (non-medical)", f.kind)}</fieldset>
+        ${offers.size || f.offers ? `<label class="check"><input type="checkbox" name="offers" value="1" ${f.offers ? "checked" : ""}> <span><b>Quiet-hour offers</b><br><span class="xs muted">Money off at quieter times</span></span></label>` : ""}
         <div><div class="filter-h"><label for="ss">Sort by</label></div><select class="in" id="ss" name="sort"><option value="rec" ${f.sort === "rec" ? "selected" : ""}>Recommended</option><option value="price" ${f.sort === "price" ? "selected" : ""}>Lowest price</option><option value="rating" ${f.sort === "rating" ? "selected" : ""}>Top rated</option>${fromLabel ? `<option value="near" ${f.sort === "near" ? "selected" : ""}>Nearest first</option>` : ""}</select></div>
         <div class="row wrap" style="gap:8px"><button class="btn btn-p btn-s" type="submit">Apply</button><a class="btn btn-o btn-s" href="/search">Clear all</a></div>
       </form>
@@ -244,7 +249,7 @@ const langs = (t: { langs_json: string }): string[] => { try { const l = JSON.pa
 const kindTag = (s: { kind: string }) => s.kind === "beauty" ? '<span class="tag tag-beauty">Beauty &amp; wellness</span>'
   : s.kind === "consult" ? '<span class="tag tag-med">Consultation</span>' : '<span class="tag tag-med">Medical</span>';
 
-export function providerPage(d: ProviderDetail & { categories: { id: string; name: string }[]; next: Next; today: string; preview?: string }) {
+export function providerPage(d: ProviderDetail & { categories: { id: string; name: string }[]; next: Next; today: string; preview?: string; offers?: PublicOffer[] }) {
   const pv = d.preview ? `preview=${encodeURIComponent(d.preview)}` : "";
   const draftBanner = d.provider.status === "draft" ? `<div class="note n-plain" role="status" style="margin-bottom:16px">${ic("info", 16)}<div><b>Preview.</b> This venue isn't public yet. Only people with this link can see it or book it.</div></div>` : "";
   const p = d.provider, staffById = new Map(d.staff.map((s) => [s.id, s]));
@@ -258,6 +263,9 @@ export function providerPage(d: ProviderDetail & { categories: { id: string; nam
   const na = d.next.get(p.id);
   const bookHref = (svc?: string) => `/book/${esc(p.slug)}${svc ? `?service=${esc(svc)}${pv ? "&amp;" + pv : ""}` : pv ? "?" + pv : ""}`;
   const spoken = [...new Set(d.staff.flatMap(langs))];
+  const offers = d.offers ?? [];
+  const offerOn = new Map<string, number>();   // service → the biggest discount any offer gives it
+  for (const o of offers) for (const x of o.services) offerOn.set(x.id, Math.max(offerOn.get(x.id) ?? 0, x.off));
   const deposits = d.services.map((s) => s.deposit_paise).filter((x) => x > 0);
   const facts = [
     [ic("users", 18), `${d.staff.length} ${medical ? "practitioner" : "professional"}${d.staff.length === 1 ? "" : "s"}`, d.staff.some((t) => t.medical) ? "Registration numbers shown" : "Training and experience shown"],
@@ -284,12 +292,19 @@ export function providerPage(d: ProviderDetail & { categories: { id: string; nam
         <section id="sec-about"><h2 class="sec-h">About ${esc(p.name)}</h2><p class="mt12 about-p">${esc(p.about)}</p>
           ${amen.length ? `<ul class="amen mt16">${amen.map((a) => `<li>${ic("check", 15)} ${esc(a)}</li>`).join("")}</ul>` : ""}
         </section>
+        ${offers.length ? `<section id="sec-offers" class="mt48"><h2 class="sec-h">Quiet-hour offers</h2>
+          <p class="small muted mt8">${esc(p.name)} takes money off at quieter times. Pick a gold time when you book and the offer applies automatically.</p>
+          <div class="col mt16" style="gap:10px">${offers.map((o) => `<div class="offer-card"><div class="offer-amt">${esc(o.amount)}</div><div class="col" style="gap:2px;min-width:0">
+            <b>${esc(o.services.map((x) => x.name).join(", "))}</b>
+            <span class="small muted">${esc(o.when)} · ${o.from ? `from ${fmtDate(o.from)} ` : ""}until ${fmtDate(o.until)}</span></div></div>`).join("")}</div>
+          <p class="xs soft mt8">Offered and paid for by ${esc(p.name)}. One booking per mobile number per offer, while places last. <a href="/policies/terms#offers">Offer terms</a></p>
+        </section>` : ""}
         <section id="sec-services" class="mt48">
           <h2 class="sec-h">Services &amp; prices</h2>
           ${cats.length > 1 ? `<nav class="jump mt16 scroll-x" aria-label="Service categories">${cats.map((c) => `<a href="#cat-${c}">${catIcon(c, 15)} ${esc(catName(c))} <span>${d.services.filter((s) => s.cat === c).length}</span></a>`).join("")}</nav>` : ""}
           ${medical ? `<div class="mt16">${MED_NOTE}</div>` : ""}
           ${cats.map((c) => `<div class="cat-block" id="cat-${c}"><h3 class="cat-h">${catIcon(c, 18)} ${esc(catName(c))}</h3>${d.services.filter((s) => s.cat === c).map((s) => `
-            <div class="svc2"><div class="grow col" style="gap:4px;min-width:0"><div class="row wrap" style="gap:8px"><b class="svc2-name">${esc(s.name)}</b>${mixed ? kindTag(s) : ""}</div>${s.description ? `<p class="small muted">${esc(s.description)}</p>` : ""}<span class="xs soft">${s.dur_min} min · ${s.deposit_paise ? `${inr(s.deposit_paise)} deposit at booking` : "No deposit"} · with ${s.staff.map((x) => esc(staffById.get(x)?.name ?? "")).join(" or ")}</span></div>
+            <div class="svc2"><div class="grow col" style="gap:4px;min-width:0"><div class="row wrap" style="gap:8px"><b class="svc2-name">${esc(s.name)}</b>${mixed ? kindTag(s) : ""}${offerOn.get(s.id) ? `<span class="badge b-offer">Up to ${inr(offerOn.get(s.id)!)} off at quiet times</span>` : ""}</div>${s.description ? `<p class="small muted">${esc(s.description)}</p>` : ""}<span class="xs soft">${s.dur_min} min · ${s.deposit_paise ? `${inr(s.deposit_paise)} deposit at booking` : "No deposit"} · with ${s.staff.map((x) => esc(staffById.get(x)?.name ?? "")).join(" or ")}</span></div>
             <div class="svc2-buy"><b>${inr(s.price_paise)}</b><a class="btn btn-p btn-s" href="${bookHref(s.id)}" aria-label="Book ${esc(s.name)}">Book</a></div></div>`).join("")}</div>`).join("")}
         </section>
         <section id="sec-team" class="mt48"><h2 class="sec-h">Who will look after you</h2><p class="small muted mt8">Qualifications and registration numbers as provided${d.verifications.length ? ", checked within the scope listed" : ""}.</p>

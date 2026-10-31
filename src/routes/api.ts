@@ -9,6 +9,7 @@ import { gatewayFor, previewAllowed } from "../services/gateway";
 import { COMPANY } from "../config";
 import { getCookie } from "hono/cookie";
 import { VIA_COOKIE } from "../services/incentives";
+import { bestOffer, liveOffers, placesTaken } from "../services/offers";
 import { afterConfirmed, alertBusiness, emailBookingCancelled, siteOf } from "../services/booking-emails";
 
 const api = new Hono<{ Bindings: Env }>();
@@ -48,10 +49,16 @@ api.get("/slots", async (c) => {
   if (!ids.length) throw new HttpError(400, "That practitioner doesn't offer this service");
   const to = addDays(from, days - 1);
   const inv = await loadInventory(c.env.DB, ids, from, to, [svc.id]);
+  // Quiet-hour offers: each slot they cover carries the discount, so the time picker can show it.
+  const offers = await liveOffers(c.env.DB, now.date, [svc.provider_id]);
+  const taken = await placesTaken(c.env.DB, offers.map((o) => o.id));
   const out = [];
   for (let i = 0; i < days; i++) {
     const date = addDays(from, i);
-    out.push({ date, slots: slotsOn(inv, ids, date, svc.dur_min, now, svc.id).map((s) => ({ min: s.min, label: fmtTime(s.min), staffId: s.staffId })) });
+    out.push({ date, slots: slotsOn(inv, ids, date, svc.dur_min, now, svc.id).map((s) => {
+      const o = offers.length ? bestOffer(offers, taken, svc, date, s.min) : null;
+      return { min: s.min, label: fmtTime(s.min), staffId: s.staffId, ...(o ? { offer: o.off } : {}) };
+    }) });
   }
   c.header("cache-control", "no-store");
   return c.json({ service: svc.id, staff, days: out });
@@ -66,14 +73,16 @@ api.post("/bookings", async (c) => {
     ackMedical: b.ackMedical === true, ackTreatment: b.ackTreatment === true,
     allowDraft: previewAllowed(c.env, b.preview),
     via: getCookie(c, VIA_COOKIE),
+    expectOffer: b.expectOffer === true,
   });
   const bk = created.booking;
   if (bk.status === "confirmed") c.executionCtx.waitUntil(afterConfirmed(c.env, bk.id, siteOf(c.env, c.req.raw)));
   const manageUrl = `${origin(c.env, c.req.raw)}/booking/${bk.ref}?t=${created.manageToken}`;
   return c.json({
     ref: bk.ref, status: bk.status, manageUrl, holdExpiresAt: bk.hold_expires_at, credit: bk.credit_paise ?? 0,
+    price: bk.price_paise, deposit: bk.deposit_paise, offer: bk.offer_paise ?? 0,
     payment: created.payment && {
-      ...created.payment, currency: "INR", name: COMPANY.brand, description: `Deposit · ${bk.service_name}${bk.credit_paise ? ` · ₹${bk.credit_paise / 100} welcome offer applied` : ""}`,
+      ...created.payment, currency: "INR", name: COMPANY.brand, description: `Deposit · ${bk.service_name}${bk.offer_paise ? ` · ₹${bk.offer_paise / 100} quiet-hour offer` : ""}${bk.credit_paise ? ` · ₹${bk.credit_paise / 100} welcome offer applied` : ""}`,
       prefill: { name: String(b.name ?? ""), email: String(b.email ?? ""), contact: String(b.phone ?? "") },
     },
   }, 201);

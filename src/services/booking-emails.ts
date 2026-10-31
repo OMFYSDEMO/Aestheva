@@ -98,6 +98,7 @@ export function confirmationMail(d: Detail, manage: string, ics: string, site: s
     ["When", `<b>${esc(when(d.b))}</b> · ${d.b.dur_min} minutes`],
     ["Where", `<b>${esc(d.p.name)}</b><br>${esc(d.p.address)}<br><a href="${esc(maps(`${d.p.name}, ${d.p.address}`))}" style="color:#8A2E5C">Get directions</a>`],
     ["Price", d.paid && d.paid.status === "captured" ? `${esc(inr(d.b.price_paise))} in full · ${esc(inr(d.paid.amount_paise))} deposit paid${credit ? ` (with ${esc(inr(credit))} off from Aestheva's welcome offer)` : ""} · <b>${esc(inr(balance))} to pay on the day</b>` : `<b>${esc(inr(d.b.price_paise))}</b>, paid on the day. Nothing to pay online.`],
+    ...(d.b.offer_paise ? [["Offer", `Quiet-hour offer from ${esc(d.p.name)}: <b>${esc(inr(d.b.offer_paise))} off</b> the full price of ${esc(inr(d.b.price_paise + d.b.offer_paise))}. The price above already includes it.`] as [string, string]] : []),
     ["Booking", esc(d.b.ref)],
   ];
   const notes = [
@@ -169,6 +170,7 @@ export function businessMail(d: Detail, site: string, event: "new" | "cancelled"
       ["When", `<b>${esc(when(d.b))}</b> · ${d.b.dur_min} minutes`],
       ...(d.b.client_note && event === "new" ? [["Note", esc(d.b.client_note)] as [string, string]] : []),
       ...(event === "new" && d.paid && d.paid.status === "captured" ? [["Deposit", `${esc(inr(d.paid.amount_paise))} paid by the client${d.b.credit_paise ? ` + ${esc(inr(d.b.credit_paise))} welcome offer, paid to you by Aestheva` : ""}`] as [string, string]] : []),
+      ...(event === "new" && d.b.offer_paise ? [["Offer", `Your quiet-hour offer: ${esc(inr(d.b.offer_paise))} off, so the price is ${esc(inr(d.b.price_paise))}`] as [string, string]] : []),
       ...(event === "new" && d.b.channel === "own_link" ? [["Commission", "None: they came through your own Aestheva link"] as [string, string]] : []),
       ["Booking", esc(d.b.ref)],
     ],

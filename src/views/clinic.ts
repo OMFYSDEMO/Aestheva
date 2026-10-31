@@ -5,11 +5,11 @@ import type { Appt, ClinicUser } from "../services/clinic";
 import type { ServiceRow, StaffRow } from "../services/catalog";
 import { avatar, esc, ic, inr } from "./ui";
 
-export type Section = "setup" | "today" | "calendar" | "bookings" | "clients" | "services" | "payments" | "new";
+export type Section = "setup" | "today" | "calendar" | "bookings" | "clients" | "services" | "offers" | "payments" | "new";
 const NAV: [Section, string, string, string][] = [
   ["setup", "/clinic/setup", "edit", "Your listing"],
   ["today", "/clinic", "home", "Today"], ["calendar", "/clinic/calendar", "cal", "Calendar"], ["bookings", "/clinic/bookings", "list", "Bookings"],
-  ["clients", "/clinic/clients", "users", "Clients"], ["services", "/clinic/services", "grid", "Services & hours"], ["payments", "/clinic/payments", "wallet", "Payments"],
+  ["clients", "/clinic/clients", "users", "Clients"], ["services", "/clinic/services", "grid", "Services & hours"], ["offers", "/clinic/offers", "clock", "Offers"], ["payments", "/clinic/payments", "wallet", "Payments"],
 ];
 const STATUS: Record<string, [string, string]> = {
   held: ["b-warn", "Awaiting deposit"], confirmed: ["b-blush", "Confirmed"], completed: ["b-ok", "Completed"], no_show: ["b-err", "No-show"],
@@ -167,7 +167,7 @@ export function bookingDetailPage(d: { a: Appt; b: { status: string; date: strin
         <div class="card"><dl class="kv">
           <dt>When</dt><dd>${fmtDate(a.date, true)}, ${fmtTime(a.start_min)} to ${fmtTime(a.start_min + a.dur_min)}</dd>
           <dt>With</dt><dd>${esc(a.staff_name)}</dd>
-          <dt>Price</dt><dd>${inr(a.price_paise)}</dd>
+          <dt>Price</dt><dd>${a.offer_paise ? `${inr(a.price_paise)} <span class="badge b-offer">Quiet-hour offer: ${inr(a.offer_paise)} off ${inr(a.price_paise + a.offer_paise)}</span>` : inr(a.price_paise)}</dd>
           <dt>Deposit</dt><dd>${paid ? `${inr(paid)} paid online${d.payment?.method ? ` (${esc(d.payment.method)})` : ""}${credit ? ` + ${inr(credit)} welcome offer paid by Aestheva` : ""}${refunded ? ` · ${inr(refunded)} refunded` : ""}` : a.status === "held" ? "Waiting for the client to pay" : "None"}</dd>
           ${a.channel === "own_link" ? `<dt>Commission</dt><dd>None: the client came through your own link</dd>` : ""}
           ${a.status === "confirmed" || a.status === "completed" ? `<dt>To collect</dt><dd><b>${inr(Math.max(0, balance))}</b> on the day</dd>` : ""}
@@ -257,10 +257,10 @@ export function servicesPage(d: { services: (ServiceRow & { staff: string[] })[]
 
 /** Commission in words for this business, today. */
 export function rateLine(f: FoundingTerms | null) {
-  if (!f) return `${POLICY.commissionBp / 100}% of the full price on completed bookings made through Aestheva.`;
+  if (!f) return `${POLICY.commissionBp / 100}% of the price the client pays, on completed bookings made through Aestheva.`;
   if (f.phase === "free") return `Founding partner #${f.no}: 0% until ${fmtDate(f.freeUntil, true)}, then ${INCENTIVES.foundingRateBp / 100}% until ${fmtDate(f.foundingUntil, true)}, then ${POLICY.commissionBp / 100}%.`;
   if (f.phase === "founding") return `Founding partner #${f.no}: ${INCENTIVES.foundingRateBp / 100}% until ${fmtDate(f.foundingUntil, true)}, then ${POLICY.commissionBp / 100}%.`;
-  return `${POLICY.commissionBp / 100}% of the full price on completed bookings made through Aestheva. Thank you for being founding partner #${f.no}.`;
+  return `${POLICY.commissionBp / 100}% of the price the client pays, on completed bookings made through Aestheva. Thank you for being founding partner #${f.no}.`;
 }
 
 /** "Your booking link": bookings through it carry no commission. */
@@ -289,10 +289,11 @@ export function paymentsPage(d: { month: string; m: Awaited<ReturnType<typeof im
       ${kpi("Aestheva commission", inr(d.m.commission), d.m.ownLinkBookings ? `${d.m.ownLinkBookings} booking${d.m.ownLinkBookings === 1 ? "" : "s"} through your link: no commission` : "on completed online bookings")}
     </div>
     <p class="small mt12"><b>Your rate:</b> ${esc(rateLine(d.founding ?? null))} Bookings through your own link${d.link ? ` (<a href="${esc(d.link)}">${esc(d.link.replace(/^https?:\/\//, ""))}</a>)` : ""} and bookings you add yourself carry no commission.</p>
+    ${d.m.offerBookings ? `<p class="small muted mt8">Quiet-hour offers this month: <b>${d.m.offerBookings}</b> completed booking${d.m.offerBookings === 1 ? "" : "s"}, <b>${inr(d.m.offersGiven)}</b> off in total. Prices below are what clients paid, and commission is on those. <a href="/clinic/offers">Your offers</a></p>` : ""}
     ${d.m.welcomeCredits ? `<p class="small muted mt8">Welcome offers paid by Aestheva this month: <b>${inr(d.m.welcomeCredits)}</b>. Clients paid that much less online; you receive it with their deposits.</p>` : ""}
     ${d.m.keptOnCancellation ? `<p class="small muted mt12">Deposits kept on late cancellations and no-shows: <b>${inr(d.m.keptOnCancellation)}</b>.</p>` : ""}
     <p class="xs muted mt12">Bookings your team adds carry no commission. Settlement statements will appear here once payouts start.</p>
     ${d.m.rows.length ? `<div class="tbl-wrap mt16"><table class="tbl"><thead><tr><th>Date</th><th>Client</th><th>Service</th><th>Status</th><th>Price</th><th>Deposit</th></tr></thead><tbody>
-      ${d.m.rows.map((r) => `<tr><td class="small" style="white-space:nowrap"><a href="/clinic/bookings/${esc(r.ref)}">${fmtDate(r.date)}</a></td><td class="small">${esc(r.client_name)}</td><td class="small">${esc(r.service_name)}${r.source === "direct" ? '<div class="xs soft">Booked by clinic</div>' : ""}</td><td>${statusBadge(r.status)}</td><td>${inr(r.price_paise)}</td><td class="small">${r.paid ? inr(r.paid) + (r.refunded ? ` <span class="soft">(−${inr(r.refunded)})</span>` : "") : "—"}</td></tr>`).join("")}
+      ${d.m.rows.map((r) => `<tr><td class="small" style="white-space:nowrap"><a href="/clinic/bookings/${esc(r.ref)}">${fmtDate(r.date)}</a></td><td class="small">${esc(r.client_name)}</td><td class="small">${esc(r.service_name)}${r.source === "direct" ? '<div class="xs soft">Booked by clinic</div>' : ""}</td><td>${statusBadge(r.status)}</td><td>${inr(r.price_paise)}${r.offer_paise ? `<div class="xs" style="color:var(--offer)">${inr(r.offer_paise)} offer</div>` : ""}</td><td class="small">${r.paid ? inr(r.paid) + (r.refunded ? ` <span class="soft">(−${inr(r.refunded)})</span>` : "") : "—"}</td></tr>`).join("")}
     </tbody></table></div>` : `<div class="card mt16" style="text-align:center;padding:40px"><p class="muted">No appointments this month yet.</p></div>`}`;
 }

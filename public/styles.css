@@ -765,3 +765,30 @@ html{overflow-x:clip}
 @media (max-width:760px){.campaign{flex-direction:column;align-items:flex-start;gap:12px;padding:22px 20px}.cb-diya{width:72px;height:59px}.cb-cta{align-items:flex-start}.cb-rangoli{width:130px;height:130px;right:-40px;top:-40px}
   .campaign-compact{flex-direction:row;align-items:center;flex-wrap:wrap}.campaign-compact .cb-diya{display:none}}
 @media (max-width:760px){.cb-confetti{opacity:.45}}
+
+/* Quiet-hour offers: gold marks a discounted time, an offer on a page, and the filter */
+:root{--offer:#9A6B12;--offer-bg:#FBF1DC;--offer-line:#E3BE6F}
+.b-offer{background:var(--offer-bg);color:var(--offer);border-color:var(--offer-line)}
+.chip.chip-offer{border-color:var(--offer-line);color:var(--offer);background:var(--offer-bg)}
+.chip.chip-offer.on{background:var(--offer);border-color:var(--offer);color:#fff}
+.slot.q{background:var(--offer-bg);border-color:var(--offer-line);display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.25}
+.slot.q small{font-size:11px;font-weight:700;color:var(--offer)}
+.slot.q:hover{border-color:var(--offer)}
+.slot.q.on{background:var(--offer);border-color:var(--offer);color:#fff}.slot.q.on small{color:#FFF3D6}
+.date.has-offer{position:relative}
+.date.has-offer::after{content:"";position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--gold)}
+.offer-note{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--offer-line);background:var(--offer-bg);border-radius:var(--r-sm);padding:12px 14px;color:#4A3610}
+.offer-swatch{flex:0 0 10px;height:10px;margin-top:6px;border-radius:50%;background:var(--gold)}
+.offer-line{color:var(--offer);font-weight:600}
+.offer-card{display:flex;gap:14px;align-items:center;border:1.5px dashed var(--offer-line);background:var(--offer-bg);border-radius:var(--r-sm);padding:12px 16px}
+.offer-amt{font-family:var(--display);font-weight:700;font-size:20px;color:var(--offer);white-space:nowrap}
+.offer-row{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.offer-row + .offer-row{border-top:1px solid var(--line);padding-top:16px;margin-top:16px}
+.check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.day-picks{display:flex;flex-wrap:wrap;gap:8px}
+.day-picks label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-2);border-radius:999px;padding:6px 12px;font-size:14px;font-weight:600;cursor:pointer}
+.day-picks input{accent-color:var(--mulberry)}
+.day-picks label:has(input:checked){border-color:var(--mulberry);background:var(--mulberry-l);color:var(--mulberry-d)}
+.check-grid .pick-item{border-radius:var(--r-sm)}
+@media (min-width:1061px){.who-grid.five{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media (min-width:761px) and (max-width:1060px){.who-grid.five>div:last-child{grid-column:1/-1}}

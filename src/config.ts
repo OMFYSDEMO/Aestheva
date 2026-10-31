@@ -15,7 +15,7 @@ export const POLICY = {
   holdMinutes: 15,         // an unpaid slot is held this long while the client pays
   leadMinutes: 60,         // earliest bookable start is this far from now
   windowDays: 60,          // how far ahead clients can book
-  commissionBp: 1000,      // 10% of the full price on completed marketplace bookings
+  commissionBp: 1000,      // 10% of the price the client pays, on completed marketplace bookings
 } as const;
 
 /** Phase 1 incentives. Change the numbers here; the site's wording follows them. */

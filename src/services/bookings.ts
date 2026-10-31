@@ -6,13 +6,15 @@ import { slotsFor } from "../domain/availability";
 import { canStart, isMedical, loadInventory, type ServiceRow } from "./catalog";
 import { gatewayFor } from "./gateway";
 import { commissionBp, welcomeCredit } from "./incentives";
+import { offerForBooking } from "./offers";
+import { inr } from "../domain/money";
 
 export interface BookingRow {
   id: string; ref: string; provider_id: string; service_id: string; staff_id: string; client_id: string; date: string; start_min: number;
   dur_min: number; service_name: string; kind: string; price_paise: number; deposit_paise: number; commission_bp: number; source: string;
   status: "held" | "confirmed" | "completed" | "cancelled" | "no_show" | "expired"; hold_expires_at: string | null; manage_token_hash: string; email_token_hash?: string | null;
   client_note: string; confirmed_at: string | null; cancelled_at: string | null; cancelled_by: string | null; cancel_reason: string | null; created_at: string;
-  channel?: string; credit_paise?: number;
+  channel?: string; credit_paise?: number; offer_id?: string | null; offer_paise?: number;
 }
 export interface PaymentRow {
   id: string; booking_id: string; gateway: "razorpay" | "simulated"; order_id: string; payment_id: string | null; amount_paise: number;
@@ -26,6 +28,7 @@ export interface NewBooking {
   name: string; phone: string; email: string; note?: string; ackMedical?: boolean; ackTreatment?: boolean;
   allowDraft?: boolean;   // set only when the request carried a valid preview key
   via?: string;           // slug from the business's own link the client arrived through, if any
+  expectOffer?: boolean;  // the client picked a time shown with a quiet-hour offer
 }
 
 /** Indian mobile numbers to E.164: 98765 43210, 098765..., +91 98765... all become +919876543210. */
@@ -91,12 +94,21 @@ export async function createBooking(env: Env, input: NewBooking, now: Date = new
   }
   await db.prepare("UPDATE clients SET name = ?, email = ? WHERE id = ?").bind(name, email, client.id).run();
 
-  const needsDeposit = service.deposit_paise > 0;
+  // A quiet-hour offer, paid for by the business: the client pays the price less the discount, and the deposit never exceeds that.
+  const offer = await offerForBooking(db, service, input.date, input.start, client.id, ist.date);
+  if (input.expectOffer && !offer.offer) {
+    throw new HttpError(409, offer.reason === "used"
+      ? `The quiet-hour offer for this time has already been used with this mobile number. The time is still free at the full price of ${inr(service.price_paise)}.`
+      : `The quiet-hour offer for this time has just been taken. The time is still free at the full price of ${inr(service.price_paise)}.`);
+  }
+  const off = offer.offer?.off ?? 0;
+  const price = service.price_paise - off, deposit = Math.min(service.deposit_paise, price);
+  const needsDeposit = deposit > 0;
   // Incentives: no commission through the business's own link; founding partners' rates; the welcome offer on a first deposit.
   const prov = (await db.prepare("SELECT slug, founding_no, live_since FROM providers WHERE id = ?").bind(service.provider_id).first<{ slug: string; founding_no: number | null; live_since: string | null }>())!;
   const channel = input.via && input.via === prov.slug ? "own_link" : "";
   const commission = commissionBp(prov, channel, ist.date);
-  const credit = needsDeposit ? await welcomeCredit(env, client.id, service.deposit_paise) : 0;
+  const credit = needsDeposit ? await welcomeCredit(env, client.id, deposit) : 0;
   const token = newToken();
   const tokenHash = await sha256Hex(token);
   const holdUntil = new Date(now.getTime() + POLICY.holdMinutes * 6e4).toISOString();
@@ -107,16 +119,16 @@ export async function createBooking(env: Env, input: NewBooking, now: Date = new
       const status = needsDeposit ? "held" : "confirmed";
       const stmts = [
         db.prepare(`INSERT INTO bookings (id, ref, provider_id, service_id, staff_id, client_id, date, start_min, dur_min, service_name, kind,
-            price_paise, deposit_paise, commission_bp, source, status, hold_expires_at, manage_token_hash, client_note, confirmed_at, created_at, updated_at, channel, credit_paise)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'marketplace', ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+            price_paise, deposit_paise, commission_bp, source, status, hold_expires_at, manage_token_hash, client_note, confirmed_at, created_at, updated_at, channel, credit_paise, offer_id, offer_paise)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'marketplace', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
           .bind(id, ref, service.provider_id, service.id, staffId, client.id, input.date, input.start, service.dur_min, service.name, service.kind,
-            service.price_paise, service.deposit_paise, commission, status, needsDeposit ? holdUntil : null, tokenHash, note,
-            needsDeposit ? null : ts, ts, ts, channel, credit),
+            price, deposit, commission, status, needsDeposit ? holdUntil : null, tokenHash, note,
+            needsDeposit ? null : ts, ts, ts, channel, credit, offer.offer?.offer.id ?? null, off),
         ...slotsFor(input.start, service.dur_min).map((slot) =>
           db.prepare("INSERT INTO staff_slots (staff_id, date, slot, booking_id) VALUES (?, ?, ?, ?)").bind(staffId, input.date, slot, id)),
         ...resources.flatMap((r) => slotsFor(input.start, service.dur_min).map((slot) =>
           db.prepare("INSERT INTO resource_slots (resource_id, date, slot, booking_id) VALUES (?, ?, ?, ?)").bind(r, input.date, slot, id))),
-        audit(db, `client:${client.id}`, needsDeposit ? "booking.held" : "booking.confirmed", "booking", id, { ref, staffId, date: input.date, start: input.start }),
+        audit(db, `client:${client.id}`, needsDeposit ? "booking.held" : "booking.confirmed", "booking", id, { ref, staffId, date: input.date, start: input.start, ...(off ? { offer: offer.offer!.offer.id, off } : {}) }),
       ];
       try { await db.batch(stmts); }
       catch (e) {

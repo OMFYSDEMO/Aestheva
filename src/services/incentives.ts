@@ -19,7 +19,7 @@ export function foundingTerms(p: { founding_no?: number | null; live_since?: str
   return { no: p.founding_no, freeUntil, foundingUntil, phase, rateBp: phase === "free" ? 0 : phase === "founding" ? INCENTIVES.foundingRateBp : POLICY.commissionBp };
 }
 
-/** Commission on a new online booking, in basis points of the full price. */
+/** Commission on a new online booking, in basis points of the price the client pays (after any quiet-hour offer). */
 export function commissionBp(p: { founding_no?: number | null; live_since?: string | null }, channel: string, today: string) {
   if (channel === "own_link") return 0;
   return foundingTerms(p, today)?.rateBp ?? POLICY.commissionBp;

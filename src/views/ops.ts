@@ -6,7 +6,7 @@ const STATUS_BADGE: Record<string, string> = { new: "b-blush", reviewing: "b-war
 const badge = (s: string) => `<span class="badge ${STATUS_BADGE[s] ?? "b-plain"}">${esc(s[0].toUpperCase() + s.slice(1))}</span>`;
 const when = (iso: string) => new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
 
-const shell = (body: string) => `<div class="page"><div class="ops-bar"><div class="row wrap" style="gap:4px"><span class="eyebrow" style="margin-right:10px">Aestheva team</span><a class="btn btn-g btn-s" href="/ops/applications">Applications</a><a class="btn btn-g btn-s" href="/ops/venues">Venues</a><a class="btn btn-g btn-s" href="/ops/clinics">Clinic logins</a></div><form method="post" action="/ops/logout"><button class="btn btn-g btn-s" type="submit">${ic("out", 15)} Sign out</button></form></div>${body}</div>`;
+const shell = (body: string) => `<div class="page"><div class="ops-bar"><div class="row wrap" style="gap:4px"><span class="eyebrow" style="margin-right:10px">Aestheva team</span><a class="btn btn-g btn-s" href="/ops/applications">Applications</a><a class="btn btn-g btn-s" href="/ops/venues">Venues</a><a class="btn btn-g btn-s" href="/ops/clinics">Clinic logins</a><a class="btn btn-g btn-s" href="/ops/offers">Offers</a></div><form method="post" action="/ops/logout"><button class="btn btn-g btn-s" type="submit">${ic("out", 15)} Sign out</button></form></div>${body}</div>`;
 
 const STAGE_BADGE: Record<string, [string, string]> = { setup: ["b-plain", "Setting up"], review: ["b-warn", "Ready for review"], live: ["b-ok", "Live"], paused: ["b-err", "Paused"] };
 const stageBadge = (s: string) => `<span class="badge ${STAGE_BADGE[s]?.[0] ?? "b-plain"}">${STAGE_BADGE[s]?.[1] ?? esc(s)}</span>`;
@@ -149,4 +149,17 @@ export function opsDetailPage(a: ApplicationRow, csrf: string, draft: unknown, c
         </form>
       </aside>
     </div>`);
+}
+
+/** Every business's quiet-hour offers that haven't ended, so the team can check their wording and terms and pause one if needed. */
+export function opsOffersPage(d: { rows: { id: string; provider: string; slug: string; amount: string; when: string; services: string; starts_on: string; ends_on: string; cap: number; status: string; paused_by: string | null; used: number }[]; csrf: string; message?: string }) {
+  const act = (id: string, action: "pause" | "resume", label: string) => `<form method="post" action="/ops/offers/${esc(id)}/${action}"><input type="hidden" name="csrf" value="${esc(d.csrf)}"><button class="btn ${action === "pause" ? "btn-o" : "btn-p"} btn-x" type="submit">${label}</button></form>`;
+  return shell(`<h1 class="mt8" style="font-size:40px">Quiet-hour offers</h1>
+    <p class="small muted mt8">Offers businesses have set up and not ended. Offers never apply to medical services. Pause one if its terms look wrong; the business can't turn it back on until you lift the pause.</p>
+    ${d.message ? `<div class="form-ok mt12" role="status">${esc(d.message)}</div>` : ""}
+    ${d.rows.length ? `<div class="tbl-wrap mt16"><table class="tbl"><thead><tr><th>Business</th><th>Offer</th><th>Dates</th><th>Used</th><th>Status</th><th></th></tr></thead><tbody>
+    ${d.rows.map((r) => `<tr><td><a href="/p/${esc(r.slug)}"><b>${esc(r.provider)}</b></a></td><td class="small"><b>${esc(r.amount)}</b> · ${esc(r.services)}<div class="xs muted">${esc(r.when)}</div></td><td class="small">${esc(r.starts_on)} to ${esc(r.ends_on)}</td><td class="small">${r.used} of ${r.cap} this month</td>
+      <td>${r.status === "on" ? '<span class="badge b-ok">On</span>' : r.paused_by === "ops" ? '<span class="badge b-err">Paused by us</span>' : '<span class="badge b-plain">Paused by business</span>'}</td>
+      <td>${r.status === "on" ? act(r.id, "pause", "Pause") : r.paused_by === "ops" ? act(r.id, "resume", "Lift pause") : ""}</td></tr>`).join("")}
+    </tbody></table></div>` : `<div class="card mt16" style="text-align:center;padding:40px"><p class="muted">No offers yet.</p></div>`}`);
 }

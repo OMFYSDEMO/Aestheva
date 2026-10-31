@@ -37,7 +37,8 @@ export function termsPage() {
     <h2>Payments</h2>
     <p>Deposits are collected by ${esc(COMPANY.legalName)} through Razorpay and passed to the venue, less Aestheva's commission. The balance is paid to the venue directly. Cancellations and refunds follow the <a href="/policies/cancellation">cancellation policy</a>.</p>
     <h2 id="offers">Offers</h2>
-    <p><b>Welcome offer.</b> ₹${INCENTIVES.welcomeCreditPaise / 100} off the deposit of your first booking on Aestheva that takes a deposit. It is paid by ${esc(COMPANY.legalName)}, not by the business, and the business still receives the full deposit. One per person, identified by mobile number. It applies automatically when you pay, cannot be exchanged for cash and cannot be combined with other offers. If the booking is cancelled, the offer stays available for your next booking. We may change or end the offer at any time; bookings already paid are not affected.</p>
+    <p><b>Welcome offer.</b> ₹${INCENTIVES.welcomeCreditPaise / 100} off the deposit of your first booking on Aestheva that takes a deposit. It is paid by ${esc(COMPANY.legalName)}, not by the business, and the business still receives the full deposit. One per person, identified by mobile number. It applies automatically when you pay and cannot be exchanged for cash. It can be used together with a business's quiet-hour offer, but not with other Aestheva offers. If the booking is cancelled, the offer stays available for your next booking. We may change or end the offer at any time; bookings already paid are not affected.</p>
+    <p id="quiet-hours"><b>Quiet-hour offers.</b> Some businesses take an amount off chosen services for appointments that start at quieter times. These times are shown in gold when you book, and the offer applies automatically. Each offer is set and paid for by the business, which receives the discounted price; Aestheva's commission is charged on that discounted price. Offers never apply to medical consultations or treatments. One booking per mobile number per offer, while the business's places for that month last. If you cancel, the offer becomes available to you again. Offers have no cash value. A business may change, pause or end an offer at any time; bookings already made keep their price.</p>
     <h2>Reviews</h2>
     <p>Reviews must describe your own experience of a booking made on Aestheva.</p>
   </div>`;
@@ -142,6 +143,7 @@ export function practitionersPage(cats: { id: string; name: string }[] = [], pla
     ["cal", "Your real availability", "Clients only see the hours you actually work, and two people can never take the same slot or chair."],
     ["receipt", "Prices in full", "Clients see the full price before they book, so there are no awkward surprises on the day."],
     ["shield", "Checked, fairly", "We check what applies to your kind of work. Medical care is held to medical standards; everyone else, to theirs."],
+    ["clock", "Fill your quiet hours", "Set an amount off for the hours that are usually empty. Those times show in gold when clients book; busy times stay at the full price. You choose the services, the hours and the limit."],
   ];
   const steps = [
     ["Apply", "Your business details and the services you offer. About five minutes, no documents needed yet."],
@@ -181,7 +183,7 @@ export function practitionersPage(cats: { id: string; name: string }[] = [], pla
     <div class="who-grid mt24">${who.map(([i, t, b]) => `<div>${ic(i, 22)}<b>${t}</b><p>${b}</p></div>`).join("")}</div></section>
 
   <section class="band mt64"><div class="eyebrow">What you get</div><h2 class="mt8">Built so the right clients find you</h2>
-    <div class="who-grid mt24">${perks.map(([i, t, b]) => `<div>${ic(i, 22)}<b>${t}</b><p>${b}</p></div>`).join("")}</div></section>
+    <div class="who-grid five mt24">${perks.map(([i, t, b]) => `<div>${ic(i, 22)}<b>${t}</b><p>${b}</p></div>`).join("")}</div></section>
 
   <section class="story-two mt64">
     <div><div class="eyebrow">How joining works</div><h2 class="mt8">Four steps to your first booking</h2>

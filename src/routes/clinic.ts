@@ -19,6 +19,9 @@ import {
 import { layout } from "../views/layout";
 import { emailBookingCancelled, emailBookingConfirmed } from "../services/booking-emails";
 import { foundingTerms, ownLink } from "../services/incentives";
+import { OfferFormError, offerOf, offerStats, providerOffers, saveOffer, setOfferStatus, validateOffer } from "../services/offers";
+import { offerDefaults, offerForm, offerToForm, offersPage } from "../views/offers";
+import type { ServiceRow } from "../services/catalog";
 import {
   bookingCreatedPage, bookingDetailPage, bookingsPage, calendarPage, clientPage, clientsPage, clinicLoginPage, clinicShell, forgotPage, linkInvalidPage, newBookingPage, setPasswordPage,
   paymentsPage, servicesPage, signOutButton, todayPage, type Section,
@@ -328,6 +331,43 @@ clinic.get("/services", async (c) => {
   const services = svc.results.map((s) => ({ ...s, staff: links.results.filter((l) => l.service_id === s.id).map((l) => l.staff_id) }));
   return page(c, "Services & hours", "services", servicesPage({ services, staff, hours, catName: (id) => cats.find((x) => x.id === id)?.name ?? id }));
 });
+
+// ---------- quiet-hour offers ----------
+
+const activeServices = async (c: C) => (await c.env.DB.prepare("SELECT * FROM services WHERE provider_id = ? AND active = 1 ORDER BY sort").bind(pid(c)).all<ServiceRow>()).results;
+const OFFER_DONE: Record<string, string> = {
+  created: "Offer is on. Its times now show in gold when clients book.", saved: "Offer saved. New bookings get the new terms.",
+  pause: "Offer paused. Times are back at the full price.", resume: "Offer is back on.", end: "Offer ended. Bookings already made keep their price.",
+};
+async function offersView(c: C, extra: { message?: string; error?: string } = {}, status = 200) {
+  const today = nowIst().date;
+  const [offers, services, stats] = await Promise.all([providerOffers(c.env.DB, pid(c)), activeServices(c), offerStats(c.env.DB, pid(c), today.slice(0, 7))]);
+  return page(c, "Offers", "offers", offersPage({ offers, services, stats, today, csrf: c.get("csrf"), ...extra }), status);
+}
+clinic.get("/offers", (c) => offersView(c, { message: OFFER_DONE[c.req.query("done") ?? ""] }));
+async function offerFormPage(c: C, id: string | undefined, v: Record<string, unknown>, e: Record<string, string> = {}, status = 200) {
+  return page(c, "Offers", "offers", offerForm({ id, v, e, services: await activeServices(c), csrf: c.get("csrf"), today: nowIst().date }), status);
+}
+clinic.get("/offers/new", async (c) => offerFormPage(c, undefined, offerDefaults(await activeServices(c), nowIst().date, addDays)));
+clinic.get("/offers/:id", async (c) => {
+  const o = await offerOf(c.env.DB, pid(c), c.req.param("id"));
+  if (o.status === "ended") return c.redirect("/clinic/offers", 303);
+  return offerFormPage(c, o.id, offerToForm(o));
+});
+clinic.post("/offers/:id", async (c) => {
+  const f = await form(c), id = c.req.param("id") === "new" ? null : c.req.param("id");
+  const existing = id ? await offerOf(c.env.DB, pid(c), id) : undefined;
+  try { await saveOffer(c.env.DB, pid(c), id, validateOffer(f, await activeServices(c), nowIst().date, existing), actor(c)); }
+  catch (e) { if (e instanceof OfferFormError) return offerFormPage(c, id ?? undefined, flat(f), e.errors, 400); throw e; }
+  return c.redirect(`/clinic/offers?done=${id ? "saved" : "created"}`, 303);
+});
+for (const action of ["pause", "resume", "end"] as const) {
+  clinic.post(`/offers/:id/${action}`, async (c) => {
+    try { await setOfferStatus(c.env.DB, pid(c), c.req.param("id"), action, actor(c)); }
+    catch (e) { if (e instanceof HttpError && e.status === 409) return offersView(c, { error: e.message }, 409); throw e; }
+    return c.redirect(`/clinic/offers?done=${action}`, 303);
+  });
+}
 
 clinic.get("/payments", async (c) => {
   const thisMonth = nowIst().date.slice(0, 7), q = c.req.query("month") ?? "";

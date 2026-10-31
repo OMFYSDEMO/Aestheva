@@ -6,7 +6,9 @@ import { audit, hmacSha256Hex, safeEqual } from "../db";
 import { categories } from "../services/catalog";
 import { getApplication, listApplications, updateApplication, venueDraft } from "../services/applications";
 import { layout } from "../views/layout";
-import { opsClinicsPage, opsDetailPage, opsListPage, opsLoginPage, opsVenuePage, opsVenuesPage, type ClinicLoginRow } from "../views/ops";
+import { opsClinicsPage, opsDetailPage, opsListPage, opsLoginPage, opsOffersPage, opsVenuePage, opsVenuesPage, type ClinicLoginRow } from "../views/ops";
+import { offerAmount, offerServices, opsSetOffer, placesTaken, whenLabel, type OfferRow } from "../services/offers";
+import { nowIst } from "../domain/time";
 import { STAGE, addDocument, addVerification, approveApplication, checklist, listing, removeVerification, setVenueStage } from "../services/onboarding";
 import { photosOf } from "../views/ui";
 import { createClinicUser, emailPasswordLink, issuePasswordLink, setClinicUserActive, type ClinicUser } from "../services/clinic";
@@ -84,6 +86,20 @@ ops.post("/applications/:ref/approve", async (c) => {
   const a = await getApplication(db, ref), cats = await categories(db);
   return page(c, a.business_name, opsDetailPage(a, c.get("csrf"), venueDraft(a), (id) => cats.find((x) => x.id === id)?.name ?? id, false, r));
 });
+
+ops.get("/offers", async (c) => {
+  const db = c.env.DB, month = nowIst().date.slice(0, 7);
+  const offers = (await db.prepare("SELECT o.*, p.name AS provider, p.slug FROM offers o JOIN providers p ON p.id = o.provider_id WHERE o.status <> 'ended' ORDER BY o.status, o.created_at DESC").all<OfferRow & { provider: string; slug: string }>()).results;
+  const names = new Map((await db.prepare("SELECT id, name FROM services").all<{ id: string; name: string }>()).results.map((r) => [r.id, r.name]));
+  const taken = await placesTaken(db, offers.map((o) => o.id));
+  const rows = offers.map((o) => ({ id: o.id, provider: o.provider, slug: o.slug, amount: offerAmount(o), when: whenLabel(o), services: offerServices(o).map((id) => names.get(id) ?? id).join(", "),
+    starts_on: o.starts_on, ends_on: o.ends_on, cap: o.monthly_cap, status: o.status, paused_by: o.paused_by, used: taken.get(`${o.id}|${month}`) ?? 0 }));
+  const done = c.req.query("done");
+  return page(c, "Offers", opsOffersPage({ rows, csrf: c.get("csrf"), message: done === "pause" ? "Offer paused. Its times are back at the full price." : done === "resume" ? "Pause lifted. The offer is on again." : undefined }));
+});
+for (const action of ["pause", "resume"] as const) {
+  ops.post(`/offers/:id/${action}`, async (c) => { await opsSetOffer(c.env.DB, c.req.param("id"), action); return c.redirect(`/ops/offers?done=${action}`, 303); });
+}
 
 ops.get("/venues", async (c) => {
   const db = c.env.DB;

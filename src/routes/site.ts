@@ -22,6 +22,7 @@ import { createApplication, validateApplication, type ApplicationForm } from "..
 import { notifyNewApplication } from "../services/notify";
 import { afterClientCancel } from "./api";
 import { icsFor } from "../services/booking-emails";
+import { liveOffers, publicOffers } from "../services/offers";
 import { aboutPage, cancellationPage, contactPage, practitionersPage, privacyPage, termsPage } from "../views/static";
 
 type C = Context<{ Bindings: Env }>;
@@ -50,20 +51,23 @@ site.get("/search", async (c) => {
   const f: SearchQuery = {
     q: String(q.q ?? "").slice(0, 80), area: AREAS.includes(q.area) ? q.area : "", near: near ? `${near.lat},${near.lng}` : "", cat: String(q.cat ?? ""),
     kind: q.kind === "medical" || q.kind === "beauty" ? q.kind : "all", sort: q.sort === "price" || q.sort === "rating" || q.sort === "near" ? q.sort : "rec",
+    offers: q.offers === "1" ? "1" : "",
   };
   // Searching from a locality or "near me" ranks every venue by distance instead of hiding the ones next door.
   if (f.area) f.near = "";   // choosing a locality replaces an earlier "near me"
   const from = f.area ? locality(f.area) : near;
   if (from && f.sort === "rec") f.sort = "near";
   if (!from && f.sort === "near") f.sort = "rec";
-  const [providers, services, cats, rt, ver] = await Promise.all([liveProviders(db), liveServices(db), categories(db), ratings(db),
-    db.prepare("SELECT provider_id, COUNT(*) AS n FROM verifications GROUP BY provider_id").all<{ provider_id: string; n: number }>()]);
+  const [providers, services, cats, rt, ver, offers] = await Promise.all([liveProviders(db), liveServices(db), categories(db), ratings(db),
+    db.prepare("SELECT provider_id, COUNT(*) AS n FROM verifications GROUP BY provider_id").all<{ provider_id: string; n: number }>(), liveOffers(db, today)]);
+  const offerSvcs = new Map<string, number>();
+  for (const o of publicOffers(offers, services, today)) for (const x of o.services) offerSvcs.set(x.id, Math.max(offerSvcs.get(x.id) ?? 0, x.off));
   if (f.cat && !cats.some((x) => x.id === f.cat)) f.cat = "";
   const catName = (id: string) => cats.find((x) => x.id === id)?.name ?? id;
   const vcount = new Map(ver.results.map((r) => [r.provider_id, r.n]));
   const distance = (area: string) => { const at = locality(area); return from && at ? km(from, at) : undefined; };
   let results = providers
-    .map((p) => ({ p, svcs: matchServices(services.filter((s) => s.provider_id === p.id), p, f, catName), verifications: vcount.get(p.id) ?? 0, km: distance(p.area) }))
+    .map((p) => ({ p, svcs: matchServices(services.filter((s) => s.provider_id === p.id && (!f.offers || offerSvcs.has(s.id))), p, f, catName), verifications: vcount.get(p.id) ?? 0, km: distance(p.area) }))
     .filter((x) => x.svcs.length);
   const next = await nextAvailable(db, results.flatMap((x) => x.svcs));
   const score = (id: string) => (rt.get(id)?.avg ?? 0) * (rt.get(id)?.n ?? 0);
@@ -72,15 +76,15 @@ site.get("/search", async (c) => {
   else if (f.sort === "near") results.sort((a, b) => (a.km ?? 999) - (b.km ?? 999));
   else results.sort((a, b) => score(b.p.id) - score(a.p.id));
   // A plain category listing ("Nails, lashes & brows") is a page worth finding on Google; filtered or typed searches are not.
-  const catPage = !!f.cat && !f.q && !f.area && !f.near && f.kind === "all" && f.sort === "rec";
+  const catPage = !!f.cat && !f.q && !f.area && !f.near && f.kind === "all" && f.sort === "rec" && !f.offers;
   const b = base(c), where = f.area || "Trivandrum";
   return page(c, {
     title: catPage ? `${catName(f.cat)} in Trivandrum · Book online · Aestheva` : `${f.q ? f.q + " · " : f.cat ? catName(f.cat) + " · " : ""}${where} · Aestheva`,
     description: catPage ? `${CAT_META[f.cat]?.line ?? ""} Compare full prices and book ${catName(f.cat).toLowerCase()} in Thiruvananthapuram (Trivandrum) online.`.trim()
       : `Find and book ${f.cat ? catName(f.cat).toLowerCase() : "beauty, wellness and care"} near ${where}: salons, clinics, studios and independent professionals, with full prices.`,
-    canonical: catPage ? `${b}/search?cat=${encodeURIComponent(f.cat)}` : `${b}/search`, nav: "explore", noindex: !!f.q || (catPage && !results.length), joinPromo: true,
+    canonical: catPage ? `${b}/search?cat=${encodeURIComponent(f.cat)}` : `${b}/search`, nav: "explore", noindex: !!f.q || !!f.offers || (catPage && !results.length), joinPromo: true,
     jsonLd: catPage && results.length ? [breadcrumbs(b, [["Home", "/"], [catName(f.cat), `/search?cat=${encodeURIComponent(f.cat)}`]]), itemList(b, results.map((r) => r.p))] : undefined,
-  }, searchPage({ f, results, welcome: welcomeAmount(c.env), beauty: services.some((s) => s.kind === "beauty"), outside: !f.area && !!near && !inServiceArea(near), categories: providers.length ? cats.filter((x) => services.some((s) => s.cat === x.id)) : cats, ratings: rt, next, today, anyLive: providers.length > 0 }));
+  }, searchPage({ f, results, welcome: welcomeAmount(c.env), beauty: services.some((s) => s.kind === "beauty"), outside: !f.area && !!near && !inServiceArea(near), categories: providers.length ? cats.filter((x) => services.some((s) => s.cat === x.id)) : cats, ratings: rt, next, today, anyLive: providers.length > 0, offerSvcs }));
 });
 
 /** A business's own booking link: remembers where the client came from for 30 days, then opens the business's page. */
@@ -97,14 +101,15 @@ site.get("/p/:slug", async (c) => {
   if (!d && c.req.query("preview") !== undefined && !preview)
     return page(c, { title: "Preview link not valid · Aestheva", noindex: true }, notFoundPage("This preview link isn't valid. Check the whole link was copied."), 404);
   if (!d) return page(c, { title: "Not found · Aestheva", noindex: true }, notFoundPage("We couldn't find that venue."), 404);
-  const [cats, next] = await Promise.all([categories(db), nextAvailable(db, d.services)]);
+  const today = nowIst().date;
+  const [cats, next, offers] = await Promise.all([categories(db), nextAvailable(db, d.services), liveOffers(db, today, [d.provider.id])]);
   return page(c, {
     title: `${d.provider.name}, ${d.provider.area} · Prices & booking · Aestheva`,
     description: `${d.provider.tagline}. ${typeLabel(d.provider.type)} in ${d.provider.area}, ${d.provider.city}: ${d.services.length ? `${d.services.length} services from ${inrPlain(Math.min(...d.services.map((s) => s.price_paise)))}, with live free times. Book online.` : "see services, prices and free times."}`,
     canonical: `${base(c)}/p/${d.provider.slug}`, nav: "explore", noindex: d.provider.status !== "live",
     jsonLd: d.provider.status === "live" ? [business(base(c), d), breadcrumbs(base(c), [["Home", "/"], [d.provider.area, `/search?area=${encodeURIComponent(d.provider.area)}`], [d.provider.name, `/p/${d.provider.slug}`]])] : undefined,
     ogImage: photosOf(d.provider)[0] ? `${base(c)}${photosOf(d.provider)[0].src}-og.jpg` : undefined,
-  }, providerPage({ ...d, categories: cats, next, today: nowIst().date, preview }));
+  }, providerPage({ ...d, categories: cats, next, today, preview, offers: publicOffers(offers, d.services, today) }));
 });
 
 site.get("/book/:slug", async (c) => {
@@ -116,7 +121,8 @@ site.get("/book/:slug", async (c) => {
   try { gateway = gatewayFor(c.env).kind; } catch { /* production without keys: deposits can't be taken */ }
   const scripts = ["/book.js", ...(gateway === "razorpay" ? ["https://checkout.razorpay.com/v1/checkout.js"] : [])];
   return page(c, { title: `Book · ${d.provider.name} · Aestheva`, noindex: true, scripts },
-    bookPage(d, pre && d.services.some((s) => s.id === pre) ? pre : null, { gateway, mode: paymentMode(c.env) }, preview, await categories(c.env.DB), welcomeAmount(c.env)));
+    bookPage(d, pre && d.services.some((s) => s.id === pre) ? pre : null, { gateway, mode: paymentMode(c.env) }, preview, await categories(c.env.DB), welcomeAmount(c.env),
+      publicOffers(await liveOffers(c.env.DB, nowIst().date, [d.provider.id]), d.services, nowIst().date)));
 });
 
 async function renderManage(c: C, ref: string, token: string, message?: string) {
