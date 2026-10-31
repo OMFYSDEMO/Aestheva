@@ -11,6 +11,8 @@ import { offerAmount, offerServices, opsSetOffer, placesTaken, whenLabel, type O
 import { nowIst } from "../domain/time";
 import { companyGstin, statementWithLines, taxFile, type StatementRow } from "../services/statements";
 import { opsMoneyPage, statementPage } from "../views/statements";
+import { joinerRows, nudge } from "../services/joiners";
+import { joinersPage } from "../views/joiners";
 import { shell } from "../views/ops";
 import { STAGE, addDocument, addVerification, approveApplication, checklist, listing, removeVerification, setVenueStage } from "../services/onboarding";
 import { photosOf } from "../views/ui";
@@ -88,6 +90,17 @@ ops.post("/applications/:ref/approve", async (c) => {
   const r = await approveApplication(c.env, ref, c.env.SITE_URL || new URL(c.req.url).origin);
   const a = await getApplication(db, ref), cats = await categories(db);
   return page(c, a.business_name, opsDetailPage(a, c.get("csrf"), venueDraft(a), (id) => cats.find((x) => x.id === id)?.name ?? id, false, r));
+});
+
+ops.get("/joiners", async (c) => {
+  const sent = c.req.query("sent");
+  return page(c, "New joiners", shell(joinersPage({ rows: await joinerRows(c.env.DB), csrf: c.get("csrf"), now: Date.now(),
+    message: sent !== undefined ? (sent === "0" ? "Nothing sent: the email couldn't be delivered. Check the team email settings with Send a test email." : `Sent to ${sent} ${sent === "1" ? "person" : "people"}.`) : undefined })));
+});
+ops.post("/joiners/:id/nudge", async (c) => {
+  const f = await c.req.parseBody();
+  const r = await nudge(c.env, c.req.param("id"), String(f.note ?? ""), c.env.SITE_URL || new URL(c.req.url).origin);
+  return c.redirect(`/ops/joiners?sent=${r.sent}`, 303);
 });
 
 ops.get("/money", async (c) => {

@@ -805,3 +805,9 @@ html{overflow-x:clip}
 /* Statements print cleanly: no site header, footer or buttons */
 @media print{.topbar,.footer,.envbar,.no-print,.ws .side,.mob-nav,.join-pop{display:none!important}.ws-main{padding:0!important}.statement .card{break-inside:avoid;border-color:#ddd}body{background:#fff}}
 .invoice .tbl td,.invoice .tbl th{font-size:14px}
+/* New joiners grid */
+.joiners td{vertical-align:top}
+.joiners tr.stuck td:first-child{box-shadow:inset 3px 0 0 var(--err)}
+.jx{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;font-weight:700;cursor:help}
+.jx.ok{background:var(--ok-bg);color:var(--ok)}
+.jx.no{background:var(--line);color:var(--muted)}
