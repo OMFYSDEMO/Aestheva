@@ -181,7 +181,7 @@ export function termsPage(d: { p: ProviderRow; csrf: string; error?: string; acc
         <li><b>Your care, your responsibility:</b> you provide the service and are responsible for it. For medical treatments, your practitioner decides whether a treatment suits each client.</li>
         <li><b>Accurate information:</b> prices, team, qualifications and registrations on your page must be true and up to date. Tell us if a registration lapses.</li>
         <li><b>Respectful marketing:</b> no promises of results, and no before-and-after claims, for medical treatments.</li>
-        <li><b>Client data:</b> use clients' details only to look after their bookings, as our <a href="/policies/privacy" target="_blank" rel="noopener">privacy policy</a> says.</li>
+        <li><b>Client data:</b> use clients' details only to look after their bookings, keep treatment records and other health information off Aestheva, and follow data protection law and your professional rules. Your business is responsible for the data once it has it. Our <a href="/policies/data-protection" target="_blank" rel="noopener">data protection terms for businesses</a> are part of this agreement.</li>
       </ul>
     </div>
     ${accepted ? `<div class="form-ok mt16" role="status">Accepted${d.acceptedBy ? ` by ${esc(d.acceptedBy)}` : ""} on ${new Date(d.p.terms_accepted_at!).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}.</div><div class="mt16"><a class="btn btn-p" href="/clinic/setup">Continue</a></div>`

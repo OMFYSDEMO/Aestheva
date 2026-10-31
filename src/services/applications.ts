@@ -3,6 +3,15 @@ import type { Env } from "../env";
 import { HttpError, audit, newId, newRef, sha256Hex } from "../db";
 import { normalisePhone } from "./bookings";
 
+/** Data retention: the anti-spam code is cleared after 7 days, and applications that didn't go ahead are deleted after 2 years. */
+export async function pruneApplications(db: D1Database) {
+  const [a, b] = await db.batch([
+    db.prepare("UPDATE applications SET ip_hash = '' WHERE ip_hash <> '' AND created_at < strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-7 days')"),
+    db.prepare("DELETE FROM applications WHERE status = 'declined' AND provider_id IS NULL AND created_at < strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-2 years')"),
+  ]);
+  return { cleared: a.meta.changes, deleted: b.meta.changes };
+}
+
 export const ROLES = ["Owner", "Manager", "Practitioner", "Independent professional", "Other"] as const;
 export const APP_STATUSES = ["new", "reviewing", "approved", "declined"] as const;
 export type AppStatus = (typeof APP_STATUSES)[number];

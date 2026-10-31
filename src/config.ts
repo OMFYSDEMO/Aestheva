@@ -8,6 +8,9 @@ export const COMPANY = {
   supportPhone: "+91 97784 58883",
   registeredAddress: "1st floor, Anjali Arcade, near Nippon Toyota, Technopark Phase 3 Service Road, Kazhakkoottam, Thiruvananthapuram, Kerala 695583",
   launchCity: "Thiruvananthapuram",
+  // Data protection: the person named as Grievance Officer in the privacy notice (required by the IT (SPDI) Rules, 2011).
+  grievanceOfficer: "",
+  privacyUpdated: "31 October 2026",
 } as const;
 
 export const POLICY = {

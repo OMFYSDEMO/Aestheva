@@ -23,7 +23,7 @@ import { notifyNewApplication } from "../services/notify";
 import { afterClientCancel } from "./api";
 import { icsFor } from "../services/booking-emails";
 import { liveOffers, publicOffers } from "../services/offers";
-import { aboutPage, cancellationPage, contactPage, practitionersPage, privacyPage, termsPage } from "../views/static";
+import { aboutPage, cancellationPage, contactPage, dataProtectionPage, practitionersPage, privacyPage, termsPage } from "../views/static";
 
 type C = Context<{ Bindings: Env }>;
 const site = new Hono<{ Bindings: Env }>();
@@ -175,7 +175,8 @@ site.post("/waitlist", async (c) => {
 
 site.get("/policies/cancellation", (c) => page(c, { title: "Cancellation & refunds · Aestheva", canonical: base(c) + "/policies/cancellation" }, cancellationPage()));
 site.get("/policies/terms", (c) => page(c, { title: "Terms of use · Aestheva", canonical: base(c) + "/policies/terms" }, termsPage()));
-site.get("/policies/privacy", (c) => page(c, { title: "Privacy · Aestheva", canonical: base(c) + "/policies/privacy" }, privacyPage()));
+site.get("/policies/privacy", (c) => page(c, { title: "Privacy and data protection · Aestheva", description: "How Aestheva collects, uses, shares, stores and protects personal data, your rights, and how to contact our Grievance Officer.", canonical: base(c) + "/policies/privacy" }, privacyPage()));
+site.get("/policies/data-protection", (c) => page(c, { title: "Data protection for businesses · Aestheva", description: "Who is responsible for client data on Aestheva, what businesses agree to, and answers to the questions clinics, salons and professionals ask.", canonical: base(c) + "/policies/data-protection" }, dataProtectionPage()));
 site.get("/contact", (c) => page(c, { title: "Contact · Aestheva", canonical: base(c) + "/contact" }, contactPage()));
 site.get("/about", (c) => page(c, { jsonLd: [organisation(base(c))], title: "Our story · Aestheva", description: `Why we built Aestheva, who runs it, and what you can count on when you book care in ${COMPANY.launchCity}.`, canonical: base(c) + "/about", nav: "story", joinPromo: true }, aboutPage()));
 site.get("/for-practitioners", async (c) => page(c, { title: "List your business · Aestheva", description: `Salons, studios, clinics and independent professionals: list your beauty, wellness or care business on Aestheva in ${COMPANY.launchCity}.`, canonical: base(c) + "/for-practitioners", nav: "practitioners" }, practitionersPage(await categories(c.env.DB), await foundingPlacesLeft(c.env.DB))));
@@ -257,7 +258,7 @@ site.get("/sitemap.xml", async (c) => {
   const xmlEsc = (u: string) => u.replace(/&/g, "&amp;");
   const urls: [string, string][] = [["/", "daily"], ["/search", "daily"], ...cats.map((id): [string, string] => [`/search?cat=${id}`, "weekly"]), ...ps.map((p): [string, string] => [`/p/${p.slug}`, "daily"]),
     ["/trivandrum", "weekly"], ...guides.filter((g) => g.rows.length).map((g): [string, string] => [`/trivandrum/${g.t.slug}`, "weekly"]),
-    ["/about", "monthly"], ["/for-practitioners", "monthly"], ["/for-practitioners/apply", "monthly"], ["/contact", "monthly"], ["/policies/cancellation", "yearly"], ["/policies/terms", "yearly"], ["/policies/privacy", "yearly"]];
+    ["/about", "monthly"], ["/for-practitioners", "monthly"], ["/for-practitioners/apply", "monthly"], ["/contact", "monthly"], ["/policies/cancellation", "yearly"], ["/policies/terms", "yearly"], ["/policies/privacy", "yearly"], ["/policies/data-protection", "yearly"]];
   return c.body(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map(([u, f]) => `<url><loc>${xmlEsc(b + u)}</loc><changefreq>${f}</changefreq></url>`).join("")}</urlset>`, 200, { "content-type": "application/xml" });
 });
 
