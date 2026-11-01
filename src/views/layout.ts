@@ -1,5 +1,6 @@
 import { COMPANY } from "../config";
 import { SKYLINE } from "./skyline";
+import { KOCHI_SKYLINE } from "./skyline-kochi";
 import { esc, ic } from "./ui";
 
 export interface PageOpts {
@@ -14,6 +15,7 @@ export interface PageOpts {
   ogImage?: string;           // absolute URL of a 1200x630 image
   app?: { label: string; right?: string };   // signed-in workspace: slim header and footer, no marketing navigation
   joinPromo?: boolean;        // invite businesses to join with a small, dismissible pop-up
+  city?: "kochi";             // a city page: its own footer sketch and wording (default: Trivandrum)
   jsonLd?: object[];          // schema.org structured data for search engines
 }
 
@@ -71,11 +73,11 @@ ${ribbon}
 <main id="main">
 ${body}
 </main>
-${o.app ? `<footer class="footer app-foot"><p>Aestheva for business · Help: <a href="mailto:${esc(COMPANY.supportEmail)}">${esc(COMPANY.supportEmail)}</a></p></footer>` : `<footer class="footer">${SKYLINE}<div class="footer-in">
+${o.app ? `<footer class="footer app-foot"><p>Aestheva for business · Help: <a href="mailto:${esc(COMPANY.supportEmail)}">${esc(COMPANY.supportEmail)}</a></p></footer>` : `<footer class="footer">${o.city === "kochi" ? KOCHI_SKYLINE : SKYLINE}<div class="footer-in">
   <div class="footer-brand">
     <div class="logo logo-foot"><span class="wm">aestheva</span></div>
     <p class="mt12">Beauty, wellness and care in ${esc(COMPANY.launchCity)}, booked with the price, the person and the time settled before you arrive.</p>
-    <p class="mt12 xs">Made in Kazhakkoottam. Kochi, Kozhikode and Thrissur next.</p>
+    <p class="mt12 xs">${o.city === "kochi" ? `Live in ${esc(COMPANY.launchCity)}. <a href="/kochi">Kochi</a> next, then Kozhikode and Thrissur.` : `Made in Kazhakkoottam. <a href="/kochi">Kochi</a>, Kozhikode and Thrissur next.`}</p>
   </div>
   <nav aria-label="Explore"><h2>Explore</h2><a href="/search">All services</a><a href="/trivandrum">Prices &amp; service guides</a><a href="/search?cat=skin">Skin &amp; facials</a><a href="/search?cat=nails">Nails, lashes &amp; brows</a><a href="/search?cat=groom">Makeup &amp; grooming</a><a href="/search?cat=dental">Smile &amp; dental</a></nav>
   <nav aria-label="Company"><h2>Company</h2><a href="/about">Our story</a><a href="/for-practitioners">List your business</a><a href="/for-practitioners/apply">Apply to join</a><a href="/contact">Contact</a></nav>

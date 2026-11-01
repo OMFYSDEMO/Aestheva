@@ -116,8 +116,10 @@ describe("booking emails", () => {
     await emailBookingConfirmed(env, id, "https://aestheva.test");
     expect(sent).toHaveLength(0);
     (env as { EMAIL: unknown }).EMAIL = { send: async () => { throw Object.assign(new Error("down"), { code: "E_DOWN" }); } };
-    const slot = await firstSlot("v15", day(7));
-    const r = await req("POST", "/api/bookings", { serviceId: "v15", staffId: "any", date: day(7), start: slot.min, ...guest, phone: "9844455566" });
+    // The first day from a week ahead with a free time (the salon is closed on some days).
+    let d7 = day(7), slot = await firstSlot("v15", d7);
+    for (let n = 8; !slot && n < 14; n++) { d7 = day(n); slot = await firstSlot("v15", d7); }
+    const r = await req("POST", "/api/bookings", { serviceId: "v15", staffId: "any", date: d7, start: slot.min, ...guest, phone: "9844455566" });
     expect(r.status).toBe(201); expect(r.json.status).toBe("confirmed");
     expect(await sql("SELECT action FROM audit_log WHERE action = 'email.booking_confirmed_failed'")).toHaveLength(1);
     (env as { EMAIL: unknown }).EMAIL = { send: async (m: Sent) => { sent.push(m); return { messageId: "m" }; } };

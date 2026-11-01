@@ -134,7 +134,7 @@ export function homePage(d: {
 
   <section class="mt64 grid g2" style="align-items:stretch">
     <div class="sage-card"><div class="eyebrow" style="color:var(--sage-d)">For every beauty, wellness and care business</div><h3 class="mt8">Big salon or one-person studio, you're welcome</h3><p class="small mt8" style="color:#33463A">Beauticians, nail, makeup and tattoo artists, therapists, salons and clinics: a profile that shows your work, your real availability and bookings straight into your calendar. Setting up takes about 30 minutes.</p><div class="row wrap mt16" style="gap:8px"><a class="btn btn-ok btn-s" href="/for-practitioners/apply">List your business</a><a class="btn btn-o btn-s" href="/for-practitioners">How joining works</a></div></div>
-    <div class="card" id="waitlist"><div class="eyebrow">Coming next</div><h3 class="mt8">Kochi · Kozhikode · Thrissur</h3><p class="small muted mt8">Not in ${esc(SERVICE_AREA.short)}? Leave your email and we'll tell you when we open in your city.</p>
+    <div class="card" id="waitlist"><div class="eyebrow">Coming next</div><h3 class="mt8"><a href="/kochi">Kochi</a> · Kozhikode · Thrissur</h3><p class="small muted mt8">Not in ${esc(SERVICE_AREA.short)}? Leave your email and we'll tell you when we open in your city.</p>
       ${d.joined && d.joined !== COMPANY.launchCity ? `<p class="form-ok mt16" role="status">You're on the ${esc(d.joined)} waitlist. We'll email you when we open there.</p>` : ""}
       <form class="row wrap mt16" method="post" action="/waitlist" style="gap:10px">
         <label class="sr" for="wl-city">City</label><select class="in" id="wl-city" name="city" style="width:auto">${others.map((c) => `<option>${c}</option>`).join("")}</select>

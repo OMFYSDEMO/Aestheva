@@ -811,3 +811,10 @@ html{overflow-x:clip}
 .jx{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;font-weight:700;cursor:help}
 .jx.ok{background:var(--ok-bg);color:var(--ok)}
 .jx.no{background:var(--line);color:var(--muted)}
+/* Kochi page */
+.kochi-hero-art{display:flex;flex-direction:column;gap:12px}
+.kochi-art{display:block;width:100%;max-width:360px;height:auto;margin:0 auto -6px;color:var(--mulberry);opacity:.78;stroke-width:1.15}
+.kochi-moments{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:1060px){.kochi-moments{grid-template-columns:1fr 1fr}}
+@media (max-width:620px){.kochi-moments{grid-template-columns:1fr}}
+.footer-brand p a{color:inherit}
