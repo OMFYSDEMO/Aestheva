@@ -264,7 +264,7 @@ export function aboutPage() {
       <div><b>Run by</b><span>${esc(COMPANY.legalName)}</span></div>
       <div><b>Covering</b><span>${esc(COMPANY.launchCity)} and the towns around it, from Varkala to Neyyattinkara</span></div>
       <div><b>For</b><span>Salons, studios, clinics and independent professionals</span></div>
-      <div><b>Next</b><span><a href="/kochi">Kochi</a>, Kozhikode and Thrissur</span></div>
+      <div><b>Next</b><span><a href="/kochi">Kochi</a>, <a href="/kozhikode">Kozhikode</a> and <a href="/thrissur">Thrissur</a></span></div>
     </aside>
   </section>
 
