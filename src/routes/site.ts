@@ -105,7 +105,7 @@ site.get("/p/:slug", async (c) => {
   const today = nowIst().date;
   const [cats, next, offers] = await Promise.all([categories(db), nextAvailable(db, d.services), liveOffers(db, today, [d.provider.id])]);
   return page(c, {
-    title: `${d.provider.name}, ${d.provider.area} · Prices & booking · Aestheva`,
+    title: venueTitle(d.provider.name, d.provider.area),
     description: `${d.provider.tagline}. ${typeLabel(d.provider.type)} in ${d.provider.area}, ${d.provider.city}: ${d.services.length ? `${d.services.length} services from ${inrPlain(Math.min(...d.services.map((s) => s.price_paise)))}, with live free times. Book online.` : "see services, prices and free times."}`,
     canonical: `${base(c)}/p/${d.provider.slug}`, nav: "explore", noindex: d.provider.status !== "live",
     jsonLd: d.provider.status === "live" ? [business(base(c), d), breadcrumbs(base(c), [["Home", "/"], [d.provider.area, `/search?area=${encodeURIComponent(d.provider.area)}`], [d.provider.name, `/p/${d.provider.slug}`]])] : undefined,
@@ -185,9 +185,12 @@ for (const slug of CITY_ORDER) site.get(`/${slug}`, async (c) => page(c, { ...CI
 site.get("/calicut", (c) => c.redirect("/kozhikode", 301));
 site.get("/contact", (c) => page(c, { title: "Contact · Aestheva", canonical: base(c) + "/contact" }, contactPage()));
 site.get("/about", (c) => page(c, { jsonLd: [organisation(base(c))], title: "Our story · Aestheva", description: `Why we built Aestheva, who runs it, and what you can count on when you book care in ${COMPANY.launchCity}.`, canonical: base(c) + "/about", nav: "story", joinPromo: true }, aboutPage()));
-site.get("/for-practitioners", async (c) => page(c, { title: "List your business · Aestheva", description: `Salons, studios, clinics and independent professionals: list your beauty, wellness or care business on Aestheva in ${COMPANY.launchCity}.`, canonical: base(c) + "/for-practitioners", nav: "practitioners" }, practitionersPage(await categories(c.env.DB), await foundingPlacesLeft(c.env.DB))));
+site.get("/for-practitioners", async (c) => page(c, { title: "List your salon, spa or clinic free in Trivandrum · Aestheva", description: `Free listing and online booking for salons, beauty parlours, spas, makeup artists and clinics in ${COMPANY.launchCity}. No commission on bookings from your own link.`, canonical: base(c) + "/for-practitioners", nav: "practitioners" }, practitionersPage(await categories(c.env.DB), await foundingPlacesLeft(c.env.DB))));
 
-const applyMeta = (c: C) => ({ title: "Apply to join · Aestheva", description: `Apply to list your salon, studio, clinic or independent business on Aestheva in ${COMPANY.launchCity}.`, canonical: base(c) + "/for-practitioners/apply", nav: "practitioners" as const });
+/** Venue page title: as much as fits in the ~65 characters Google shows, dropping the brand before the search words. */
+export const venueTitle = (name: string, area: string) =>
+  [`${name}, ${area} · Prices & booking · Aestheva`, `${name}, ${area} · Prices & booking`, `${name}, ${area} · Aestheva`].find((t) => t.length <= 65) ?? `${name}, ${area}`;
+const applyMeta = (c: C) => ({ title: "Apply to list your business free · Aestheva", description: `List your salon, beauty parlour, spa, studio or clinic on Aestheva in ${COMPANY.launchCity}. Free to list; the form takes about five minutes.`, canonical: base(c) + "/for-practitioners/apply", nav: "practitioners" as const });
 site.get("/for-practitioners/apply", async (c) => {
   const cats = await categories(c.env.DB), pre = c.req.query("cat");
   return page(c, applyMeta(c), applyPage({ values: pre && cats.some((x) => x.id === pre) ? { categories: [pre] } : {}, errors: {}, categories: cats, started: Date.now() }));

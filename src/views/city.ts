@@ -57,8 +57,8 @@ export const CITIES: Record<CitySlug, City> = {
       ["South & beyond", "Vyttila, Tripunithura, Maradu, Aluva, Vypeen"],
     ],
     meta: {
-      title: "Kochi: book beauty, wellness and care, coming soon · Aestheva",
-      description: "Aestheva is coming to Kochi: salons, studios, clinics and independent professionals across Fort Kochi, Ernakulam, Kakkanad and beyond, with full prices and real free times. Join the list.",
+      title: "Kochi salons, spas & clinics, coming soon · Aestheva",
+      description: "Aestheva is coming to Kochi. Book salons, spas, makeup artists and clinics in Fort Kochi, Ernakulam and Kakkanad at full prices, or list your business free.",
     },
   },
 
@@ -91,8 +91,8 @@ export const CITIES: Record<CitySlug, City> = {
       ["Across the district", "Guruvayur, Kunnamkulam, Chalakudy, Irinjalakuda, Kodungallur"],
     ],
     meta: {
-      title: "Thrissur: book beauty, wellness and care, coming soon · Aestheva",
-      description: "Aestheva is coming to Thrissur: salons, bridal makeup artists, studios and clinics around Swaraj Round, Punkunnam, Ayyanthole and out to Guruvayur, with full prices and real free times. Join the list.",
+      title: "Thrissur salons, spas & clinics, coming soon · Aestheva",
+      description: "Aestheva is coming to Thrissur. Book salons, bridal makeup artists, spas and clinics from Swaraj Round to Guruvayur at full prices, or list your business free.",
     },
   },
 
@@ -125,8 +125,8 @@ export const CITIES: Record<CitySlug, City> = {
       ["South & beyond", "Meenchanda, Beypore, Feroke, Ramanattukara"],
     ],
     meta: {
-      title: "Kozhikode (Calicut): book beauty, wellness and care, coming soon · Aestheva",
-      description: "Aestheva is coming to Kozhikode: salons, studios, clinics and independent professionals around Mananchira, Nadakkavu, Medical College and the beach, with full prices and real free times. Join the list.",
+      title: "Kozhikode (Calicut) salons, spas & clinics · Aestheva",
+      description: "Aestheva is coming to Kozhikode. Book salons, spas, makeup artists and clinics from Mananchira to Medical College at full prices, or list your business free.",
     },
   },
 };
