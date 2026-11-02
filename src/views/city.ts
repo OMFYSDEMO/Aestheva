@@ -45,7 +45,7 @@ export const CITIES: Record<CitySlug, City> = {
     },
     moments: [
       ["clock", "Between two calls at Infopark", "A threading or a beard trim in Kakkanad at lunch, with a time that's really free, not \"come, we'll see\"."],
-      ["sparkle", "Wedding season, sorted early", "Bridal makeup trials and mehendi booked with the artist named and the full price on the page, months before the muhurtham."],
+      ["sparkle", "Wedding season, sorted early", "Bridal makeup trials and mehendi booked with the artist named and the full price on the page, weeks before the muhurtham."],
       ["leaf", "A slow Sunday in Fort Kochi", "A walk past the nets at sunset, then an Ayurvedic massage or a facial nearby, booked from your phone on the way."],
       care,
     ],
@@ -78,7 +78,7 @@ export const CITIES: Record<CitySlug, City> = {
       body: "Thrissur is home to Kerala's Sahitya, Sangeetha Nataka and Lalithakala Akademis, to Pulikali at Onam and to the Round that every road comes back to. It's where families shop for gold and silk before a wedding and gather at Guruvayur for the muhurtham. Care has to fit around all of that. On Aestheva you'll see every price in full, who's free and when, and book in about a minute, from a bus on the Round or a seat at the Sakthan stand.",
     },
     moments: [
-      ["sparkle", "A dawn muhurtham at Guruvayur", "Bridal makeup and saree draping for an early-morning wedding, booked months ahead with the artist named and the full price on the page."],
+      ["sparkle", "A dawn muhurtham at Guruvayur", "Bridal makeup and saree draping for an early-morning wedding, booked weeks ahead with the artist named and the full price on the page."],
       ["clock", "An errand on the Round", "A haircut or a threading between the bank and the jeweller, at a time that's really free, not \"come, we'll see\"."],
       ["leaf", "The day after Pooram", "Feet and shoulders that stood on the Round all night: an Ayurvedic massage the next afternoon, booked from home."],
       care,
@@ -112,7 +112,7 @@ export const CITIES: Record<CitySlug, City> = {
       body: "In 2023 Kozhikode became India's first UNESCO City of Literature. It's also the city of SM Street halwa, of biriyani worth crossing town for, of sulaimani on the beach at sunset and football on every open ground. Care has to fit between all of that. On Aestheva you'll see every price in full, who's free and when, and book in about a minute, from a bus on Mavoor Road or the queue for halwa.",
     },
     moments: [
-      ["sparkle", "Wedding season, sorted early", "Bridal makeup, mehendi and styling for the big day, booked months ahead with the artist named and the full price on the page."],
+      ["sparkle", "Wedding season, sorted early", "Bridal makeup, mehendi and styling for the big day, booked weeks ahead with the artist named and the full price on the page."],
       ["clock", "In town for SM Street", "A threading or a beard trim near Mananchira while you're in town, at a time that's really free, not \"come, we'll see\"."],
       ["leaf", "An evening by the old piers", "Sunset on the beach, a sulaimani, then a massage or a facial nearby, booked from your phone on the way."],
       care,

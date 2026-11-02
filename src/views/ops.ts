@@ -1,12 +1,13 @@
 import { APP_STATUSES, type ApplicationRow } from "../services/applications";
 import { esc, ic } from "./ui";
+import { CLICK_ID_DAYS, CONVERSIONS, describeSource, parseSource, type sourceReport } from "../services/adsource";
 import { DOC_KINDS } from "../services/onboarding";
 
 const STATUS_BADGE: Record<string, string> = { new: "b-blush", reviewing: "b-warn", approved: "b-ok", declined: "b-plain" };
 const badge = (s: string) => `<span class="badge ${STATUS_BADGE[s] ?? "b-plain"}">${esc(s[0].toUpperCase() + s.slice(1))}</span>`;
 const when = (iso: string) => new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
 
-export const shell = (body: string) => `<div class="page"><div class="ops-bar"><div class="row wrap" style="gap:4px"><span class="eyebrow" style="margin-right:10px">Aestheva team</span><a class="btn btn-g btn-s" href="/ops/applications">Applications</a><a class="btn btn-g btn-s" href="/ops/joiners">New joiners</a><a class="btn btn-g btn-s" href="/ops/venues">Venues</a><a class="btn btn-g btn-s" href="/ops/clinics">Clinic logins</a><a class="btn btn-g btn-s" href="/ops/offers">Offers</a><a class="btn btn-g btn-s" href="/ops/money">Statements</a></div><form method="post" action="/ops/logout"><button class="btn btn-g btn-s" type="submit">${ic("out", 15)} Sign out</button></form></div>${body}</div>`;
+export const shell = (body: string) => `<div class="page"><div class="ops-bar"><div class="row wrap" style="gap:4px"><span class="eyebrow" style="margin-right:10px">Aestheva team</span><a class="btn btn-g btn-s" href="/ops/applications">Applications</a><a class="btn btn-g btn-s" href="/ops/joiners">New joiners</a><a class="btn btn-g btn-s" href="/ops/venues">Venues</a><a class="btn btn-g btn-s" href="/ops/clinics">Clinic logins</a><a class="btn btn-g btn-s" href="/ops/offers">Offers</a><a class="btn btn-g btn-s" href="/ops/money">Statements</a><a class="btn btn-g btn-s" href="/ops/ads">Ads</a></div><form method="post" action="/ops/logout"><button class="btn btn-g btn-s" type="submit">${ic("out", 15)} Sign out</button></form></div>${body}</div>`;
 
 const STAGE_BADGE: Record<string, [string, string]> = { setup: ["b-plain", "Setting up"], review: ["b-warn", "Ready for review"], live: ["b-ok", "Live"], paused: ["b-err", "Paused"] };
 const stageBadge = (s: string) => `<span class="badge ${STAGE_BADGE[s]?.[0] ?? "b-plain"}">${STAGE_BADGE[s]?.[1] ?? esc(s)}</span>`;
@@ -108,7 +109,7 @@ export function opsListPage(d: { rows: ApplicationRow[]; counts: Record<string, 
     <form method="post" action="/ops/test-email"><input type="hidden" name="csrf" value="${esc(d.csrf)}"><button class="btn btn-o btn-s" type="submit">${ic("mail", 15)} Send a test email</button></form></div>
     <div class="chips mt16">${tab("", "All", total)}${APP_STATUSES.map((s) => tab(s, s[0].toUpperCase() + s.slice(1), d.counts[s] ?? 0)).join("")}</div>
     ${d.rows.length ? `<div class="tbl-wrap mt24"><table class="tbl"><thead><tr><th>Received</th><th>Business</th><th>Area</th><th>Contact</th><th>Status</th></tr></thead><tbody>
-      ${d.rows.map((a) => `<tr><td class="small" style="white-space:nowrap">${when(a.created_at)}</td><td><a href="/ops/applications/${esc(a.ref)}"><b>${esc(a.business_name)}</b></a><div class="xs muted">${esc(a.business_type)}${a.medical ? " · medical" : ""} · ${esc(a.ref)}</div></td><td class="small">${esc(a.area)}</td><td class="small">${esc(a.contact_name)}<div class="xs muted">${esc(a.phone)}</div></td><td>${badge(a.status)}</td></tr>`).join("")}
+      ${d.rows.map((a) => `<tr><td class="small" style="white-space:nowrap">${when(a.created_at)}</td><td><a href="/ops/applications/${esc(a.ref)}"><b>${esc(a.business_name)}</b></a><div class="xs muted">${esc(a.business_type)}${a.medical ? " · medical" : ""} · ${esc(a.ref)}</div>${a.ad_source && parseSource(a.ad_source).gclid ? `<span class="badge b-ok" style="font-size:11px">Google Ads</span>` : ""}</td><td class="small">${esc(a.area)}</td><td class="small">${esc(a.contact_name)}<div class="xs muted">${esc(a.phone)}</div></td><td>${badge(a.status)}</td></tr>`).join("")}
     </tbody></table></div>` : `<div class="card mt24" style="text-align:center;padding:40px"><p class="muted">No applications${d.status ? ` marked ${esc(d.status)}` : " yet"}.</p></div>`}`);
 }
 
@@ -135,7 +136,7 @@ export function opsDetailPage(a: ApplicationRow, csrf: string, draft: unknown, c
       </div>
       <aside class="sticky col" style="gap:16px">
         <div class="card"><h2 style="font-size:22px">Contact</h2><dl class="kv mt12">${row("Name", esc(a.contact_name))}${row("Role", esc(a.contact_role))}
-          ${row("Mobile", `<a href="tel:${esc(a.phone)}">${esc(a.phone)}</a>`)}${row("Email", `<a href="mailto:${esc(a.email)}?subject=${encodeURIComponent(`Your Aestheva application ${a.ref}`)}">${esc(a.email)}</a>`)}${row("Heard via", esc(a.heard_from))}</dl></div>
+          ${row("Mobile", `<a href="tel:${esc(a.phone)}">${esc(a.phone)}</a>`)}${row("Email", `<a href="mailto:${esc(a.email)}?subject=${encodeURIComponent(`Your Aestheva application ${a.ref}`)}">${esc(a.email)}</a>`)}${row("Heard via", esc(a.heard_from))}${row("Came from", esc(describeSource(parseSource(a.ad_source))))}</dl></div>
         <div class="card">${a.provider_id ? `<b>Listing created</b><p class="small muted mt8">The clinic is setting up its listing.</p><a class="btn btn-o btn-s mt12" href="/ops/venues/${esc(a.provider_id)}">Open the venue</a>`
           : `<b>Approve</b><p class="small muted mt8">Creates a draft listing from this application and emails ${esc(a.contact_name)} an invitation to set it up: photos, team, treatments and documents. Nothing is public until you publish it.</p>
           <form method="post" action="/ops/applications/${esc(a.ref)}/approve" class="mt12"><input type="hidden" name="csrf" value="${esc(csrf)}"><button class="btn btn-ok btn-s" type="submit">Approve and invite to set up</button></form>`}</div>
@@ -162,4 +163,18 @@ export function opsOffersPage(d: { rows: { id: string; provider: string; slug: s
       <td>${r.status === "on" ? '<span class="badge b-ok">On</span>' : r.paused_by === "ops" ? '<span class="badge b-err">Paused by us</span>' : '<span class="badge b-plain">Paused by business</span>'}</td>
       <td>${r.status === "on" ? act(r.id, "pause", "Pause") : r.paused_by === "ops" ? act(r.id, "resume", "Lift pause") : ""}</td></tr>`).join("")}
     </tbody></table></div>` : `<div class="card mt16" style="text-align:center;padding:40px"><p class="muted">No offers yet.</p></div>`}`);
+}
+
+/** Which ads and links bring businesses, and the Google Ads upload. */
+export function opsAdsPage(rows: Awaited<ReturnType<typeof sourceReport>>) {
+  return `<div class="row wrap between mt8"><h1 style="font-size:40px">Ads and sources</h1>
+      <a class="btn btn-o btn-s" href="/ops/ads/conversions.csv">${ic("upload", 15)} Download for Google Ads</a></div>
+    <p class="small muted mt8" style="max-width:760px">Every application, grouped by where it came from: the Google Ads click, or the utm_ tags on a link we shared. Nothing here uses cookies; the business pages pass the ad's details to the application form.</p>
+    ${rows.length ? `<div class="tbl-wrap mt24"><table class="tbl"><thead><tr><th>Source</th><th>Applied</th><th>Approved</th><th>Live now</th><th>Landing pages</th></tr></thead><tbody>
+      ${rows.map((r) => `<tr><td><b>${esc(r.group)}</b></td><td>${r.applied}</td><td>${r.approved}</td><td>${r.live}</td><td class="small">${[...r.landings].sort((a, b) => b[1] - a[1]).map(([p, n]) => `${esc(p)} (${n})`).join(", ") || "<span class='muted'>—</span>"}</td></tr>`).join("")}
+    </tbody></table></div>` : `<div class="card mt24" style="text-align:center;padding:40px"><p class="muted">No applications yet.</p></div>`}
+    <div class="card mt24"><h2 style="font-size:22px">Uploading to Google Ads</h2><ol class="small mt12" style="padding-left:20px;line-height:1.7">
+      <li>Once, in Google Ads under Goals, Conversions: create two conversion actions of the kind <b>Import</b>, then <b>Track conversions from clicks</b>, named exactly <b>${esc(CONVERSIONS.applied)}</b> and <b>${esc(CONVERSIONS.live)}</b>.</li>
+      <li>Each week, press <b>Download for Google Ads</b> above and upload the file under Goals, Conversions, Uploads. Google ignores rows it has seen before.</li>
+      <li>Click IDs are deleted from applications after ${CLICK_ID_DAYS} days, the longest Google accepts them. Campaign names and landing pages stay for this report.</li></ol></div>`;
 }

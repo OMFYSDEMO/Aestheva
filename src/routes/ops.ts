@@ -6,7 +6,8 @@ import { audit, hmacSha256Hex, safeEqual } from "../db";
 import { categories } from "../services/catalog";
 import { getApplication, listApplications, updateApplication, venueDraft } from "../services/applications";
 import { layout } from "../views/layout";
-import { opsClinicsPage, opsDetailPage, opsListPage, opsLoginPage, opsOffersPage, opsVenuePage, opsVenuesPage, type ClinicLoginRow } from "../views/ops";
+import { opsAdsPage, opsClinicsPage, opsDetailPage, opsListPage, opsLoginPage, opsOffersPage, opsVenuePage, opsVenuesPage, type ClinicLoginRow } from "../views/ops";
+import { conversionsCsv, sourceReport } from "../services/adsource";
 import { offerAmount, offerServices, opsSetOffer, placesTaken, whenLabel, type OfferRow } from "../services/offers";
 import { nowIst } from "../domain/time";
 import { companyGstin, statementWithLines, taxFile, type StatementRow } from "../services/statements";
@@ -107,6 +108,13 @@ ops.get("/money", async (c) => {
   const rows = (await c.env.DB.prepare("SELECT s.*, p.name FROM statements s JOIN providers p ON p.id = s.provider_id ORDER BY s.month DESC, p.name").all<StatementRow & { name: string }>()).results;
   const noPan = (await c.env.DB.prepare("SELECT name FROM providers WHERE payout_mode <> 'own' AND status = 'live' AND pan = '' AND tds_exempt = 0 ORDER BY name").all<{ name: string }>()).results.map((r) => r.name);
   return page(c, "Statements", shell(opsMoneyPage({ rows, gstinSet: !!companyGstin(c.env), noPan })));
+});
+ops.get("/ads", async (c) => page(c, "Ads and sources", shell(opsAdsPage(await sourceReport(c.env.DB)))));
+ops.get("/ads/conversions.csv", async (c) => {
+  c.header("cache-control", "no-store");
+  c.header("content-type", "text/csv; charset=utf-8");
+  c.header("content-disposition", `attachment; filename="aestheva-google-ads-conversions-${new Date().toISOString().slice(0, 10)}.csv"`);
+  return c.body(await conversionsCsv(c.env.DB));
 });
 ops.get("/money.csv", async (c) => {
   const month = c.req.query("month") ?? "";

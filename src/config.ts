@@ -12,7 +12,7 @@ export const COMPANY = {
   grievanceOfficer: "Shaji Anandan",
   gstin: "32AAHCH7753F1ZL", // Haswel Care's GSTIN, printed on commission invoices. Invoices stay as drafts while it is empty.
   cin: "U47720KL2025PTC092343",  // Corporate Identity Number: on invoices and wherever the company is named (Companies Act, s.12)
-  privacyUpdated: "31 October 2026",
+  privacyUpdated: "2 November 2026",
 } as const;
 
 export const POLICY = {

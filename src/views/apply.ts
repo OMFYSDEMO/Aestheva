@@ -25,7 +25,7 @@ export function applyPage(d: { values: ApplicationForm; errors: Record<string, s
         <p class="lede mt12">Salon, studio, clinic or independent professional, you're welcome. It takes about five minutes. We'll review it and get in touch, usually by phone, to talk through the next steps. You don't need any documents yet.</p>
         ${summary ? `<div class="mt24">${summary}</div>` : ""}
         <form class="apply-form mt24" method="post" action="/for-practitioners/apply" novalidate>
-          <input type="hidden" name="t" value="${d.started}">
+          <input type="hidden" name="t" value="${d.started}">${val(v, "src") ? `<input type="hidden" name="src" value="${val(v, "src")}">` : ""}
           <div class="hp" aria-hidden="true"><label>Leave this empty<input name="company_website" tabindex="-1" autocomplete="off"></label></div>
 
           <fieldset class="apply-sec"><legend><span>1</span> Your business</legend>

@@ -2,6 +2,7 @@ import { AREAS, VENUE_TYPES } from "../config";
 import type { Env } from "../env";
 import { HttpError, audit, newId, newRef, sha256Hex } from "../db";
 import { normalisePhone } from "./bookings";
+import { pruneClickIds, readSource, sourceJson } from "./adsource";
 
 /** Data retention: the anti-spam code is cleared after 7 days, and applications that didn't go ahead are deleted after 2 years. */
 export async function pruneApplications(db: D1Database) {
@@ -9,7 +10,7 @@ export async function pruneApplications(db: D1Database) {
     db.prepare("UPDATE applications SET ip_hash = '' WHERE ip_hash <> '' AND created_at < strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-7 days')"),
     db.prepare("DELETE FROM applications WHERE status = 'declined' AND provider_id IS NULL AND created_at < strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-2 years')"),
   ]);
-  return { cleared: a.meta.changes, deleted: b.meta.changes };
+  return { cleared: a.meta.changes, deleted: b.meta.changes, clickIds: await pruneClickIds(db) };
 }
 
 export const ROLES = ["Owner", "Manager", "Practitioner", "Independent professional", "Other"] as const;
@@ -19,7 +20,7 @@ export type AppStatus = (typeof APP_STATUSES)[number];
 export interface ApplicationRow {
   id: string; ref: string; status: AppStatus; business_name: string; business_type: string; area: string; address: string; website: string;
   contact_name: string; contact_role: string; phone: string; email: string; categories_json: string; medical: number; team_size: number;
-  services_text: string; establishment_reg: string; practitioner_reg: string; gstin: string; heard_from: string; team_notes: string; provider_id: string | null;
+  services_text: string; establishment_reg: string; practitioner_reg: string; gstin: string; heard_from: string; ad_source: string; team_notes: string; provider_id: string | null;
   created_at: string; updated_at: string;
 }
 
@@ -28,7 +29,7 @@ export type ApplicationForm = Record<string, string | string[]>;
 export interface CleanApplication {
   business_name: string; business_type: string; area: string; address: string; website: string; contact_name: string; contact_role: string;
   phone: string; email: string; categories: string[]; medical: boolean; team_size: number; services_text: string;
-  establishment_reg: string; practitioner_reg: string; gstin: string; heard_from: string;
+  establishment_reg: string; practitioner_reg: string; gstin: string; heard_from: string; ad_source: string;
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -74,6 +75,7 @@ export function validateApplication(f: ApplicationForm, categoryIds: string[]): 
     website: v.website, contact_name: v.contact_name, contact_role: v.contact_role, phone: phone!, email: v.email, categories: cats,
     medical: v.medical === "yes", team_size: team, services_text: v.services_text, establishment_reg: v.establishment_reg,
     practitioner_reg: v.practitioner_reg, gstin: v.gstin, heard_from: v.heard_from,
+    ad_source: sourceJson(readSource(new URLSearchParams(str(f, "src")))),
   } };
 }
 
@@ -90,10 +92,10 @@ export async function createApplication(env: Env, a: CleanApplication, ip: strin
   const id = newId("app"), ref = newRef("AP");
   await db.batch([
     db.prepare(`INSERT INTO applications (id, ref, business_name, business_type, area, address, website, contact_name, contact_role, phone, email,
-      categories_json, medical, team_size, services_text, establishment_reg, practitioner_reg, gstin, heard_from, ip_hash)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(
+      categories_json, medical, team_size, services_text, establishment_reg, practitioner_reg, gstin, heard_from, ad_source, ip_hash)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(
       id, ref, a.business_name, a.business_type, a.area, a.address, a.website, a.contact_name, a.contact_role, a.phone, a.email,
-      JSON.stringify(a.categories), a.medical ? 1 : 0, a.team_size, a.services_text, a.establishment_reg, a.practitioner_reg, a.gstin, a.heard_from, ipHash),
+      JSON.stringify(a.categories), a.medical ? 1 : 0, a.team_size, a.services_text, a.establishment_reg, a.practitioner_reg, a.gstin, a.heard_from, a.ad_source, ipHash),
     audit(db, "applicant", "application.created", "application", ref, { business: a.business_name, type: a.business_type, area: a.area }),
   ]);
   return { ref, repeat: false };

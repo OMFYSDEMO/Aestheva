@@ -1,4 +1,5 @@
 import { freePeriod } from "../services/incentives";
+import { TRADES } from "./trades";
 import { COMPANY, INCENTIVES, POLICY } from "../config";
 import { fact } from "./layout";
 import { catTile, esc, ic } from "./ui";
@@ -71,7 +72,7 @@ export function privacyPage() {
       ["You pay a deposit or get a refund", "Razorpay's order and payment references, the amount, the method (for example UPI) and the refund status. Never your card number, UPI PIN or bank login: those go straight to Razorpay."],
       ["You cancel or ask for a refund review", "The reason you give, if any."],
       ["You join a waiting list", "Your email address and the city you're waiting for."],
-      ["You apply to list a business", "Your business and contact details, the services you describe and any registration numbers you share. To stop automated spam we keep a scrambled code made from your network address, never the address itself, for up to 7 days."],
+      ["You apply to list a business", "Your business and contact details, the services you describe and any registration numbers you share. To stop automated spam we keep a scrambled code made from your network address, never the address itself, for up to 7 days. If you reached our business pages from one of our ads or links, we also keep the ad's click reference and campaign name with your application, so we can see which ads bring businesses and tell Google which clicks led to an application. This uses no cookies."],
       ["A business sets up and uses its portal", "Each login's name and email and a scrambled form of the password; the business's listing, team profiles, photos and hours; verification documents; its PAN and GSTIN, for invoices and the tax Aestheva must deduct and report."],
       ["You browse", "No advertising or analytics trackers. See cookies below. Our hosting provider processes standard technical data, such as IP address and browser type, to deliver the site and protect it from attacks."],
     ])}
@@ -94,6 +95,7 @@ export function privacyPage() {
       ["The business you book", "Your name, mobile number, email, appointment and note, so it can provide the service and contact you about it."],
       ["Razorpay Software Private Limited", "Payment and refund details, to process deposits and refunds. Razorpay handles payment data under its own privacy policy and the Reserve Bank of India's rules."],
       ["Cloudflare, Inc.", "Hosts the website, database and files and sends our emails, acting only on our instructions."],
+      ["Google (Google Ads)", "For businesses that applied after clicking one of our ads: the ad's click reference and the time of the application or of going live. No names or contact details."],
       ["Authorities", "Only when the law requires us to, for example a court order."],
     ])}
     <p>Links you choose to open, such as WhatsApp, Google Maps or Google Calendar, take you to those services under their own terms. If Aestheva is ever sold or merged, personal data would move with it under the same promises.</p>
@@ -107,6 +109,7 @@ export function privacyPage() {
       ["Waiting-list emails", "Until we open in that city or you ask us to remove you"],
       ["Applications that don't go ahead", "2 years, then deleted"],
       ["The anti-spam code from an application", "Up to 7 days"],
+      ["The ad click reference on an application", "90 days; the campaign name stays with the application"],
       ["Portal logins", "While the business is listed; closed within 30 days of it leaving"],
       ["Verification documents", "While the business is listed, then 3 years in case of a dispute, then deleted"],
       ["Private booking and password links", "Stored only in scrambled form. Password links stop working after one use or a short time"],
@@ -346,7 +349,8 @@ export function practitionersPage(cats: { id: string; name: string }[] = [], pla
     <div class="tile-grid mt24">${cats.map((c) => `<a class="tile" href="/for-practitioners/apply?cat=${esc(c.id)}">${catTile(c.id, 22)}<b>${esc(c.name)}</b></a>`).join("")}</div></section>` : ""}
 
   <section class="mt64"><div class="eyebrow">Who can join</div><h2 class="mt8">Everyone in beauty, wellness and care</h2>
-    <div class="who-grid mt24">${who.map(([i, t, b]) => `<div>${ic(i, 22)}<b>${t}</b><p>${b}</p></div>`).join("")}</div></section>
+    <div class="who-grid mt24">${who.map(([i, t, b]) => `<div>${ic(i, 22)}<b>${t}</b><p>${b}</p></div>`).join("")}</div>
+    <p class="small mt24"><b>More for your trade:</b></p><div class="chips mt8">${TRADES.map((t) => `<a class="chip" href="/for-practitioners/${t.slug}">${t.short}</a>`).join("")}</div></section>
 
   <section class="band mt64"><div class="eyebrow">What you get</div><h2 class="mt8">Built so the right clients find you</h2>
     <div class="who-grid five mt24">${perks.map(([i, t, b]) => `<div>${ic(i, 22)}<b>${t}</b><p>${b}</p></div>`).join("")}</div></section>

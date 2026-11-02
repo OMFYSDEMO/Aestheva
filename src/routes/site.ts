@@ -24,6 +24,8 @@ import { afterClientCancel } from "./api";
 import { icsFor } from "../services/booking-emails";
 import { liveOffers, publicOffers } from "../services/offers";
 import { CITIES, CITY_ORDER, cityPage, citySlugFor, type CitySlug } from "../views/city";
+import { TRADES, tradeBySlug, tradePage } from "../views/trades";
+import { carrySource, readSource, sourceQuery } from "../services/adsource";
 import { aboutPage, cancellationPage, contactPage, dataProtectionPage, practitionersPage, privacyPage, termsPage } from "../views/static";
 
 type C = Context<{ Bindings: Env }>;
@@ -185,7 +187,8 @@ for (const slug of CITY_ORDER) site.get(`/${slug}`, async (c) => page(c, { ...CI
 site.get("/calicut", (c) => c.redirect("/kozhikode", 301));
 site.get("/contact", (c) => page(c, { title: "Contact · Aestheva", canonical: base(c) + "/contact" }, contactPage()));
 site.get("/about", (c) => page(c, { jsonLd: [organisation(base(c))], title: "Our story · Aestheva", description: `Why we built Aestheva, who runs it, and what you can count on when you book care in ${COMPANY.launchCity}.`, canonical: base(c) + "/about", nav: "story", joinPromo: true }, aboutPage()));
-site.get("/for-practitioners", async (c) => page(c, { title: "List your salon, spa or clinic free in Trivandrum · Aestheva", description: `Free listing and online booking for salons, beauty parlours, spas, makeup artists and clinics in ${COMPANY.launchCity}. No commission on bookings from your own link.`, canonical: base(c) + "/for-practitioners", nav: "practitioners" }, practitionersPage(await categories(c.env.DB), await foundingPlacesLeft(c.env.DB))));
+site.get("/for-practitioners", async (c) => page(c, { title: "List your salon, spa or clinic free in Trivandrum · Aestheva", description: `Free listing and online booking for salons, beauty parlours, spas, makeup artists and clinics in ${COMPANY.launchCity}. No commission on bookings from your own link.`, canonical: base(c) + "/for-practitioners", nav: "practitioners" },
+  carrySource(practitionersPage(await categories(c.env.DB), await foundingPlacesLeft(c.env.DB)), readSource(new URL(c.req.url).searchParams, "/for-practitioners"))));
 
 /** Venue page title: as much as fits in the ~65 characters Google shows, dropping the brand before the search words. */
 export const venueTitle = (name: string, area: string) =>
@@ -193,8 +196,13 @@ export const venueTitle = (name: string, area: string) =>
 const applyMeta = (c: C) => ({ title: "Apply to list your business free · Aestheva", description: `List your salon, beauty parlour, spa, studio or clinic on Aestheva in ${COMPANY.launchCity}. Free to list; the form takes about five minutes.`, canonical: base(c) + "/for-practitioners/apply", nav: "practitioners" as const });
 site.get("/for-practitioners/apply", async (c) => {
   const cats = await categories(c.env.DB), pre = c.req.query("cat");
-  return page(c, applyMeta(c), applyPage({ values: pre && cats.some((x) => x.id === pre) ? { categories: [pre] } : {}, errors: {}, categories: cats, started: Date.now() }));
+  const src = sourceQuery(readSource(new URL(c.req.url).searchParams));
+  return page(c, applyMeta(c), applyPage({ values: { ...(pre && cats.some((x) => x.id === pre) ? { categories: [pre] } : {}), ...(src ? { src } : {}) }, errors: {}, categories: cats, started: Date.now() }));
 });
+for (const t of TRADES) site.get(`/for-practitioners/${t.slug}`, async (c) => page(c, {
+  title: t.title, description: t.description, canonical: `${base(c)}/for-practitioners/${t.slug}`, nav: "practitioners",
+  jsonLd: [breadcrumbs(base(c), [["Home", "/"], ["List your business", "/for-practitioners"], [t.short, `/for-practitioners/${t.slug}`]])],
+}, carrySource(tradePage(t, await foundingPlacesLeft(c.env.DB)), readSource(new URL(c.req.url).searchParams, `/for-practitioners/${t.slug}`))));
 site.post("/for-practitioners/apply", async (c) => {
   const form = (await c.req.parseBody({ all: true })) as ApplicationForm;
   const cats = await categories(c.env.DB);
@@ -267,7 +275,7 @@ site.get("/sitemap.xml", async (c) => {
   const xmlEsc = (u: string) => u.replace(/&/g, "&amp;");
   const urls: [string, string][] = [["/", "daily"], ["/search", "daily"], ...cats.map((id): [string, string] => [`/search?cat=${id}`, "weekly"]), ...ps.map((p): [string, string] => [`/p/${p.slug}`, "daily"]),
     ["/trivandrum", "weekly"], ...guides.filter((g) => g.rows.length).map((g): [string, string] => [`/trivandrum/${g.t.slug}`, "weekly"]),
-    ["/about", "monthly"], ["/for-practitioners", "monthly"], ["/for-practitioners/apply", "monthly"], ["/contact", "monthly"], ["/policies/cancellation", "yearly"], ["/policies/terms", "yearly"], ["/policies/privacy", "yearly"], ["/policies/data-protection", "yearly"], ...CITY_ORDER.map((s): [string, string] => [`/${s}`, "monthly"])];
+    ["/about", "monthly"], ["/for-practitioners", "monthly"], ["/for-practitioners/apply", "monthly"], ["/contact", "monthly"], ["/policies/cancellation", "yearly"], ["/policies/terms", "yearly"], ["/policies/privacy", "yearly"], ["/policies/data-protection", "yearly"], ...CITY_ORDER.map((s): [string, string] => [`/${s}`, "monthly"]), ...TRADES.map((t): [string, string] => [`/for-practitioners/${t.slug}`, "monthly"])];
   return c.body(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map(([u, f]) => `<url><loc>${xmlEsc(b + u)}</loc><changefreq>${f}</changefreq></url>`).join("")}</urlset>`, 200, { "content-type": "application/xml" });
 });
 
