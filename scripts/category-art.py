@@ -347,7 +347,253 @@ def skin():
     o.append(P((0, G), (W, G)))
     return o
 
-DRAW = {"nails": nails, "hair": hair, "skin": skin}
+# ---------------------------------------------------------------- Makeup & grooming
+
+def brush_cup(x, ground, s=1.0):
+    """A cup of makeup brushes: fluffy, angled and fan."""
+    w, h = 30*s, 30*s
+    out = [P((x, ground - h), (x + 3*s, ground), (x + w - 3*s, ground), (x + w, ground - h), close=True), P((x + 2*s, ground - h + 6*s), (x + w - 2*s, ground - h + 6*s))]
+    for dx, L, lean, head in ((6, 44, -10, "round"), (13, 54, -2, "fan"), (19, 50, 4, "angle"), (25, 40, 12, "round")):
+        a = math.radians(lean); ux, uy = math.sin(a), -math.cos(a)
+        bx, by = x + dx*s, ground - h + 2*s; ex, ey = bx + ux*L*s, by + uy*L*s
+        mx, my = bx + ux*(L - 12)*s, by + uy*(L - 12)*s
+        out.append(P((bx, by), (mx, my)))
+        if head == "round":
+            out.append(f"M{f(mx - 3*s)} {f(my)} Q{f(ex - 7*s)} {f(ey + 3*s)} {f(ex)} {f(ey)} Q{f(ex + 7*s)} {f(ey + 3*s)} {f(mx + 3*s)} {f(my)}")
+        elif head == "fan":
+            out.append(f"M{f(mx)} {f(my)} L{f(ex - 10*s)} {f(ey + 2*s)} Q{f(ex)} {f(ey - 6*s)} {f(ex + 10*s)} {f(ey + 2*s)} Z")
+        else:
+            out.append(f"M{f(mx - 3*s)} {f(my)} L{f(ex - 4*s)} {f(ey + 4*s)} L{f(ex + 4*s)} {f(ey - 2*s)} L{f(mx + 3*s)} {f(my)}")
+    return out
+
+def compact(x, ground, s=1.0):
+    """An open powder compact: mirror lid up, puff in the pan."""
+    out = [ellipse(x, ground - 5*s, 22*s, 5*s), P((x - 22*s, ground - 5*s), (x - 22*s, ground - 1*s)), P((x + 22*s, ground - 5*s), (x + 22*s, ground - 1*s)),
+           f"M{f(x - 22*s)} {f(ground - 1*s)} Q{f(x)} {f(ground + 3*s)} {f(x + 22*s)} {f(ground - 1*s)}", ellipse(x, ground - 5*s, 15*s, 3*s)]
+    out.append(oval(x + 4*s, ground - 30*s, 22*s, 14*s, -8)); out.append(oval(x + 4*s, ground - 30*s, 17*s, 10*s, -8))
+    out.append(f"M{f(x - 6*s)} {f(ground - 36*s)} Q{f(x - 2*s)} {f(ground - 40*s)} {f(x + 4*s)} {f(ground - 40*s)}")
+    return out
+
+def lipstick(x, ground, s=1.0):
+    w = 13*s
+    return [rrect(x, ground - 24*s, w, 24*s, 2*s), P((x + 1.5*s, ground - 24*s), (x + 1.5*s, ground - 32*s), (x + w - 1.5*s, ground - 32*s), (x + w - 1.5*s, ground - 24*s)),
+            f"M{f(x + 3*s)} {f(ground - 32*s)} L{f(x + 3*s)} {f(ground - 42*s)} Q{f(x + 3*s)} {f(ground - 44*s)} {f(x + 6*s)} {f(ground - 46*s)} L{f(x + w - 3*s)} {f(ground - 50*s)} L{f(x + w - 3*s)} {f(ground - 32*s)}",
+            P((x, ground - 10*s), (x + w, ground - 10*s))]
+
+def palette(x, ground, s=1.0):
+    """An eyeshadow palette lying open, seen from the front at an angle."""
+    out = [P((x, ground), (x + 70*s, ground), (x + 64*s, ground - 24*s), (x + 6*s, ground - 24*s), close=True)]
+    for r in range(2):
+        for c in range(4):
+            cx = x + 15*s + c*13.5*s - r*1.5*s + (1 - r)*0.0; cy = ground - 6*s - r*11*s
+            out.append(ellipse(cx + r*2*s, cy, 5*s, 3.4*s))
+    return out
+
+def hand_mirror(x, ground, s=1.0):
+    """A bridal hand mirror with a scalloped frame, standing on its handle."""
+    cy = ground - 62*s
+    out = [ellipse(x, cy, 20*s, 25*s), ellipse(x, cy, 15*s, 20*s)]
+    for k in range(14):
+        a = math.radians(k*360/14); out.append(circle(x + 23*s*math.sin(a), cy - 28*s*math.cos(a), 2.2*s))
+    out.append(f"M{f(x - 4*s)} {f(cy + 25*s)} L{f(x - 3*s)} {f(ground - 6*s)} Q{f(x)} {f(ground)} {f(x + 3*s)} {f(ground - 6*s)} L{f(x + 4*s)} {f(cy + 25*s)}")
+    out.append(f"M{f(x - 8*s)} {f(cy - 8*s)} Q{f(x - 6*s)} {f(cy - 16*s)} {f(x + 2*s)} {f(cy - 17*s)}")
+    return out
+
+def jhumka(x, y, s=1.0):
+    """A pair of jhumka earrings hanging from a stand."""
+    out = [P((x - 28*s, y), (x + 28*s, y)), P((x - 24*s, y), (x - 24*s, G)), P((x + 24*s, y), (x + 24*s, G)), P((x - 30*s, G), (x - 18*s, G)), P((x + 18*s, G), (x + 30*s, G))]
+    for dx in (-10, 10):
+        cx = x + dx*s
+        out += [P((cx, y), (cx, y + 8*s)), circle(cx, y + 12*s, 4*s),
+                f"M{f(cx - 10*s)} {f(y + 34*s)} Q{f(cx - 10*s)} {f(y + 18*s)} {f(cx)} {f(y + 17*s)} Q{f(cx + 10*s)} {f(y + 18*s)} {f(cx + 10*s)} {f(y + 34*s)} Z"]
+        for k in range(5): out.append(circle(cx - 8*s + k*4*s, y + 37*s, 1.3*s))
+    return out
+
+def razor(x, ground, s=1.0):
+    """A barber's straight razor lying open: a slim handle, the pivot, and the blade with its curved edge."""
+    px, py = x + 46*s, ground - 3*s
+    out = [f"M{f(x)} {f(ground)} Q{f(x + 22*s)} {f(ground - 5*s)} {f(px)} {f(py - 2.5*s)} L{f(px)} {f(py + 2.5*s)} Q{f(x + 22*s)} {f(ground + 3*s)} {f(x)} {f(ground)}",
+           circle(px, py, 2*s)]
+    a = math.radians(-16); ux, uy = math.cos(a), math.sin(a); vx, vy = -uy, ux
+    q = lambda u, v: (px + ux*u + vx*v, py + uy*u + vy*v)
+    s0, s1, e1, e0 = q(4*s, -3*s), q(52*s, -3*s), q(54*s, 9*s), q(10*s, 7*s)
+    out.append(f"M{f(s0[0])} {f(s0[1])} L{f(s1[0])} {f(s1[1])} Q{f(q(57*s, 2*s)[0])} {f(q(57*s, 2*s)[1])} {f(e1[0])} {f(e1[1])} Q{f(q(30*s, 12*s)[0])} {f(q(30*s, 12*s)[1])} {f(e0[0])} {f(e0[1])} Z")
+    t0, t1 = q(4*s, -3*s), q(-6*s, -8*s)
+    out.append(f"M{f(t0[0])} {f(t0[1])} Q{f(q(-2*s, -7*s)[0])} {f(q(-2*s, -7*s)[1])} {f(t1[0])} {f(t1[1])}")
+    out.append(P(q(14*s, -1*s), q(46*s, -1*s)))
+    return out
+
+def shaving_brush(x, ground, s=1.0):
+    """A shaving brush standing on its handle, bristles up."""
+    out = [f"M{f(x - 10*s)} {f(ground)} L{f(x + 10*s)} {f(ground)} Q{f(x + 6*s)} {f(ground - 14*s)} {f(x + 8*s)} {f(ground - 28*s)} L{f(x - 8*s)} {f(ground - 28*s)} Q{f(x - 6*s)} {f(ground - 14*s)} {f(x - 10*s)} {f(ground)}",
+           P((x - 9*s, ground - 6*s), (x + 9*s, ground - 6*s))]
+    out.append(f"M{f(x - 8*s)} {f(ground - 28*s)} C{f(x - 22*s)} {f(ground - 40*s)} {f(x - 16*s)} {f(ground - 62*s)} {f(x)} {f(ground - 62*s)} C{f(x + 16*s)} {f(ground - 62*s)} {f(x + 22*s)} {f(ground - 40*s)} {f(x + 8*s)} {f(ground - 28*s)}")
+    for k in (-2, -1, 0, 1, 2):
+        out.append(f"M{f(x + k*3*s)} {f(ground - 30*s)} Q{f(x + k*5.5*s)} {f(ground - 44*s)} {f(x + k*4.5*s)} {f(ground - 56*s + abs(k)*2*s)}")
+    return out
+
+def groom():
+    o = []
+    o += brush_cup(20, G, 1.0) + lipstick(66, G, 1.0) + lipstick(84, G, 0.85) + compact(140, G, 1.0) + sparkle(176, 44, 5)
+    o += hand_mirror(230, G, 1.0) + palette(268, G, 1.0) + sparkle(318, 64, 5)
+    o += jhumka(390, 48, 1.0) + sparkle(440, 40, 6)
+    o += razor(460, G, 1.0) + shaving_brush(580, G, 1.0) + sprig(620, G, 50, 8)
+    o += brush_cup(660, G, 0.9) + compact(740, G, 0.9) + lipstick(780, G, 0.95) + sparkle(812, 52, 5)
+    o += hand_mirror(860, G, 0.9) + jhumka(950, 54, 0.85) + palette(1000, G, 0.9)
+    o += shaving_brush(1100, G, 0.9) + razor(1124, G, 0.85) + sparkle(1238, 50, 5)
+    o.append(P((0, G), (W, G)))
+    return o
+
+# ---------------------------------------------------------------- Ayurveda & massage
+
+def kindi(x, ground, s=1.0):
+    """A kindi: the round spouted vessel used to pour oil."""
+    cy = ground - 20*s
+    out = [f"M{f(x - 8*s)} {f(ground)} L{f(x + 8*s)} {f(ground)} L{f(x + 10*s)} {f(ground - 3*s)} C{f(x + 26*s)} {f(ground - 8*s)} {f(x + 26*s)} {f(cy - 14*s)} {f(x + 8*s)} {f(cy - 18*s)}"
+           f" L{f(x + 7*s)} {f(cy - 30*s)} L{f(x - 7*s)} {f(cy - 30*s)} L{f(x - 8*s)} {f(cy - 18*s)} C{f(x - 26*s)} {f(cy - 14*s)} {f(x - 26*s)} {f(ground - 8*s)} {f(x - 10*s)} {f(ground - 3*s)} Z"]
+    out.append(ellipse(x, cy - 30*s, 10*s, 2.5*s))
+    out.append(f"M{f(x + 20*s)} {f(cy - 2*s)} C{f(x + 30*s)} {f(cy - 8*s)} {f(x + 34*s)} {f(cy - 20*s)} {f(x + 40*s)} {f(cy - 26*s)} L{f(x + 42*s)} {f(cy - 23*s)} C{f(x + 36*s)} {f(cy - 16*s)} {f(x + 32*s)} {f(cy + 2*s)} {f(x + 22*s)} {f(cy + 6*s)}")
+    out.append(f"M{f(x - 18*s)} {f(cy - 2*s)} Q{f(x)} {f(cy + 4*s)} {f(x + 18*s)} {f(cy - 2*s)}")
+    return out
+
+def uruli(x, ground, s=1.0):
+    """A wide bronze uruli with flowers floating in it."""
+    out = [ellipse(x, ground - 18*s, 40*s, 6*s), f"M{f(x - 40*s)} {f(ground - 18*s)} C{f(x - 38*s)} {f(ground - 2*s)} {f(x + 38*s)} {f(ground - 2*s)} {f(x + 40*s)} {f(ground - 18*s)}",
+           ellipse(x, ground - 1*s, 12*s, 1.5*s), P((x - 46*s, ground - 19*s), (x - 40*s, ground - 18*s)), P((x + 40*s, ground - 18*s), (x + 46*s, ground - 19*s))]
+    for dx, r in ((-18, 4), (0, 5), (17, 4)):
+        cx = x + dx*s; cy = ground - 19*s
+        for k in range(5):
+            a = math.radians(k*72); out.append(ellipse(cx + r*0.9*s*math.cos(a), cy + r*0.3*s*math.sin(a), r*0.55*s, r*0.3*s))
+    return out
+
+def droni(x, ground, s=1.0):
+    """A droni: the carved wooden Ayurvedic massage table, with a folded towel and a bowl of oil."""
+    L, top = 150*s, ground - 34*s
+    out = [f"M{f(x)} {f(top)} L{f(x + L)} {f(top)} Q{f(x + L + 6*s)} {f(top)} {f(x + L + 4*s)} {f(top + 6*s)} L{f(x + L - 4*s)} {f(top + 12*s)} L{f(x + 4*s)} {f(top + 12*s)} L{f(x - 4*s)} {f(top + 6*s)} Q{f(x - 6*s)} {f(top)} {f(x)} {f(top)}",
+           f"M{f(x + 6*s)} {f(top + 4*s)} Q{f(x + L/2)} {f(top + 10*s)} {f(x + L - 6*s)} {f(top + 4*s)}"]
+    for lx in (x + 14*s, x + L - 14*s):
+        out += [P((lx - 4*s, top + 12*s), (lx - 6*s, ground)), P((lx + 4*s, top + 12*s), (lx + 6*s, ground))]
+    out.append(P((x + 14*s, ground - 8*s), (x + L - 14*s, ground - 8*s)))
+    out.append(rrect(x + 10*s, top - 7*s, 30*s, 7*s, 3*s)); out.append(P((x + 16*s, top - 3.5*s), (x + 34*s, top - 3.5*s)))
+    out.append(f"M{f(x + L - 34*s)} {f(top - 1*s)} Q{f(x + L - 24*s)} {f(top - 10*s)} {f(x + L - 14*s)} {f(top - 1*s)} Z")
+    return out
+
+def dhara(x, ground, s=1.0):
+    """Shirodhara: a pot hanging from a wooden frame, a thin stream of oil falling into a bowl."""
+    top = ground - 114*s
+    out = [P((x - 30*s, ground), (x - 30*s, top)), P((x + 30*s, ground), (x + 30*s, top)), P((x - 36*s, top), (x + 36*s, top))]
+    out += [P((x - 6*s, top), (x - 12*s, top + 22*s)), P((x + 6*s, top), (x + 12*s, top + 22*s)), P((x, top), (x, top + 18*s))]
+    out.append(f"M{f(x - 16*s)} {f(top + 22*s)} C{f(x - 18*s)} {f(top + 44*s)} {f(x + 18*s)} {f(top + 44*s)} {f(x + 16*s)} {f(top + 22*s)} Z")
+    out.append(P((x, top + 38*s), (x, top + 40*s)))
+    d = f"M{f(x)} {f(top + 42*s)}"
+    for k in range(6): d += f" q{f((1 if k % 2 else -1)*1.2*s)} {f(5*s)} 0 {f(10*s)}"
+    out.append(d)
+    out.append(f"M{f(x - 16*s)} {f(ground - 14*s)} Q{f(x)} {f(ground + 2*s)} {f(x + 16*s)} {f(ground - 14*s)} Z")
+    for k in (-1, 1): out.append(f"M{f(x + k*5*s)} {f(ground - 18*s)} q{f(k*2*s)} {f(-3*s)} {f(k*5*s)} {f(-2*s)}")
+    return out
+
+def banana_leaf(x, ground, s=1.0):
+    """Herbs, flowers and a mortar of crushed leaves laid out on a banana leaf."""
+    L = 110*s
+    out = [f"M{f(x)} {f(ground - 2*s)} Q{f(x + L*0.5)} {f(ground - 22*s)} {f(x + L)} {f(ground - 6*s)} Q{f(x + L*0.5)} {f(ground + 2*s)} {f(x)} {f(ground - 2*s)}",
+           f"M{f(x + 2*s)} {f(ground - 2.5*s)} Q{f(x + L*0.5)} {f(ground - 11*s)} {f(x + L - 4*s)} {f(ground - 6*s)}"]
+    for k in range(7):
+        t = 0.12 + k*0.12; px = x + L*t; py = ground - 2*s - 18*s*t*(1 - t)*1.6
+        out.append(P((px, py), (px + 6*s, py - 7*s*(1 - t))))
+    out += leaf(x + 26*s, ground - 12*s, 16*s, -60) + leaf(x + 30*s, ground - 12*s, 14*s, 10)
+    cx = x + 74*s
+    out.append(f"M{f(cx - 12*s)} {f(ground - 16*s)} Q{f(cx)} {f(ground - 2*s)} {f(cx + 12*s)} {f(ground - 16*s)} Z")
+    out.append(P((cx + 4*s, ground - 14*s), (cx + 14*s, ground - 34*s)))
+    out.append(circle(cx + 14.5*s, ground - 35*s, 2.2*s))
+    for k in range(5):
+        a = math.radians(k*72); out.append(circle(x + 52*s + 3*s*math.cos(a), ground - 15*s + 3*s*math.sin(a), 1.8*s))
+    return out
+
+def stones(x, ground, s=1.0):
+    out = []
+    for i, (w, h) in enumerate(((30, 8), (24, 7), (18, 6), (12, 5))):
+        y = ground - sum(hh for _, hh in ((30, 8), (24, 7), (18, 6), (12, 5))[:i])*s*1.6 - h*s*0.8
+        out.append(ellipse(x, y, w*s/2 + 2*s, h*s*0.8))
+    return out + leaf(x + 6*s, ground - 34*s, 12*s, 40)
+
+def ayur():
+    o = []
+    o += sprig(16, G, 70, 8, 3) + kindi(64, G, 1.0) + uruli(160, G, 1.0)
+    o += dhara(262, G, 1.0) + droni(320, G, 1.0) + sparkle(500, 46, 5)
+    o += banana_leaf(512, G, 1.0) + stones(660, G, 1.0) + sprig(700, G, 56, -6)
+    o += kindi(744, G, 0.9) + uruli(830, G, 0.85) + sparkle(890, 56, 5)
+    o += droni(910, G, 0.82) + dhara(1080, G, 0.88) + banana_leaf(1124, G, 0.85) + sprig(1240, G, 50, -6)
+    o.append(P((0, G), (W, G)))
+    return o
+
+# ---------------------------------------------------------------- Smile & dental
+
+def tooth(cx, ground, s=1.0, shine=True):
+    """A molar standing on its roots."""
+    top = ground - 56*s
+    out = [f"M{f(cx - 22*s)} {f(top + 14*s)} C{f(cx - 24*s)} {f(top)} {f(cx - 10*s)} {f(top - 4*s)} {f(cx)} {f(top + 4*s)} C{f(cx + 10*s)} {f(top - 4*s)} {f(cx + 24*s)} {f(top)} {f(cx + 22*s)} {f(top + 14*s)}"
+           f" C{f(cx + 21*s)} {f(top + 26*s)} {f(cx + 16*s)} {f(top + 34*s)} {f(cx + 14*s)} {f(top + 46*s)} C{f(cx + 13*s)} {f(ground - 2*s)} {f(cx + 7*s)} {f(ground)} {f(cx + 5*s)} {f(ground - 8*s)}"
+           f" C{f(cx + 3*s)} {f(top + 36*s)} {f(cx - 3*s)} {f(top + 36*s)} {f(cx - 5*s)} {f(ground - 8*s)} C{f(cx - 7*s)} {f(ground)} {f(cx - 13*s)} {f(ground - 2*s)} {f(cx - 14*s)} {f(top + 46*s)}"
+           f" C{f(cx - 16*s)} {f(top + 34*s)} {f(cx - 21*s)} {f(top + 26*s)} {f(cx - 22*s)} {f(top + 14*s)} Z"]
+    if shine: out.append(f"M{f(cx - 14*s)} {f(top + 8*s)} Q{f(cx - 13*s)} {f(top + 2*s)} {f(cx - 7*s)} {f(top + 2*s)}")
+    return out
+
+def toothbrush(x, ground, s=1.0, lean=-14):
+    a = math.radians(lean); ux, uy = math.sin(a), -math.cos(a); vx, vy = -uy, ux
+    p = lambda u, v: (x + ux*u + vx*v, ground + uy*u + vy*v)
+    out = [f"M{f(p(0, -3*s)[0])} {f(p(0, -3*s)[1])} L{f(p(60*s, -2*s)[0])} {f(p(60*s, -2*s)[1])} L{f(p(78*s, -2.5*s)[0])} {f(p(78*s, -2.5*s)[1])} L{f(p(78*s, 2.5*s)[0])} {f(p(78*s, 2.5*s)[1])} L{f(p(60*s, 2*s)[0])} {f(p(60*s, 2*s)[1])} L{f(p(0, 3*s)[0])} {f(p(0, 3*s)[1])} Z"]
+    for u in range(62, 79, 3): out.append(P(p(u*s, 2.5*s), p(u*s, 9*s)))
+    return out
+
+def cup(x, ground, s=1.0):
+    return [P((x, ground - 30*s), (x + 3*s, ground), (x + 21*s, ground), (x + 24*s, ground - 30*s)), ellipse(x + 12*s, ground - 30*s, 12*s, 2.5*s)]
+
+def mirror_probe(x, ground, s=1.0):
+    """A dental mirror and a probe crossed on a tray."""
+    out = [rrect(x, ground - 6*s, 90*s, 6*s, 3*s)]
+    out.append(P((x + 8*s, ground - 9*s), (x + 64*s, ground - 18*s)))
+    out.append(oval(x + 72*s, ground - 19.5*s, 7*s, 5*s, -10)); out.append(oval(x + 72*s, ground - 19.5*s, 4.5*s, 3*s, -10))
+    out.append(f"M{f(x + 24*s)} {f(ground - 24*s)} L{f(x + 76*s)} {f(ground - 10*s)} Q{f(x + 82*s)} {f(ground - 9*s)} {f(x + 84*s)} {f(ground - 14*s)}")
+    return out
+
+def dental_chair(x, ground, s=1.0):
+    """A dental chair, reclined, with its overhead lamp."""
+    out = [P((x - 20*s, ground), (x + 40*s, ground)), P((x + 6*s, ground), (x + 6*s, ground - 26*s)), P((x + 14*s, ground), (x + 14*s, ground - 26*s))]
+    out.append(f"M{f(x - 30*s)} {f(ground - 30*s)} L{f(x + 46*s)} {f(ground - 30*s)} Q{f(x + 54*s)} {f(ground - 30*s)} {f(x + 56*s)} {f(ground - 22*s)} L{f(x + 60*s)} {f(ground - 12*s)}")
+    out.append(f"M{f(x - 30*s)} {f(ground - 30*s)} L{f(x - 30*s)} {f(ground - 38*s)} L{f(x + 40*s)} {f(ground - 38*s)} L{f(x + 48*s)} {f(ground - 30*s)}")
+    out.append(f"M{f(x - 30*s)} {f(ground - 34*s)} L{f(x - 58*s)} {f(ground - 62*s)} Q{f(x - 62*s)} {f(ground - 66*s)} {f(x - 56*s)} {f(ground - 68*s)} L{f(x - 24*s)} {f(ground - 40*s)}")
+    out.append(rrect(x - 70*s, ground - 78*s, 14*s, 8*s, 4*s))
+    out.append(P((x + 60*s, ground), (x + 60*s, ground - 104*s), (x + 8*s, ground - 104*s), (x - 10*s, ground - 92*s)))
+    out.append(f"M{f(x - 26*s)} {f(ground - 90*s)} Q{f(x - 10*s)} {f(ground - 102*s)} {f(x + 4*s)} {f(ground - 86*s)} Z")
+    for k in (-1, 0, 1): out.append(P((x - 11*s + k*7*s, ground - 84*s), (x - 13*s + k*10*s, ground - 76*s)))
+    return out
+
+def smile(cx, cy, s=1.0):
+    """A wide smile: upper lip, lower lip and a row of teeth."""
+    out = [f"M{f(cx - 34*s)} {f(cy)} Q{f(cx - 16*s)} {f(cy - 12*s)} {f(cx)} {f(cy - 6*s)} Q{f(cx + 16*s)} {f(cy - 12*s)} {f(cx + 34*s)} {f(cy)}",
+           f"M{f(cx - 34*s)} {f(cy)} Q{f(cx)} {f(cy + 26*s)} {f(cx + 34*s)} {f(cy)}",
+           f"M{f(cx - 26*s)} {f(cy + 1*s)} Q{f(cx)} {f(cy - 3*s)} {f(cx + 26*s)} {f(cy + 1*s)} Q{f(cx)} {f(cy + 12*s)} {f(cx - 26*s)} {f(cy + 1*s)}"]
+    for k in range(-3, 4):
+        x = cx + k*7*s; out.append(P((x, cy - 0.5*s - (3 - abs(k))*0.4*s), (x, cy + 6*s - abs(k)*0.9*s)))
+    return out
+
+def paste(x, ground, s=1.0):
+    return [f"M{f(x)} {f(ground)} L{f(x + 54*s)} {f(ground)} L{f(x + 60*s)} {f(ground - 6*s)} L{f(x + 54*s)} {f(ground - 12*s)} L{f(x)} {f(ground - 12*s)} Z",
+            rrect(x + 60*s, ground - 9*s, 8*s, 6*s, 1.5*s), P((x + 6*s, ground - 6*s), (x + 30*s, ground - 6*s)), P((x + 4*s, ground), (x + 4*s, ground - 12*s))]
+
+def dental():
+    o = []
+    o += tooth(40, G, 1.0) + sparkle(70, 66, 6) + cup(92, G, 1.0) + toothbrush(98, G - 26, 0.8, 14) + toothbrush(106, G - 26, 0.8, -6)
+    o += mirror_probe(140, G, 1.0) + smile(300, 72, 1.1) + sparkle(352, 48, 5)
+    o += dental_chair(450, G, 1.0) + sprig(540, G, 52, 6)
+    o += paste(570, G, 1.0) + tooth(680, G, 0.9) + sparkle(706, 60, 5)
+    o += smile(800, 74, 0.95) + mirror_probe(850, G, 0.9)
+    o += cup(966, G, 0.95) + toothbrush(976, G - 24, 0.75, -10) + tooth(1040, G, 1.05) + sparkle(1074, 56, 6)
+    o += dental_chair(1160, G, 0.9) + sprig(1240, G, 44, -6)
+    o.append(P((0, G), (W, G)))
+    return o
+
+DRAW = {"nails": nails, "hair": hair, "skin": skin, "groom": groom, "ayur": ayur, "dental": dental}
 
 if __name__ == "__main__":
     out = sys.argv[1]
