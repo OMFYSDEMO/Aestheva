@@ -1,6 +1,7 @@
 // One page per kind of business (/for-practitioners/<trade>): what Aestheva does for that trade, what we check, its questions.
 // Each is aimed at what an owner searches for, and is the landing page for that trade's Google Ads ad group.
 import { COMPANY, INCENTIVES, POLICY } from "../config";
+import { catBand } from "./category-art";
 import { freePeriod } from "../services/incentives";
 import { esc, ic } from "./ui";
 
@@ -137,7 +138,7 @@ export function tradePage(t: Trade, placesLeft: number) {
     ["We check by scope", t.checks],
     ["Go live", "Your profile, services and free times appear on Aestheva, and bookings arrive in your calendar."],
   ];
-  return `<div class="page join trade" style="padding-top:0">
+  return `<div class="page join trade" style="padding-top:0">${catBand(t.cat)}
   <section class="story-hero">
     <div>
       <div class="eyebrow" style="color:var(--sage-d)">${t.eyebrow} · ${esc(COMPANY.launchCity)}</div>

@@ -1,4 +1,5 @@
 import { COMPANY, LOCALITIES, POLICY, SERVICE_AREA, WAITLIST_CITIES, ZONES, typeLabel } from "../config";
+import { catBand } from "./category-art";
 import { kmLabel } from "../domain/geo";
 import { TOPICS } from "../content/topics";
 import { campaignBanner } from "./campaign";
@@ -216,7 +217,7 @@ export function searchPage(d: {
           <a class="btn btn-p btn-s" href="/p/${esc(p.slug)}">See services &amp; times</a></div>
       </div></article>`;
   }).join("");
-  return `<div class="page">
+  return `<div class="page">${f.cat && !f.q ? catBand(f.cat) : ""}
     ${d.anyLive ? campaignBanner(d.today, d.welcome ?? 0, true, d.beauty) : ""}
     <div class="row between wrap" style="gap:16px">
       <div><div class="eyebrow">${esc(COMPANY.launchCity)}${f.area ? " · " + esc(f.area) : f.near ? " · Near you" : ""}</div><h1 class="mt8" style="font-size:clamp(30px,3.6vw,40px)">${title}</h1>${f.offers ? `<p class="small muted mt8">Showing services with a quiet-hour offer. Pick a gold time when you book.</p>` : ""}${fromLabel ? `<p class="small muted mt8">Nearest to ${fromLabel} first. Distances are straight-line and approximate.</p>` : f.cat && !f.q && CAT_META[f.cat] ? `<p class="muted mt8">${esc(CAT_META[f.cat].line)} Compare full prices and book a free time online.</p>` : ""}</div>

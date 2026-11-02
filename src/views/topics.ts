@@ -1,5 +1,6 @@
 // Service guide pages: "Teeth cleaning in Trivandrum", with live places, full prices and plain answers.
 import { SERVICE_AREA } from "../config";
+import { catBand } from "./category-art";
 import type { Topic } from "../content/topics";
 import { fmtTime, relDay } from "../domain/time";
 import type { ProviderRow, ServiceRow } from "../services/catalog";
@@ -18,7 +19,7 @@ export function topicPage(d: { t: Topic; rows: TopicRow[]; related: Topic[]; tod
   const where = SERVICE_AREA.short;
   const areas = [...new Set(rows.map((r) => r.p.area))];
   const durs = [...new Set(rows.map((r) => r.s.dur_min))].sort((a, b) => a - b);
-  return `<div class="page topic" style="padding-top:0">
+  return `<div class="page topic" style="padding-top:0">${catBand(t.cat)}
   <section class="story-hero topic-hero">
     <div>
       <a class="btn btn-g btn-s" href="/trivandrum" style="margin-left:-10px">${ic("chevL", 16)} Service guides</a>
