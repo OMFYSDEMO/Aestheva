@@ -71,11 +71,12 @@ export async function pruneClickIds(db: D1Database) {
 
 export const CONVERSIONS = { applied: "Aestheva business application", live: "Aestheva business went live" } as const;
 
-/** "2026-11-02 14:05:09" in India time, for the upload file's Asia/Calcutta time zone. */
-const ist = (iso: string) => new Date(Date.parse(iso) + 330 * 60e3).toISOString().slice(0, 19).replace("T", " ");
+/** "2026-11-02 14:05:09+05:30": India time with its offset, so the file needs no separate time-zone line. */
+const ist = (iso: string) => new Date(Date.parse(iso) + 330 * 60e3).toISOString().slice(0, 19).replace("T", " ") + "+05:30";
 
 /**
- * Google Ads offline conversions (Goals > Conversions > Uploads), one row per conversion with a Google click ID:
+ * Google Ads offline conversions (a File upload data source, or Goals > Conversions > Uploads), one row per conversion
+ * with a Google click ID. Column names are in the first row, as Google's file connection requires:
  * the application, and the day that business went live. Create two conversion actions in Google Ads with exactly these names
  * (source "Import", "Track conversions from clicks") before the first upload.
  */
@@ -84,7 +85,7 @@ export async function conversionsCsv(db: D1Database) {
       (SELECT MIN(l.at) FROM audit_log l WHERE l.action = 'provider.live' AND l.entity_id = a.provider_id) AS live_at
     FROM applications a WHERE a.ad_source <> '' AND json_extract(a.ad_source, '$.gclid') IS NOT NULL ORDER BY a.created_at`)
     .all<{ ad_source: string; created_at: string; provider_id: string | null; live_at: string | null }>()).results;
-  const lines = ["Parameters:TimeZone=Asia/Calcutta", "Google Click ID,Conversion Name,Conversion Time,Conversion Value,Conversion Currency"];
+  const lines = ["Google Click ID,Conversion Name,Conversion Time,Conversion Value,Conversion Currency"];
   for (const r of rows) {
     const g = parseSource(r.ad_source).gclid!;
     lines.push(`${g},${CONVERSIONS.applied},${ist(r.created_at)},,INR`);

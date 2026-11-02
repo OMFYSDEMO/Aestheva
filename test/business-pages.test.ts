@@ -87,11 +87,10 @@ describe("where applications come from", () => {
     await sql("INSERT INTO audit_log (actor, action, entity, entity_id, at) VALUES ('ops', 'provider.live', 'provider', 'prov_fake_live', '2026-11-20T04:30:00.000Z')");
     await sql("UPDATE applications SET provider_id = 'prov_fake_live', created_at = '2026-11-02T08:35:00.000Z' WHERE ref = ?", ref);
     const csv = (await send("GET", "/ops/ads/conversions.csv", undefined, cookie)).text.split("\n");
-    expect(csv.slice(0, 4)).toEqual([
-      "Parameters:TimeZone=Asia/Calcutta",
+    expect(csv.slice(0, 3)).toEqual([
       "Google Click ID,Conversion Name,Conversion Time,Conversion Value,Conversion Currency",
-      "Cj0KCQiA_salon42,Aestheva business application,2026-11-02 14:05:00,,INR",
-      "Cj0KCQiA_salon42,Aestheva business went live,2026-11-20 10:00:00,,INR",
+      "Cj0KCQiA_salon42,Aestheva business application,2026-11-02 14:05:00+05:30,,INR",
+      "Cj0KCQiA_salon42,Aestheva business went live,2026-11-20 10:00:00+05:30,,INR",
     ]);
 
     // After 90 days the click ID goes; the campaign stays.

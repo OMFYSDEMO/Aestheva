@@ -174,7 +174,7 @@ export function opsAdsPage(rows: Awaited<ReturnType<typeof sourceReport>>) {
       ${rows.map((r) => `<tr><td><b>${esc(r.group)}</b></td><td>${r.applied}</td><td>${r.approved}</td><td>${r.live}</td><td class="small">${[...r.landings].sort((a, b) => b[1] - a[1]).map(([p, n]) => `${esc(p)} (${n})`).join(", ") || "<span class='muted'>—</span>"}</td></tr>`).join("")}
     </tbody></table></div>` : `<div class="card mt24" style="text-align:center;padding:40px"><p class="muted">No applications yet.</p></div>`}
     <div class="card mt24"><h2 style="font-size:22px">Uploading to Google Ads</h2><ol class="small mt12" style="padding-left:20px;line-height:1.7">
-      <li>Once, in Google Ads under Goals, Conversions: create two conversion actions of the kind <b>Import</b>, then <b>Track conversions from clicks</b>, named exactly <b>${esc(CONVERSIONS.applied)}</b> and <b>${esc(CONVERSIONS.live)}</b>.</li>
-      <li>Each week, press <b>Download for Google Ads</b> above and upload the file under Goals, Conversions, Uploads. Google ignores rows it has seen before.</li>
+      <li>Once, in Google Ads under Goals, Conversions: add an offline data source of the kind <b>File upload</b> (Google click ID, no enhanced conversions) and two conversion actions, named exactly <b>${esc(CONVERSIONS.applied)}</b> and <b>${esc(CONVERSIONS.live)}</b>.</li>
+      <li>Each week, press <b>Download for Google Ads</b> above and upload it to that File upload source in Google Ads (Goals, Conversions, Uploads, or Tools, Data Manager). Google ignores rows it has seen before.</li>
       <li>Click IDs are deleted from applications after ${CLICK_ID_DAYS} days, the longest Google accepts them. Campaign names and landing pages stay for this report.</li></ol></div>`;
 }
