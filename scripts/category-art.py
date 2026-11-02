@@ -593,7 +593,223 @@ def dental():
     o.append(P((0, G), (W, G)))
     return o
 
-DRAW = {"nails": nails, "hair": hair, "skin": skin, "groom": groom, "ayur": ayur, "dental": dental}
+# ---------------------------------------------------------------- Physio & body
+
+def ball(cx, ground, r=26, s=1.0):
+    r *= s; cy = ground - r
+    return [circle(cx, cy, r), f"M{f(cx - r*0.92)} {f(cy - r*0.3)} Q{f(cx)} {f(cy + r*0.25)} {f(cx + r*0.92)} {f(cy - r*0.3)}",
+            f"M{f(cx - r*0.45)} {f(cy - r*0.88)} Q{f(cx - r*0.05)} {f(cy)} {f(cx - r*0.45)} {f(cy + r*0.88)}",
+            f"M{f(cx - r*0.62)} {f(cy - r*0.62)} Q{f(cx - r*0.55)} {f(cy - r*0.78)} {f(cx - r*0.32)} {f(cy - r*0.84)}"]
+
+def reformer(x, ground, s=1.0):
+    """A Pilates reformer: frame on low legs, sliding carriage with shoulder rests, springs and the foot bar."""
+    L, top = 170*s, ground - 18*s
+    out = [rrect(x, top - 6*s, L, 6*s, 3*s), P((x + 8*s, top), (x + 8*s, ground)), P((x + L - 8*s, top), (x + L - 8*s, ground))]
+    out.append(rrect(x + 70*s, top - 14*s, 64*s, 8*s, 3*s))
+    out += [rrect(x + 126*s, top - 26*s, 6*s, 12*s, 2*s), rrect(x + 116*s, top - 26*s, 6*s, 12*s, 2*s)]
+    out.append(rrect(x + 136*s, top - 18*s, 22*s, 10*s, 4*s))
+    for k in range(3):
+        y = top - 3*s - k*1.2*s; d = f"M{f(x + 22*s)} {f(y)}"
+        for i in range(8): d += f" l{f(3*s)} {f(-2*s if i % 2 else 2*s)}"
+        out.append(d + f" L{f(x + 70*s)} {f(y)}")
+    out.append(P((x + 10*s, top - 6*s), (x + 2*s, top - 40*s), (x + 18*s, top - 40*s), (x + 22*s, top - 6*s)))
+    out.append(P((x + L - 4*s, top - 6*s), (x + L - 4*s, top - 54*s))); out.append(P((x + L - 10*s, top - 54*s), (x + L + 2*s, top - 54*s)))
+    out.append(f"M{f(x + L - 4*s)} {f(top - 50*s)} Q{f(x + L - 30*s)} {f(top - 40*s)} {f(x + 130*s)} {f(top - 30*s)}")
+    return out
+
+def spine(cx, ground, s=1.0):
+    """The spine as a column of vertebrae on a stand, with its gentle S curve."""
+    out = [P((cx - 20*s, ground), (cx + 20*s, ground)), P((cx, ground), (cx, ground - 8*s))]
+    n = 13
+    for i in range(n):
+        t = i/(n-1); y = ground - 12*s - t*92*s; x = cx + 7*s*math.sin(t*math.pi*1.6)
+        w = (10 - t*4)*s; h = 3.6*s
+        out.append(rrect(x - w/2, y - h, w, h, 1.6*s))
+        out.append(P((x + w/2, y - h/2), (x + w/2 + 5*s, y - h/2 + 2*s)))
+    out.append(oval(cx + 6*s, ground - 112*s, 9*s, 6*s, -10))
+    return out
+
+def band_loop(x, y, s=1.0):
+    return [oval(x, y, 26*s, 9*s, -12), oval(x + 3*s, y + 1*s, 22*s, 6*s, -12)]
+
+def foam_roller(x, ground, s=1.0):
+    r, L = 10*s, 60*s
+    return [ellipse(x, ground - r, r*0.45, r), P((x, ground - 2*r), (x + L, ground - 2*r)), P((x, ground), (x + L, ground)),
+            f"M{f(x + L)} {f(ground - 2*r)} A{f(r*0.45)} {f(r)} 0 0 1 {f(x + L)} {f(ground)}"] + [P((x + k*s, ground - 2*r), (x + k*s + 4*s, ground)) for k in range(12, 60, 12)]
+
+def kettlebell(cx, ground, s=1.0):
+    return [f"M{f(cx - 14*s)} {f(ground)} C{f(cx - 24*s)} {f(ground - 12*s)} {f(cx - 20*s)} {f(ground - 30*s)} {f(cx)} {f(ground - 30*s)} C{f(cx + 20*s)} {f(ground - 30*s)} {f(cx + 24*s)} {f(ground - 12*s)} {f(cx + 14*s)} {f(ground)} Z",
+            f"M{f(cx - 11*s)} {f(ground - 27*s)} C{f(cx - 14*s)} {f(ground - 46*s)} {f(cx + 14*s)} {f(ground - 46*s)} {f(cx + 11*s)} {f(ground - 27*s)}",
+            f"M{f(cx - 6*s)} {f(ground - 29*s)} C{f(cx - 7*s)} {f(ground - 39*s)} {f(cx + 7*s)} {f(ground - 39*s)} {f(cx + 6*s)} {f(ground - 29*s)}"]
+
+def mat(x, ground, s=1.0):
+    r = 11*s
+    return [circle(x + r, ground - r, r), circle(x + r, ground - r, r*0.45), P((x + r, ground), (x + 70*s, ground)),
+            f"M{f(x + r)} {f(ground - 2*r)} Q{f(x + 2.4*r)} {f(ground - 2*r)} {f(x + 2*r)} {f(ground - 0.4*r)}"]
+
+def plinth(x, ground, s=1.0):
+    """A physiotherapy treatment couch with a raised back section and a pillow."""
+    L, top = 120*s, ground - 40*s
+    out = [rrect(x, top, L, 8*s, 3*s), P((x + 10*s, top + 8*s), (x + 10*s, ground)), P((x + L - 10*s, top + 8*s), (x + L - 10*s, ground)),
+           P((x + 10*s, ground - 10*s), (x + L - 10*s, ground - 10*s))]
+    out.append(f"M{f(x + L - 36*s)} {f(top)} L{f(x + L - 8*s)} {f(top - 22*s)} Q{f(x + L - 3*s)} {f(top - 22*s)} {f(x + L - 4*s)} {f(top - 16*s)} L{f(x + L - 28*s)} {f(top)}")
+    out.append(oval(x + L - 18*s, top - 16*s, 9*s, 4*s, -38))
+    return out
+
+def body():
+    o = []
+    o += sprig(16, G, 56, 6) + ball(70, G, 30) + band_loop(140, G - 9, 0.9) + sparkle(178, 44, 5)
+    o += reformer(196, G, 1.0) + spine(420, G, 1.0) + sparkle(452, 40, 5)
+    o += kettlebell(492, G, 1.0) + foam_roller(524, G, 1.0) + sprig(606, G, 50, -6)
+    o += plinth(630, G, 1.0) + ball(800, G, 24) + mat(838, G, 1.0) + sparkle(890, 60, 5)
+    o += band_loop(940, G - 8, 0.8) + spine(1000, G, 0.9) + reformer(1040, G, 0.92) + sprig(1240, G, 46, -6)
+    o.append(P((0, G), (W, G)))
+    return o
+
+# ---------------------------------------------------------------- Medical aesthetics
+
+def magnifier(x, ground, s=1.0):
+    """A clinic magnifier lamp: wheeled base, pole, jointed arm and a ring lens."""
+    out = [P((x - 18*s, ground), (x + 18*s, ground)), circle(x - 16*s, ground - 2*s, 2*s), circle(x + 16*s, ground - 2*s, 2*s), P((x, ground - 2*s), (x, ground - 80*s))]
+    out.append(P((x, ground - 80*s), (x + 24*s, ground - 102*s), (x + 52*s, ground - 92*s)))
+    out.append(circle(x + 24*s, ground - 102*s, 1.8*s))
+    out.append(oval(x + 64*s, ground - 88*s, 14*s, 10*s, 18)); out.append(oval(x + 64*s, ground - 88*s, 10*s, 6.5*s, 18))
+    return out
+
+def laser_unit(x, ground, s=1.0):
+    """A laser machine on a wheeled cart: screen, body and a handpiece on its curled cable."""
+    out = [rrect(x, ground - 74*s, 40*s, 66*s, 5*s), circle(x + 6*s, ground - 3*s, 3*s), circle(x + 34*s, ground - 3*s, 3*s)]
+    out.append(P((x + 4*s, ground - 74*s), (x + 2*s, ground - 96*s), (x + 38*s, ground - 96*s), (x + 36*s, ground - 74*s)))
+    out.append(rrect(x + 7*s, ground - 92*s, 26*s, 14*s, 2*s))
+    out.append(P((x + 6*s, ground - 56*s), (x + 34*s, ground - 56*s)))
+    for k in range(3): out.append(circle(x + 12*s + k*8*s, ground - 64*s, 1.6*s))
+    out.append(rrect(x + 44*s, ground - 66*s, 8*s, 26*s, 3*s)); out.append(P((x + 46*s, ground - 66*s), (x + 46*s, ground - 72*s), (x + 50*s, ground - 72*s), (x + 50*s, ground - 66*s)))
+    d = f"M{f(x + 40*s)} {f(ground - 30*s)}"
+    for k in range(4): d += f" q{f(3*s)} {f(5*s)} {f(2*s)} {f(-1*s)} t{f(1*s)} {f(-1*s)}"
+    out.append(d + f" Q{f(x + 54*s)} {f(ground - 28*s)} {f(x + 48*s)} {f(ground - 40*s)}")
+    return out
+
+def aesthetic_bed(x, ground, s=1.0):
+    """A clinic treatment bed with the back raised and a towel at the head."""
+    L, top = 130*s, ground - 36*s
+    out = [f"M{f(x)} {f(top)} L{f(x + 86*s)} {f(top)} L{f(x + L - 8*s)} {f(top - 34*s)} Q{f(x + L - 2*s)} {f(top - 38*s)} {f(x + L)} {f(top - 30*s)} L{f(x + 96*s)} {f(top + 8*s)} L{f(x)} {f(top + 8*s)} Z"]
+    out.append(P((x + 30*s, top + 8*s), (x + 40*s, ground - 6*s))); out.append(P((x + 76*s, top + 8*s), (x + 66*s, ground - 6*s)))
+    out.append(P((x + 24*s, ground - 6*s), (x + 82*s, ground - 6*s)))
+    out += [circle(x + 28*s, ground - 3*s, 3*s), circle(x + 78*s, ground - 3*s, 3*s)]
+    out.append(f"M{f(x + 104*s)} {f(top - 12*s)} L{f(x + 116*s)} {f(top - 28*s)}")
+    return out
+
+def certificate(x, y, s=1.0):
+    out = [rrect(x, y, 44*s, 32*s, 1.5*s), rrect(x + 4*s, y + 4*s, 36*s, 24*s, 1*s)]
+    out += [P((x + 10*s, y + 10*s), (x + 34*s, y + 10*s)), P((x + 10*s, y + 15*s), (x + 30*s, y + 15*s)), P((x + 10*s, y + 20*s), (x + 24*s, y + 20*s))]
+    out.append(circle(x + 32*s, y + 22*s, 3.5*s)); out.append(P((x + 22*s, y), (x + 22*s, y - 8*s)))
+    return out
+
+def stethoscope(x, ground, s=1.0):
+    """A stethoscope hanging from a hook: ear tips, the Y of tubes and the chest piece below."""
+    top = ground - 70*s
+    out = [P((x - 2*s, top - 8*s), (x + 2*s, top - 8*s)), P((x, top - 8*s), (x, top - 3*s))]
+    for k in (-1, 1):
+        out.append(circle(x + k*9*s, top, 1.8*s))
+        out.append(f"M{f(x + k*9*s)} {f(top + 2*s)} C{f(x + k*12*s)} {f(top + 14*s)} {f(x + k*4*s)} {f(top + 22*s)} {f(x)} {f(top + 30*s)}")
+    out.append(f"M{f(x)} {f(top + 30*s)} C{f(x - 2*s)} {f(top + 52*s)} {f(x + 26*s)} {f(top + 44*s)} {f(x + 26*s)} {f(ground - 16*s)}")
+    out += [circle(x + 26*s, ground - 9*s, 7*s), circle(x + 26*s, ground - 9*s, 3.5*s)]
+    return out
+
+def medaes():
+    o = []
+    o += sprig(16, G, 60, 6) + magnifier(58, G, 1.0) + certificate(150, 30, 1.0)
+    o += aesthetic_bed(150, G, 1.0) + laser_unit(310, G, 1.0) + sparkle(396, 46, 5)
+    o += pump(410, G, 0.95) + dropper(440, G, 0.95) + jar(468, G, 0.9) + stethoscope(516, G, 1.0)
+    o += sprig(600, G, 56, -6) + magnifier(640, G, 0.9)
+    o += aesthetic_bed(740, G, 0.92) + sparkle(890, 50, 5) + laser_unit(900, G, 0.92)
+    o += stethoscope(990, G, 0.9) + pump(1052, G, 0.9) + jar(1080, G, 0.9) + dropper(1124, G, 0.9)
+    o += magnifier(1166, G, 0.82) + sprig(1240, G, 46, -6)
+    o.append(P((0, G), (W, G)))
+    return o
+
+# ---------------------------------------------------------------- Tattoo & piercing
+
+def tattoo_machine(x, y, s=1.0):
+    """A coil tattoo machine standing upright: L-shaped frame, twin coils, the spring bar, and the grip tube below."""
+    out = [rrect(x, y - 5*s, 44*s, 5*s, 1.5*s), rrect(x - 4*s, y - 34*s, 5*s, 34*s, 1.5*s)]
+    for cx in (x + 8*s, x + 21*s):
+        out.append(rrect(cx, y - 28*s, 10*s, 23*s, 2*s))
+        for k in range(4): out.append(P((cx, y - 10*s - k*4.5*s), (cx + 10*s, y - 10*s - k*4.5*s)))
+    out.append(P((x - 2*s, y - 34*s), (x + 6*s, y - 34*s), (x + 40*s, y - 31*s)))
+    out.append(f"M{f(x + 4*s)} {f(y - 34*s)} q{f(2*s)} {f(-6*s)} {f(6*s)} {f(-6*s)} t{f(6*s)} {f(3*s)}")
+    out.append(P((x + 40*s, y - 31*s), (x + 40*s, y - 5*s)))
+    out.append(rrect(x + 36*s, y, 9*s, 6*s, 1.5*s))
+    out.append(rrect(x + 36.5*s, y + 6*s, 8*s, 24*s, 3*s))
+    for k in range(4): out.append(P((x + 36.5*s, y + 11*s + k*5*s), (x + 44.5*s, y + 11*s + k*5*s)))
+    out.append(P((x + 37*s, y + 30*s), (x + 40.5*s, y + 42*s), (x + 44*s, y + 30*s)))
+    out.append(P((x + 40.5*s, y + 42*s), (x + 40.5*s, y + 47*s)))
+    return out
+
+def rose(cx, cy, s=1.0):
+    """A traditional tattoo-flash rose: an open cup of petals around a bud, with two leaves."""
+    out = [f"M{f(cx - 14*s)} {f(cy)} Q{f(cx - 14*s)} {f(cy + 14*s)} {f(cx)} {f(cy + 14*s)} Q{f(cx + 14*s)} {f(cy + 14*s)} {f(cx + 14*s)} {f(cy)}",
+           f"M{f(cx - 14*s)} {f(cy)} Q{f(cx - 13*s)} {f(cy - 11*s)} {f(cx - 4*s)} {f(cy - 9*s)} Q{f(cx + 2*s)} {f(cy - 15*s)} {f(cx + 7*s)} {f(cy - 9*s)} Q{f(cx + 15*s)} {f(cy - 9*s)} {f(cx + 14*s)} {f(cy)}",
+           f"M{f(cx - 8*s)} {f(cy - 2*s)} Q{f(cx)} {f(cy - 9*s)} {f(cx + 8*s)} {f(cy - 2*s)} Q{f(cx)} {f(cy + 5*s)} {f(cx - 8*s)} {f(cy - 2*s)}",
+           f"M{f(cx - 3*s)} {f(cy - 3*s)} Q{f(cx)} {f(cy - 5.5*s)} {f(cx + 3*s)} {f(cy - 3*s)}",
+           f"M{f(cx - 11*s)} {f(cy + 4*s)} Q{f(cx - 5*s)} {f(cy + 9*s)} {f(cx)} {f(cy + 5*s)} Q{f(cx + 5*s)} {f(cy + 9*s)} {f(cx + 11*s)} {f(cy + 4*s)}"]
+    out += leaf(cx - 9*s, cy + 11*s, 16*s, -128) + leaf(cx + 9*s, cy + 11*s, 16*s, 128)
+    return out
+
+def swallow(cx, cy, s=1.0):
+    return [f"M{f(cx - 22*s)} {f(cy - 6*s)} Q{f(cx - 8*s)} {f(cy - 10*s)} {f(cx)} {f(cy)} Q{f(cx + 12*s)} {f(cy - 2*s)} {f(cx + 18*s)} {f(cy - 8*s)} L{f(cx + 14*s)} {f(cy + 2*s)}"
+            f" L{f(cx + 22*s)} {f(cy + 12*s)} L{f(cx + 8*s)} {f(cy + 6*s)} Q{f(cx)} {f(cy + 8*s)} {f(cx - 6*s)} {f(cy + 4*s)} Q{f(cx - 14*s)} {f(cy + 4*s)} {f(cx - 22*s)} {f(cy - 6*s)}",
+            f"M{f(cx - 2*s)} {f(cy - 2*s)} Q{f(cx - 4*s)} {f(cy - 18*s)} {f(cx + 8*s)} {f(cy - 26*s)} Q{f(cx + 6*s)} {f(cy - 12*s)} {f(cx + 4*s)} {f(cy)}",
+            circle(cx - 16*s, cy - 6*s, 0.8*s)]
+
+def flash_sheet(x, y, s=1.0):
+    """A framed flash sheet: a heart with a banner, an anchor, a star and a little rose."""
+    out = [rrect(x, y, 92*s, 66*s, 1.5*s), P((x + 46*s, y), (x + 46*s, y - 8*s))]
+    hx, hy = x + 22*s, y + 22*s
+    out.append(f"M{f(hx)} {f(hy + 12*s)} C{f(hx - 16*s)} {f(hy)} {f(hx - 10*s)} {f(hy - 12*s)} {f(hx)} {f(hy - 5*s)} C{f(hx + 10*s)} {f(hy - 12*s)} {f(hx + 16*s)} {f(hy)} {f(hx)} {f(hy + 12*s)}")
+    out.append(P((hx - 14*s, hy - 1*s), (hx + 14*s, hy - 1*s), (hx + 12*s, hy + 3*s), (hx - 12*s, hy + 3*s), close=True))
+    ax, ay = x + 68*s, y + 14*s
+    out += [circle(ax, ay, 2.5*s), P((ax, ay + 2.5*s), (ax, ay + 26*s)), P((ax - 7*s, ay + 8*s), (ax + 7*s, ay + 8*s)),
+            f"M{f(ax - 11*s)} {f(ay + 18*s)} Q{f(ax - 10*s)} {f(ay + 27*s)} {f(ax)} {f(ay + 27*s)} Q{f(ax + 10*s)} {f(ay + 27*s)} {f(ax + 11*s)} {f(ay + 18*s)}"]
+    sx, sy = x + 20*s, y + 50*s
+    pts = [(sx + (7*s if k % 2 == 0 else 3*s)*math.sin(math.radians(k*36)), sy - (7*s if k % 2 == 0 else 3*s)*math.cos(math.radians(k*36))) for k in range(10)]
+    out.append(P(*pts, close=True))
+    out += rose(x + 52*s, y + 50*s, 0.5*s)
+    return out
+
+def ink(x, ground, s=1.0):
+    out = []
+    for i, dx in enumerate((0, 16, 32)):
+        h = (24, 30, 22)[i]*s; bx = x + dx*s
+        out += [rrect(bx, ground - h, 13*s, h, 2.5*s), P((bx + 3.5*s, ground - h), (bx + 4.5*s, ground - h - 8*s), (bx + 8.5*s, ground - h - 8*s), (bx + 9.5*s, ground - h)),
+                P((bx + 2.5*s, ground - h*0.55), (bx + 10.5*s, ground - h*0.55))]
+    for k in range(4): out.append(f"M{f(x + 52*s + k*9*s)} {f(ground)} L{f(x + 53*s + k*9*s)} {f(ground - 6*s)} L{f(x + 59*s + k*9*s)} {f(ground - 6*s)} L{f(x + 60*s + k*9*s)} {f(ground)}")
+    return out
+
+def piercing_card(x, ground, s=1.0):
+    """A jewellery card on a little easel: hoops, studs and a curved bar."""
+    out = [rrect(x, ground - 64*s, 50*s, 56*s, 2*s), P((x + 10*s, ground - 8*s), (x + 6*s, ground)), P((x + 40*s, ground - 8*s), (x + 44*s, ground)), P((x + 25*s, ground - 20*s), (x + 36*s, ground))]
+    for k, cx in enumerate((x + 12*s, x + 25*s, x + 38*s)):
+        out.append(circle(cx, ground - 50*s, (5 - k % 2)*s))
+    for cx in (x + 12*s, x + 25*s, x + 38*s):
+        out += [circle(cx, ground - 32*s, 1.8*s), circle(cx, ground - 32*s, 0.5*s)]
+    out.append(f"M{f(x + 16*s)} {f(ground - 18*s)} Q{f(x + 25*s)} {f(ground - 12*s)} {f(x + 34*s)} {f(ground - 18*s)}")
+    out += [circle(x + 16*s, ground - 18*s, 1.5*s), circle(x + 34*s, ground - 18*s, 1.5*s)]
+    return out
+
+def tattoo():
+    o = []
+    o += sprig(16, G, 52, 6) + flash_sheet(40, 22, 1.0) + ink(40, G, 1.0)
+    o += tattoo_machine(196, 70, 1.05) + rose(300, 70, 1.3) + sparkle(332, 34, 5)
+    o += piercing_card(350, G, 1.0) + swallow(460, 60, 1.2) + sparkle(492, 96, 4)
+    o += flash_sheet(520, 26, 0.9) + ink(530, G, 0.9) + sprig(636, G, 50, -6)
+    o += tattoo_machine(690, 74, 0.95) + rose(800, 76, 1.1) + swallow(880, 52, 1.0)
+    o += piercing_card(920, G, 0.9) + flash_sheet(1000, 30, 0.95) + ink(1004, G, 0.92)
+    o += rose(1150, 80, 1.0) + sparkle(1196, 44, 5) + sprig(1240, G, 46, -6)
+    o.append(P((0, G), (W, G)))
+    return o
+
+DRAW = {"nails": nails, "hair": hair, "skin": skin, "groom": groom, "ayur": ayur, "dental": dental, "body": body, "medaes": medaes, "tattoo": tattoo}
 
 if __name__ == "__main__":
     out = sys.argv[1]

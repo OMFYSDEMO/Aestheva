@@ -14,9 +14,17 @@ describe("category bands", () => {
     expect((await req("GET", "/for-practitioners/dental-clinics")).text).toContain(CAT_ART.dental);
   });
 
+  it("has a drawing for every category", async () => {
+    for (const id of ["skin", "medaes", "hair", "ayur", "nails", "body", "dental", "groom", "tattoo"]) {
+      expect(CAT_ART[id], id).toBeTruthy();
+      expect((await req("GET", `/search?cat=${id}`)).text, id).toContain(CAT_ART[id]);
+    }
+    expect((await req("GET", "/for-practitioners/skin-clinics")).text).toContain(CAT_ART.medaes);
+  });
+
   it("stays out of the way elsewhere", async () => {
     const home = (await req("GET", "/")).text, search = (await req("GET", "/search?cat=nails&q=gel")).text;
     for (const art of Object.values(CAT_ART)) { expect(home).not.toContain(art); expect(search).not.toContain(art); }
-    expect((await req("GET", "/search?cat=tattoo")).text).not.toContain('class="cat-band"');   // not drawn yet
+
   });
 });
