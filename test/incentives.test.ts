@@ -74,11 +74,13 @@ describe("your link, zero commission", () => {
   });
 
   it("books with no commission through the business's own link, and only for that business", async () => {
-    const s = await slot("v15", day(6));
-    const own = await book({ serviceId: "v15", staffId: "any", date: day(6), start: s.min, ...guest, phone: "9700000003" }, "ae_via=ivory-room-beauty-studio");
+    // The first day from a week ahead when both businesses take bookings (each is closed on some weekdays).
+    let d = "", s: { min: number } | undefined, s2: { min: number } | undefined;
+    for (let n = 6; !(s && s2) && n < 14; n++) { d = day(n); s = await slot("v15", d).catch(() => undefined); s2 = await slot("v30", d).catch(() => undefined); }
+    const own = await book({ serviceId: "v15", staffId: "any", date: d, start: s!.min, ...guest, phone: "9700000003" }, "ae_via=ivory-room-beauty-studio");
     expect(await sql("SELECT channel, commission_bp FROM bookings WHERE ref = ?", own.json.ref)).toEqual([{ channel: "own_link", commission_bp: 0 }]);
-    const s2 = await slot("v30", day(6));   // a different business: the link doesn't carry over
-    const other = await book({ serviceId: "v30", staffId: "any", date: day(6), start: s2.min, ...guest, phone: "9700000004" }, "ae_via=ivory-room-beauty-studio");
+    // A different business: the link doesn't carry over.
+    const other = await book({ serviceId: "v30", staffId: "any", date: d, start: s2!.min, ...guest, phone: "9700000004" }, "ae_via=ivory-room-beauty-studio");
     expect(await sql("SELECT channel, commission_bp FROM bookings WHERE ref = ?", other.json.ref)).toEqual([{ channel: "", commission_bp: 1000 }]);
   });
 });

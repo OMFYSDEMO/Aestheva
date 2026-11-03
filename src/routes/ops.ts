@@ -15,7 +15,7 @@ import { opsMoneyPage, statementPage } from "../views/statements";
 import { joinerRows, nudge } from "../services/joiners";
 import { joinersPage } from "../views/joiners";
 import { shell } from "../views/ops";
-import { STAGE, addDocument, addVerification, approveApplication, checklist, listing, removeVerification, setVenueStage } from "../services/onboarding";
+import { STAGE, addDocument, addVerification, approveApplication, changePhoto, checklist, listing, removeVerification, setVenueStage } from "../services/onboarding";
 import { photosOf } from "../views/ui";
 import { createClinicUser, emailPasswordLink, issuePasswordLink, setClinicUserActive, type ClinicUser } from "../services/clinic";
 import { HttpError } from "../db";
@@ -161,6 +161,11 @@ async function venuePage(c: C, id: string, extra: { message?: string; error?: st
 }
 const STAGE_DONE: Record<string, string> = { document: "Document uploaded.", publish: "Published. The clinic has been emailed.", send_back: "Sent back. The clinic has been emailed your note.", pause: "Paused. The clinic has been emailed." };
 ops.get("/venues/:id", (c) => venuePage(c, c.req.param("id"), { message: STAGE_DONE[c.req.query("done") ?? ""] }));
+ops.post("/venues/:id/photos/focus", async (c) => {
+  const f = await c.req.parseBody(), id = c.req.param("id");
+  await changePhoto(c.env, id, String(f.src ?? ""), "focus", "ops", String(f.pos ?? ""));
+  return c.req.header("x-requested-with") === "fetch" ? c.json({ ok: true }) : c.redirect(`/ops/venues/${encodeURIComponent(id)}`, 303);
+});
 ops.post("/venues/:id/stage", async (c) => {
   const f = await c.req.parseBody(), id = c.req.param("id"), action = String(f.action ?? "");
   if (!["publish", "send_back", "pause"].includes(action)) throw new HttpError(400, "Unknown action");

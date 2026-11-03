@@ -158,7 +158,7 @@ clinic.post("/setup/details", async (c) => {
 clinic.get("/setup/photos", async (c) => page(c, "Photos", "setup", photosPage({ p: (await listing(c.env.DB, pid(c))).p, csrf: c.get("csrf") })));
 clinic.post("/setup/photos", async (c) => {
   const f = await form(c), viaFetch = c.req.header("x-requested-with") === "fetch";
-  try { await addPhoto(c.env, pid(c), { w400: f.w400, w800: f.w800, w1500: f.w1500, og: f.og }, String(f.alt ?? ""), actor(c)); }
+  try { await addPhoto(c.env, pid(c), { w400: f.w400, w800: f.w800, w1500: f.w1500, og: f.og }, String(f.alt ?? ""), actor(c), { w: Number(f.w), h: Number(f.h) }); }
   catch (e) {
     if (!(e instanceof HttpError) || e.status >= 500 && e.status !== 503) throw e;
     if (viaFetch) return c.json({ error: e.message }, e.status as 400);
@@ -168,7 +168,9 @@ clinic.post("/setup/photos", async (c) => {
 });
 clinic.post("/setup/photos/change", async (c) => {
   const f = await form(c);
-  await changePhoto(c.env, pid(c), String(f.src ?? ""), f.action === "cover" ? "cover" : "remove", actor(c));
+  const action = f.action === "cover" ? "cover" : f.action === "focus" ? "focus" : "remove";
+  await changePhoto(c.env, pid(c), String(f.src ?? ""), action, actor(c), String(f.pos ?? ""));
+  if (c.req.header("x-requested-with") === "fetch") return c.json({ ok: true });
   return c.redirect("/clinic/setup/photos", 303);
 });
 

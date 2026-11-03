@@ -7,7 +7,8 @@ import { addDays, fmtDate, fmtTime, relDay } from "../domain/time";
 import type { PublicOffer } from "./booking";
 import type { ProviderDetail, ProviderRow, Rating, ServiceRow } from "../services/catalog";
 import { isMedical } from "../services/catalog";
-import { CAT_META, MED_NOTE, avatar, catIcon, catTile, esc, ic, inr, linkPhones, mapsUrl, photoImg, photosOf, stars, venueMark, venueThumb } from "./ui";
+import type { Photo } from "./ui";
+import { CAT_META, MED_NOTE, avatar, catIcon, catTile, esc, ic, inr, linkPhones, mapsUrl, isPortrait, photoImg, photosOf, stars, venueMark, venueThumb } from "./ui";
 
 type Next = Map<string, { date: string; min: number }>;
 const quals = (t: { quals_json: string }): string[] => { try { const q = JSON.parse(t.quals_json || "[]"); return Array.isArray(q) ? q.map(String) : []; } catch { return []; } };
@@ -277,7 +278,7 @@ export function providerPage(d: ProviderDetail & { categories: { id: string; nam
   return `<div class="page">
     ${draftBanner}
     <a class="btn btn-g btn-s" href="/search" style="margin-left:-10px">${ic("chevL", 16)} Back to search</a>
-    ${photos.length ? `<div class="v-photos mt12${photos.length > 1 ? " multi" : ""}">${photos.slice(0, 3).map((ph, i) => `<figure>${photoImg(ph, i ? "(max-width:760px) 100vw, 420px" : "(max-width:1280px) 100vw, 1232px", { eager: i === 0 })}</figure>`).join("")}</div>` : ""}
+    ${photos.length ? venueGallery(photos, p.name) : ""}
     <header class="v-head ${photos.length ? "mt24" : "mt12"}">
       ${photos.length ? "" : venueMark(p.name, p.id, p.art, "l")}
       <div class="col" style="gap:6px;min-width:0">
@@ -340,4 +341,20 @@ export function providerPage(d: ProviderDetail & { categories: { id: string; nam
 
 export function notFoundPage(msg = "We couldn't find that page.") {
   return `<div class="page narrow" style="text-align:center;padding-top:80px"><div class="eyebrow">Not found</div><h1 class="mt12" style="font-size:44px">${esc(msg)}</h1><p class="muted mt12">It may have moved, or the link may be incomplete.</p><div class="row wrap mt24" style="justify-content:center"><a class="btn btn-p" href="/search">Explore venues</a><a class="btn btn-o" href="/">Home</a></div></div>`;
+}
+
+/**
+ * A venue's photos. Desktop: one wide photo, two side by side, or a large one with two beside it; more than three adds
+ * "See all photos". Phones: a strip to swipe through every photo. Tapping any photo opens all of them uncropped.
+ */
+export function venueGallery(photos: Photo[], name: string) {
+  const n = photos.length, shown = Math.min(n, 3);
+  const layout = n === 1 ? (isPortrait(photos[0]) ? "one tall" : "one") : n === 2 ? "two" : `many${isPortrait(photos[0]) ? " tall" : ""}`;
+  const sizes = (i: number) => (n === 1 ? "(max-width:1280px) 100vw, 1232px" : i === 0 ? "(max-width:760px) 86vw, 760px" : "(max-width:760px) 86vw, 480px");
+  const tiles = photos.map((ph, i) => `<figure data-gal="${i}"${i >= shown ? ' class="extra"' : ""}>${photoImg(ph, sizes(i), { eager: i === 0 })}${i === shown - 1 && n > shown ? `<span class="v-more" aria-hidden="true">+${n - shown}</span>` : ""}</figure>`).join("");
+  return `<div class="v-photos mt12 ${layout}" data-gallery-open>${tiles}</div>
+    <div class="row wrap between mt8 v-photos-bar"><span class="xs muted v-count">${n} photo${n === 1 ? "" : "s"}${n > 1 ? '<span class="v-swipe">, swipe to see them all</span>' : ""}</span>${n > 1 ? `<button class="btn btn-g btn-s" type="button" data-gallery-open hidden>See all ${n} photos</button>` : ""}</div>
+    <dialog class="v-gallery" aria-label="Photos of ${esc(name)}"><div class="row between v-gallery-head"><b>${esc(name)}</b><button class="btn btn-o btn-s" type="button" data-gallery-close>Close</button></div>
+      ${photos.map((ph, i) => `<figure id="gal-${i}"><img src="${esc(ph.src)}-1500.webp" srcset="${[800, 1500].map((w) => `${esc(ph.src)}-${w}.webp ${w}w`).join(", ")}" sizes="(max-width:900px) 100vw, 860px"${ph.w && ph.h ? ` width="${ph.w}" height="${ph.h}"` : ""} alt="${esc(ph.alt)}" loading="lazy" decoding="async"><figcaption class="small muted">${esc(ph.alt)}</figcaption></figure>`).join("")}
+    </dialog>`;
 }

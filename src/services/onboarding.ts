@@ -188,10 +188,10 @@ const isPdf = (b: Uint8Array) => String.fromCharCode(...b.slice(0, 5)) === "%PDF
 export const MAX_PHOTOS = 6;
 
 /** The browser resizes each photo to 400, 800 and 1500 px WebP plus a 1200×630 JPEG for link previews (public/setup.js). */
-export async function addPhoto(env: Env, pid: string, files: Record<"w400" | "w800" | "w1500" | "og", unknown>, alt: string, actor: string) {
+export async function addPhoto(env: Env, pid: string, files: Record<"w400" | "w800" | "w1500" | "og", unknown>, alt: string, actor: string, dims?: { w: number; h: number }) {
   if (!env.MEDIA) throw new HttpError(503, "Photo storage isn't available.");
   const p = await env.DB.prepare("SELECT photos_json FROM providers WHERE id = ?").bind(pid).first<{ photos_json: string }>();
-  const photos: { src: string; alt: string }[] = JSON.parse(p?.photos_json || "[]");
+  const photos: StoredPhoto[] = JSON.parse(p?.photos_json || "[]");
   if (photos.length >= MAX_PHOTOS) throw new HttpError(400, `Up to ${MAX_PHOTOS} photos. Remove one first.`);
   alt = alt.trim();
   if (alt.length < 10 || alt.length > 140) throw new HttpError(400, "Please describe the photo in a short sentence, for example “Reception with the waiting area”. It helps clients who use screen readers.");
@@ -211,18 +211,75 @@ export async function addPhoto(env: Env, pid: string, files: Record<"w400" | "w8
     env.MEDIA.put(`${base}-1500.webp`, bytes.w1500, { httpMetadata: { contentType: typeOf(bytes.w1500) } }),
     env.MEDIA.put(`${base}-og.jpg`, bytes.og, { httpMetadata: { contentType: "image/jpeg" } }),
   ]);
-  photos.push({ src: `/media/${pid}/${id}`, alt });
+  const shape = dims && dims.w >= 100 && dims.h >= 100 && dims.w <= 20000 && dims.h <= 20000 ? { w: Math.round(dims.w), h: Math.round(dims.h) } : imageSize(bytes.w1500) ?? {};
+  photos.push({ src: `/media/${pid}/${id}`, alt, ...shape });
   await env.DB.batch([env.DB.prepare("UPDATE providers SET photos_json = ? WHERE id = ?").bind(JSON.stringify(photos), pid), audit(env.DB, actor, "listing.photo_added", "provider", pid)]);
 }
-export async function changePhoto(env: Env, pid: string, src: string, action: "remove" | "cover", actor: string) {
+export async function changePhoto(env: Env, pid: string, src: string, action: "remove" | "cover" | "focus", actor: string, pos?: string) {
   const p = await env.DB.prepare("SELECT photos_json FROM providers WHERE id = ?").bind(pid).first<{ photos_json: string }>();
-  const photos: { src: string; alt: string }[] = JSON.parse(p?.photos_json || "[]");
+  const photos: StoredPhoto[] = JSON.parse(p?.photos_json || "[]");
   const i = photos.findIndex((x) => x.src === src);
   if (i < 0) throw new HttpError(404, "That photo is no longer there.");
-  const [ph] = photos.splice(i, 1);
-  if (action === "cover") photos.unshift(ph);
-  else if (env.MEDIA && ph.src.startsWith(`/media/${pid}/`)) await env.MEDIA.delete(["-400.webp", "-800.webp", "-1500.webp", "-og.jpg"].map((x) => `media${ph.src.slice(6)}${x}`));
+  if (action === "focus") {
+    const m = /^(\d{1,3})% (\d{1,3})%$/.exec(pos ?? "");
+    if (!m || +m[1] > 100 || +m[2] > 100) throw new HttpError(400, "Tap the photo to choose the part to keep in view.");
+    photos[i] = { ...photos[i], pos: `${+m[1]}% ${+m[2]}%` };
+  } else {
+    const [ph] = photos.splice(i, 1);
+    if (action === "cover") photos.unshift(ph);
+    else if (env.MEDIA && ph.src.startsWith(`/media/${pid}/`)) await env.MEDIA.delete(["-400.webp", "-800.webp", "-1500.webp", "-og.jpg"].map((x) => `media${ph.src.slice(6)}${x}`));
+  }
   await env.DB.batch([env.DB.prepare("UPDATE providers SET photos_json = ? WHERE id = ?").bind(JSON.stringify(photos), pid), audit(env.DB, actor, `listing.photo_${action}`, "provider", pid)]);
+}
+
+export interface StoredPhoto { src: string; alt: string; w?: number; h?: number; pos?: string }
+
+/** Width and height from the first bytes of a WebP or JPEG file, without decoding it. */
+export function imageSize(b: Uint8Array): { w: number; h: number } | null {
+  const r = readSize(b);
+  return r && r.w > 0 && r.h > 0 ? r : null;
+}
+function readSize(b: Uint8Array): { w: number; h: number } | null {
+  const u16 = (i: number) => b[i] | (b[i + 1] << 8), u24 = (i: number) => b[i] | (b[i + 1] << 8) | (b[i + 2] << 16);
+  if (isWebp(b) && b.length >= 30) {
+    const kind = String.fromCharCode(b[12], b[13], b[14], b[15]);
+    if (kind === "VP8X") return { w: u24(24) + 1, h: u24(27) + 1 };
+    if (kind === "VP8 ") return { w: u16(26) & 0x3fff, h: u16(28) & 0x3fff };
+    if (kind === "VP8L") { const v = b[21] | (b[22] << 8) | (b[23] << 16) | (b[24] << 24); return { w: (v & 0x3fff) + 1, h: ((v >> 14) & 0x3fff) + 1 }; }
+    return null;
+  }
+  if (isJpeg(b)) {
+    let i = 2;
+    while (i + 9 < b.length) {
+      if (b[i] !== 0xff) { i++; continue; }
+      const m = b[i + 1], len = (b[i + 2] << 8) | b[i + 3];
+      if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) return { w: (b[i + 7] << 8) | b[i + 8], h: (b[i + 5] << 8) | b[i + 6] };
+      i += 2 + len;
+    }
+  }
+  return null;
+}
+
+/**
+ * Records the shape of photos uploaded before shapes were saved, by reading the start of each stored file.
+ * Runs in the scheduled job; does nothing once every photo has its shape.
+ */
+export async function measurePhotos(env: Env, limit = 30) {
+  if (!env.MEDIA) return 0;
+  const rows = (await env.DB.prepare(`SELECT id, photos_json FROM providers WHERE photos_json LIKE '%"/media/%'`).all<{ id: string; photos_json: string }>()).results;
+  let done = 0;
+  for (const r of rows) {
+    const photos: StoredPhoto[] = JSON.parse(r.photos_json || "[]");
+    let changed = false;
+    for (const ph of photos) {
+      if (ph.w || !ph.src.startsWith("/media/") || done >= limit) continue;
+      const obj = await env.MEDIA.get(`media${ph.src.slice(6)}-400.webp`, { range: { offset: 0, length: 65536 } });
+      const size = obj ? imageSize(new Uint8Array(await obj.arrayBuffer())) : null;
+      if (size) { ph.w = size.w; ph.h = size.h; changed = true; done++; }
+    }
+    if (changed) await env.DB.prepare("UPDATE providers SET photos_json = ? WHERE id = ?").bind(JSON.stringify(photos), r.id).run();
+  }
+  return done;
 }
 
 export const DOC_KINDS = ["Professional certificate", "Portfolio or proof of work", "ID proof (PAN or masked Aadhaar)", "Business identity (GST, trade licence or Udyam)", "Practitioner council registration", "Clinical establishment registration", "Other"];

@@ -4,7 +4,7 @@ import { AREAS, COMPANY, INCENTIVES, POLICY, VENUE_TYPES, VENUE_TYPE_CHOICES } f
 import { fmtTime } from "../domain/time";
 import type { ProviderRow, ServiceRow, StaffRow } from "../services/catalog";
 import { AMENITY_IDEAS, DAY_NAMES, DAY_ORDER, DOC_KINDS, DURATIONS, LANGS, MAX_PHOTOS, type Errors, type Step } from "../services/onboarding";
-import { catIcon, esc, ic, inr, photoImg, photosOf } from "./ui";
+import { catIcon, esc, focusEditor, ic, inr, photoImg, photosOf } from "./ui";
 
 type V = Record<string, unknown>;
 const val = (v: V, k: string) => esc(Array.isArray(v[k]) ? (v[k] as unknown[])[0] : v[k] ?? "");
@@ -61,7 +61,7 @@ export function photosPage(d: { p: ProviderRow; csrf: string; error?: string }) 
   return `${back}<div class="ws-head mt8"><div><div class="eyebrow">Step 2 of 6</div><h2 class="mt8">Photos</h2></div></div>
     ${d.error ? `<div class="form-error" role="alert">${esc(d.error)}</div>` : ""}
     <div class="setup-grid mt16"><div class="col" style="gap:16px">
-      ${photos.length ? `<div class="photo-grid">${photos.map((ph, i) => `<figure class="card photo-card">${photoImg(ph, "260px")}<figcaption class="small">${i === 0 ? '<span class="badge b-ok">Cover photo</span> ' : ""}${esc(ph.alt)}</figcaption>
+      ${photos.length ? `<div class="photo-grid">${photos.map((ph, i) => `<figure class="card photo-card">${focusEditor(ph, "/clinic/setup/photos/change", { csrf: d.csrf, src: ph.src, action: "focus" })}<figcaption class="small">${i === 0 ? '<span class="badge b-ok">Cover photo</span> ' : ""}${esc(ph.alt)}</figcaption>
           <div class="row wrap" style="gap:6px">${i ? `<form method="post" action="/clinic/setup/photos/change"><input type="hidden" name="csrf" value="${esc(d.csrf)}"><input type="hidden" name="src" value="${esc(ph.src)}"><input type="hidden" name="action" value="cover"><button class="btn btn-o btn-x" type="submit">Make cover</button></form>` : ""}
           <form method="post" action="/clinic/setup/photos/change"><input type="hidden" name="csrf" value="${esc(d.csrf)}"><input type="hidden" name="src" value="${esc(ph.src)}"><input type="hidden" name="action" value="remove"><button class="btn btn-g btn-x" type="submit">Remove</button></form></div></figure>`).join("")}</div>` : ""}
       ${photos.length < MAX_PHOTOS ? `<form class="card col" style="gap:14px" id="photo-form" method="post" action="/clinic/setup/photos" enctype="multipart/form-data"><input type="hidden" name="csrf" value="${esc(d.csrf)}">

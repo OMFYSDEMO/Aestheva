@@ -56,3 +56,32 @@ document.querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('clic
   try { await navigator.clipboard.writeText(b.dataset.copy); } catch { const i = b.parentElement.querySelector('input'); if (i) { i.select(); document.execCommand('copy'); } }
   const t = b.textContent; b.textContent = 'Copied'; setTimeout(() => { b.textContent = t; }, 1600);
 }));
+// Venue photos: tapping a photo or "See all photos" opens every photo uncropped, scrolled to the one tapped.
+(() => {
+  const dlg = document.querySelector('dialog.v-gallery');
+  if (!dlg || !dlg.showModal) return;
+  document.querySelectorAll('button[data-gallery-open]').forEach((b) => { b.hidden = false; });
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-gallery-close]') || e.target === dlg) return dlg.close();
+    const opener = e.target.closest('[data-gallery-open]');
+    if (!opener) return;
+    const fig = e.target.closest('[data-gal]');
+    dlg.showModal();
+    const to = fig && document.getElementById('gal-' + fig.dataset.gal);
+    if (to) to.scrollIntoView({ block: 'start' }); else dlg.scrollTop = 0;
+  });
+})();
+// Photo framing: tap the important part of a photo; the point is saved and every crop keeps it in view.
+document.querySelectorAll('form[data-focus]').forEach((form) => {
+  const pick = form.querySelector('.focus-pick'), wide = form.querySelector('.focus-wide img'), input = form.querySelector('input[name=pos]');
+  pick.addEventListener('click', (e) => {
+    const r = pick.getBoundingClientRect();
+    const x = Math.round(Math.min(100, Math.max(0, ((e.clientX - r.left) / r.width) * 100)));
+    const y = Math.round(Math.min(100, Math.max(0, ((e.clientY - r.top) / r.height) * 100)));
+    input.value = `${x}% ${y}%`;
+    pick.style.setProperty('--fx', x + '%'); pick.style.setProperty('--fy', y + '%');
+    if (wide) wide.style.objectPosition = input.value;
+    fetch(form.action, { method: 'POST', body: new FormData(form), headers: { 'x-requested-with': 'fetch' } })
+      .then((res) => { form.classList.toggle('focus-saved', res.ok); });
+  });
+});

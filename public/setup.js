@@ -33,7 +33,7 @@
       const bmp = await createImageBitmap(f);
       if (bmp.width < 600) throw new Error('That photo is quite small. Please choose one at least 600 pixels wide.');
       const fd = new FormData();
-      fd.append('csrf', form.csrf.value); fd.append('alt', alt);
+      fd.append('csrf', form.csrf.value); fd.append('alt', alt); fd.append('w', bmp.width); fd.append('h', bmp.height);
       for (const w of [400, 800, 1500]) { const ww = Math.min(w, bmp.width); fd.append('w' + w, await variant(bmp, ww, Math.round(bmp.height * ww / bmp.width)), 'w' + w); }
       fd.append('og', await variant(bmp, 1200, 630, true), 'og.jpg');
       say('Uploading…');

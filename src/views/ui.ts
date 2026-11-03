@@ -107,18 +107,42 @@ export function linkPhones(text: string) {
 
 export const mapsUrl = (q: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 
-export interface Photo { src: string; alt: string }
+export interface Photo { src: string; alt: string; w?: number; h?: number; pos?: string }
+const POS = /^(\d{1,3})% (\d{1,3})%$/;
+/** Descriptions typed in capitals read badly and are spelled out by screen readers: show them in sentence case. */
+export const sentenceCase = (t: string) => (/[a-z]/.test(t) || !/[A-Z]{3}/.test(t) ? t : t.charAt(0) + t.slice(1).toLowerCase());
 /** A venue's photographs (see migrations/0003). Each src has -400/-800/-1500.webp and -og.jpg variants: in public/ for
- * /venues/..., or in the MEDIA bucket for /media/... (uploaded by clinics in the portal). */
+ * /venues/..., or in the MEDIA bucket for /media/... (uploaded by clinics in the portal). w and h are the photo's own
+ * shape; pos is the point to keep in view when a frame crops it, chosen in the portal or by the team. */
 export function photosOf(p: { photos_json?: string | null }): Photo[] {
   try {
     const x = JSON.parse(p.photos_json || "[]");
-    return Array.isArray(x) ? x.filter((ph) => typeof ph?.src === "string" && /^\/(venues|media)\/[a-z0-9-]+\/[a-z0-9-]+$/.test(ph.src)).map((ph) => ({ src: ph.src, alt: String(ph.alt ?? "") })) : [];
+    return Array.isArray(x) ? x.filter((ph) => typeof ph?.src === "string" && /^\/(venues|media)\/[a-z0-9-]+\/[a-z0-9-]+$/.test(ph.src)).map((ph) => {
+      const w = Number(ph.w), h = Number(ph.h), m = POS.exec(String(ph.pos ?? ""));
+      return { src: ph.src, alt: sentenceCase(String(ph.alt ?? "")), ...(w > 0 && h > 0 ? { w, h } : {}), ...(m && +m[1] <= 100 && +m[2] <= 100 ? { pos: ph.pos } : {}) };
+    }) : [];
   } catch { return []; }
 }
+export const isPortrait = (ph: Photo) => !!(ph.w && ph.h && ph.h > ph.w * 1.05);
+/** Where a crop centres: the chosen point, else the upper third of a portrait (where faces usually are), else the middle. */
+export const photoPos = (ph: Photo) => ph.pos ?? (isPortrait(ph) ? "50% 30%" : "50% 50%");
 export function photoImg(ph: Photo, sizes: string, opts: { eager?: boolean; decorative?: boolean } = {}) {
   const set = [400, 800, 1500].map((w) => `${esc(ph.src)}-${w}.webp ${w}w`).join(", ");
-  return `<img src="${esc(ph.src)}-800.webp" srcset="${set}" sizes="${sizes}" alt="${opts.decorative ? "" : esc(ph.alt)}" ${opts.eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">`;
+  const dims = ph.w && ph.h ? ` width="${ph.w}" height="${ph.h}"` : "";
+  return `<img src="${esc(ph.src)}-800.webp" srcset="${set}" sizes="${sizes}"${dims} style="object-position:${photoPos(ph)}" alt="${opts.decorative ? "" : esc(ph.alt)}" ${opts.eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">`;
+}
+/**
+ * The framing tool: the whole photo, uncropped; tap the part that matters and the form saves it. Below it, how the photo
+ * looks in a wide frame. Works through site.js; without JavaScript the photo still shows, centred.
+ */
+export function focusEditor(ph: Photo, action: string, hidden: Record<string, string>) {
+  const [x, y] = photoPos(ph).split(" ");
+  return `<form class="focus-ed" method="post" action="${esc(action)}" data-focus>
+    ${Object.entries(hidden).map(([k, v]) => `<input type="hidden" name="${esc(k)}" value="${esc(v)}">`).join("")}<input type="hidden" name="pos" value="${esc(photoPos(ph))}">
+    <div class="focus-pick" style="--fx:${x};--fy:${y}"><img src="${esc(ph.src)}-800.webp" alt="" loading="lazy" decoding="async"><span class="focus-dot" aria-hidden="true"></span></div>
+    <div class="focus-wide" aria-hidden="true"><img src="${esc(ph.src)}-800.webp" alt="" loading="lazy" decoding="async" style="object-position:${photoPos(ph)}"></div>
+    <p class="xs muted">Tap the part that matters most, such as a face or the chair, and every crop keeps it in view. Below: how it looks in a wide frame.</p>
+  </form>`;
 }
 /** A venue's small square image: its first photo when it has one, otherwise its mark. */
 export function venueThumb(p: { name: string; id: string; art: number; photos_json?: string | null }, size: "s" | "m" | "l" = "m") {
