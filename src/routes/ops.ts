@@ -1,7 +1,8 @@
 // The team's private pages. Sign-in uses the OPS_KEY secret; the session is a signed, HttpOnly cookie scoped to /ops.
 import { Hono, type Context, type Next } from "hono";
 import { getPartner, markPartnerPaid, partnerAccountsCsv, partnerBankCsv, partnerStatement, prevMonth, savePartner, scorecard, setProviderPartner, type PartnerStatementRow } from "../services/partners";
-import { partnerPage, partnersListPage, partnerStatementPage, type PartnerListRow } from "../views/partners";
+import { partnerApplicationPage, partnerPage, partnersListPage, partnerStatementPage, type PartnerListRow } from "../views/partners";
+import { invitePartner, linkApplicationToPartner, partnerApplication, partnerApplications, partnerLogin, setPartnerLoginActive, updatePartnerApplication } from "../services/partner-portal";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type { Env } from "../env";
 import { audit, hmacSha256Hex, safeEqual } from "../db";
@@ -115,9 +116,13 @@ async function partnersList(c: C, extra: { error?: string; values?: Record<strin
       (SELECT COALESCE(SUM(gross_paise), 0) FROM partner_statements s WHERE s.partner_id = p.id) AS earned,
       (SELECT COALESCE(SUM(net_paise), 0) FROM partner_statements s WHERE s.partner_id = p.id AND s.status = 'issued') AS unpaid
     FROM partners p ORDER BY p.status = 'active' DESC, p.region, p.name`).all<PartnerListRow>()).results;
-  return page(c, "Regional Partners", shell(partnersListPage({ rows, csrf: c.get("csrf"), month, ...extra })), status);
+  // "Create partner from this" on an application fills the add form with what the applicant told us.
+  const fromRef = extra.values?.application_ref || c.req.query("from") || "";
+  const from = fromRef && !extra.values ? await partnerApplication(db, fromRef) : null;
+  const values = extra.values ?? (from ? { name: from.name, region: from.city.replace(/^Other: /, ""), email: from.email, phone: from.phone, notes: `From application ${from.ref}. ${from.background}.` } : undefined);
+  return page(c, "Regional Partners", shell(partnersListPage({ rows, csrf: c.get("csrf"), month, applications: await partnerApplications(db), ...extra, values, fromRef: from || extra.values?.application_ref ? fromRef : undefined })), status);
 }
-async function partnerDetail(c: C, id: string, extra: { message?: string; error?: string } = {}, status = 200) {
+async function partnerDetail(c: C, id: string, extra: { message?: string; error?: string; inviteLink?: string } = {}, status = 200) {
   const db = c.env.DB, p = await getPartner(db, id);
   if (!p) throw new HttpError(404, "Unknown partner");
   const today = nowIst().date, month = c.req.query("month") && /^\d{4}-\d{2}$/.test(c.req.query("month")!) ? c.req.query("month")! : today.slice(0, 7);
@@ -127,7 +132,8 @@ async function partnerDetail(c: C, id: string, extra: { message?: string; error?
     db.prepare("SELECT * FROM partner_statements WHERE partner_id = ? ORDER BY month DESC").bind(id).all<PartnerStatementRow>().then((r) => r.results),
     scorecard(db, p, month),
   ]);
-  return page(c, p.name, shell(partnerPage({ p, csrf: c.get("csrf"), businesses, others, statements, sc, month, site: c.env.SITE_URL || new URL(c.req.url).origin, ...extra })), status);
+  const login = await partnerLogin(db, id);
+  return page(c, p.name, shell(partnerPage({ p, csrf: c.get("csrf"), businesses, others, statements, sc, month, login, site: c.env.SITE_URL || new URL(c.req.url).origin, ...extra })), status);
 }
 const csvFile = (c: C, name: string, body: string) => {
   c.header("cache-control", "no-store"); c.header("content-type", "text/csv; charset=utf-8"); c.header("content-disposition", `attachment; filename="${name}"`);
@@ -136,7 +142,11 @@ const csvFile = (c: C, name: string, body: string) => {
 ops.get("/partners", (c) => partnersList(c));
 ops.post("/partners", async (c) => {
   const f = await c.req.parseBody();
-  try { const id = await savePartner(c.env.DB, f); return c.redirect(`/ops/partners/${encodeURIComponent(id)}?done=created`, 303); }
+  try {
+    const id = await savePartner(c.env.DB, f), ref = String(f.application_ref ?? "");
+    if (ref) await linkApplicationToPartner(c.env.DB, ref, id);
+    return c.redirect(`/ops/partners/${encodeURIComponent(id)}?done=created`, 303);
+  }
   catch (e) { if (e instanceof HttpError && e.status < 500) return partnersList(c, { error: e.message, values: Object.fromEntries(Object.entries(f).map(([k, v]) => [k, String(v)])) }, e.status); throw e; }
 });
 ops.get("/partners.csv", async (c) => {
@@ -158,7 +168,32 @@ ops.post("/partners/statements/:sid/paid", async (c) => {
   }
   return c.redirect(`/ops/partners/statements/${encodeURIComponent(sid)}`, 303);
 });
-const PARTNER_DONE: Record<string, string> = { created: "Partner added. Share their link to get started.", saved: "Saved.", business: "Businesses updated." };
+const PARTNER_DONE: Record<string, string> = { created: "Partner added. Invite them to the partner portal when their agreement is signed.", saved: "Saved.", business: "Businesses updated.",
+  invited: "Invitation emailed. The link works for 3 days.", disabled: "Portal login turned off. They're signed out.", enabled: "Portal login turned back on." };
+ops.get("/partners/applications/:ref", async (c) => {
+  const a = await partnerApplication(c.env.DB, c.req.param("ref"));
+  if (!a) throw new HttpError(404, "Unknown application");
+  return page(c, a.name, shell(partnerApplicationPage({ a, csrf: c.get("csrf"), message: c.req.query("done") ? "Saved." : undefined })));
+});
+ops.post("/partners/applications/:ref", async (c) => {
+  const f = await c.req.parseBody(), ref = c.req.param("ref");
+  await updatePartnerApplication(c.env.DB, ref, String(f.status ?? ""), String(f.team_notes ?? ""));
+  return c.redirect(`/ops/partners/applications/${encodeURIComponent(ref)}?done=1`, 303);
+});
+ops.post("/partners/:id/portal", async (c) => {
+  const f = await c.req.parseBody(), id = c.req.param("id"), action = String(f.action ?? "");
+  try {
+    if (action === "invite") {
+      const r = await invitePartner(c.env, id, c.env.SITE_URL || new URL(c.req.url).origin);
+      // When the email fails the one-time link is shown on this page only, never put in a URL.
+      return r.sent ? c.redirect(`/ops/partners/${encodeURIComponent(id)}?done=invited`, 303) : partnerDetail(c, id, { error: `The email to ${r.email} couldn't be sent (${r.code ?? "error"}).`, inviteLink: r.link });
+    }
+    const login = await partnerLogin(c.env.DB, id);
+    if (!login || (action !== "disable" && action !== "enable")) throw new HttpError(400, "Nothing to change.");
+    await setPartnerLoginActive(c.env.DB, login.id, action === "enable");
+    return c.redirect(`/ops/partners/${encodeURIComponent(id)}?done=${action === "enable" ? "enabled" : "disabled"}`, 303);
+  } catch (e) { if (e instanceof HttpError && e.status < 500) return partnerDetail(c, id, { error: e.message }, e.status); throw e; }
+});
 ops.get("/partners/:id", (c) => partnerDetail(c, c.req.param("id"), { message: PARTNER_DONE[c.req.query("done") ?? ""] }));
 ops.post("/partners/:id", async (c) => {
   const id = c.req.param("id");

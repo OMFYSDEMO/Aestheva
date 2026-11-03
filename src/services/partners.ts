@@ -13,6 +13,7 @@ export interface PartnerRow {
   id: string; code: string; name: string; region: string; email: string; phone: string; pan: string; gstin: string;
   bank_name: string; bank_account: string; bank_ifsc: string; agreement_date: string | null;
   status: "active" | "paused" | "ended" | "terminated"; ended_on: string | null; notes: string; created_at: string;
+  terms_version?: string; terms_accepted_at?: string | null;
 }
 export interface PartnerStatementRow {
   id: string; partner_id: string; month: string; number: string; share_paise: number; bonus_paise: number; gross_paise: number;

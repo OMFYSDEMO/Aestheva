@@ -1,5 +1,7 @@
 import { Hono, type Context } from "hono";
 import { partnerByCode } from "../services/partners";
+import { createPartnerApplication, validatePartnerApplication } from "../services/partner-portal";
+import { becomePartnerPage, becomePartnerThanks } from "../views/partner-portal";
 import { sentenceCase } from "../views/ui";
 import type { Env } from "../env";
 import { AREAS, COMPANY, INCENTIVES, WAITLIST_CITIES, typeLabel } from "../config";
@@ -229,6 +231,28 @@ site.post("/for-practitioners/apply", async (c) => {
   return page(c, { ...applyMeta(c), noindex: true }, applyThanksPage(ref, r.value.contact_name));
 });
 
+// ---------- become a Regional Partner ----------
+const partnerMeta = (c: C) => ({ title: "Become an Aestheva Regional Partner · Kochi, Thrissur, Kozhikode", description: "Know the salons, studios and clinics in your city? Introduce them to Aestheva, help them get booked online, and earn 25% of the commission Aestheva receives from them.", canonical: base(c) + "/become-a-partner" });
+site.get("/become-a-partner", (c) => page(c, partnerMeta(c), becomePartnerPage({ values: {}, errors: {}, started: Date.now() })));
+site.post("/become-a-partner", async (c) => {
+  const form = (await c.req.parseBody()) as Record<string, string>;
+  // Bots: the hidden field is filled in, or the form came back faster than a person could fill it. Thank them and store nothing.
+  const started = Number(form.t);
+  if (String(form.website ?? "") !== "" || !(started > 0) || Date.now() - started < 3000) {
+    console.log("partner application ignored as automated");
+    return page(c, { ...partnerMeta(c), noindex: true }, becomePartnerThanks(`RP-${crypto.randomUUID().slice(0, 6).toUpperCase()}`, ""));
+  }
+  const r = validatePartnerApplication(form);
+  if (!r.ok) return page(c, { ...partnerMeta(c), noindex: true }, becomePartnerPage({ values: form, errors: r.errors, started }), 400);
+  try {
+    const ref = await createPartnerApplication(c.env, r.value, c.req.header("cf-connecting-ip") ?? "", base(c));
+    return page(c, { ...partnerMeta(c), noindex: true }, becomePartnerThanks(ref, r.value.name));
+  } catch (e) {
+    if (e instanceof HttpError && e.status === 429) return page(c, { ...partnerMeta(c), noindex: true }, becomePartnerPage({ values: form, errors: { network: e.message }, started }), 429);
+    throw e;
+  }
+});
+
 // ---------- service guides: /trivandrum/<service> ----------
 
 /** Live services matching a guide. Medical guides list only medical services, beauty guides only non-medical ones. */
@@ -284,7 +308,7 @@ site.get("/sitemap.xml", async (c) => {
   const xmlEsc = (u: string) => u.replace(/&/g, "&amp;");
   const urls: [string, string][] = [["/", "daily"], ["/search", "daily"], ...cats.map((id): [string, string] => [`/search?cat=${id}`, "weekly"]), ...ps.map((p): [string, string] => [`/p/${p.slug}`, "daily"]),
     ["/trivandrum", "weekly"], ...guides.filter((g) => g.rows.length).map((g): [string, string] => [`/trivandrum/${g.t.slug}`, "weekly"]),
-    ["/about", "monthly"], ["/for-practitioners", "monthly"], ["/for-practitioners/apply", "monthly"], ["/contact", "monthly"], ["/policies/cancellation", "yearly"], ["/policies/terms", "yearly"], ["/policies/privacy", "yearly"], ["/policies/data-protection", "yearly"], ...CITY_ORDER.map((s): [string, string] => [`/${s}`, "monthly"]), ...TRADES.map((t): [string, string] => [`/for-practitioners/${t.slug}`, "monthly"])];
+    ["/about", "monthly"], ["/for-practitioners", "monthly"], ["/for-practitioners/apply", "monthly"], ["/become-a-partner", "monthly"], ["/contact", "monthly"], ["/policies/cancellation", "yearly"], ["/policies/terms", "yearly"], ["/policies/privacy", "yearly"], ["/policies/data-protection", "yearly"], ...CITY_ORDER.map((s): [string, string] => [`/${s}`, "monthly"]), ...TRADES.map((t): [string, string] => [`/for-practitioners/${t.slug}`, "monthly"])];
   return c.body(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map(([u, f]) => `<url><loc>${xmlEsc(b + u)}</loc><changefreq>${f}</changefreq></url>`).join("")}</urlset>`, 200, { "content-type": "application/xml" });
 });
 

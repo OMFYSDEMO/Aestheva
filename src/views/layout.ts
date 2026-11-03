@@ -73,14 +73,14 @@ ${ribbon}
 <main id="main">
 ${body}
 </main>
-${o.app ? `<footer class="footer app-foot"><p>Aestheva for business · Help: <a href="mailto:${esc(COMPANY.supportEmail)}">${esc(COMPANY.supportEmail)}</a></p></footer>` : `<footer class="footer">${o.city ? CITIES[o.city].footer : SKYLINE}<div class="footer-in">
+${o.app ? `<footer class="footer app-foot"><p>Aestheva ${o.app.label === "partners" ? "Regional Partners" : "for business"} · Help: <a href="mailto:${esc(COMPANY.supportEmail)}">${esc(COMPANY.supportEmail)}</a></p></footer>` : `<footer class="footer">${o.city ? CITIES[o.city].footer : SKYLINE}<div class="footer-in">
   <div class="footer-brand">
     <div class="logo logo-foot"><span class="wm">aestheva</span></div>
     <p class="mt12">Beauty, wellness and care in ${esc(COMPANY.launchCity)}, booked with the price, the person and the time settled before you arrive.</p>
     <p class="mt12 xs">${o.city ? `Live in ${esc(COMPANY.launchCity)}.` : "Made in Kazhakkoottam."} Coming next: ${CITY_ORDER.map((s) => `<a href="/${s}">${CITIES[s].name}</a>`).join(", ").replace(/, ([^,]*)$/, " and $1")}.</p>
   </div>
   <nav aria-label="Explore"><h2>Explore</h2><a href="/search">All services</a><a href="/trivandrum">Prices &amp; service guides</a><a href="/search?cat=skin">Skin &amp; facials</a><a href="/search?cat=nails">Nails, lashes &amp; brows</a><a href="/search?cat=groom">Makeup &amp; grooming</a><a href="/search?cat=dental">Smile &amp; dental</a></nav>
-  <nav aria-label="Company"><h2>Company</h2><a href="/about">Our story</a><a href="/for-practitioners">List your business</a><a href="/for-practitioners/apply">Apply to join</a><a href="/contact">Contact</a></nav>
+  <nav aria-label="Company"><h2>Company</h2><a href="/about">Our story</a><a href="/for-practitioners">List your business</a><a href="/for-practitioners/apply">Apply to join</a><a href="/become-a-partner">Become a partner</a><a href="/contact">Contact</a></nav>
   <nav aria-label="Policies"><h2>Policies</h2><a href="/policies/cancellation">Cancellation &amp; refunds</a><a href="/policies/terms">Terms of use</a><a href="/policies/privacy">Privacy</a><a href="/policies/data-protection">Data protection for businesses</a></nav>
 </div>
 <div class="footer-base">

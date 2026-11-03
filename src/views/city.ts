@@ -208,7 +208,8 @@ export function cityPage(c: City, d: { joined?: boolean; placesLeft: number }) {
     <div class="sage-card" id="business"><div class="eyebrow" style="color:var(--sage-d)">For ${n} businesses</div><h3 class="mt8">Run a salon, studio or clinic in ${n}?</h3>
       <p class="small mt8" style="color:#33463A">Be one of the first on Aestheva in ${n}. Listing is free.${d.placesLeft ? ` The first ${INCENTIVES.foundingPlaces} businesses to go live, in any city, are founding partners: no commission for their first ${freePeriod()}, then ${INCENTIVES.foundingRateBp / 100}% until their first anniversary. <b>${d.placesLeft} places left.</b>` : ""} Bookings through your own Aestheva link never carry commission.</p>
       <div class="row wrap mt16" style="gap:10px"><a class="btn btn-p btn-s" href="/for-practitioners/apply">Apply in about five minutes</a><a class="btn btn-o btn-s" href="/for-practitioners">How it works</a></div>
-      <p class="xs mt12" style="color:#33463A">In the application, choose <b>Other</b> as the area and write your ${n} neighbourhood.</p></div>
+      <p class="xs mt12" style="color:#33463A">In the application, choose <b>Other</b> as the area and write your ${n} neighbourhood.</p>
+      <p class="xs mt8" style="color:#33463A">Know many businesses in ${n}? <a href="/become-a-partner">Become a Regional Partner</a>.</p></div>
   </section>
 
   <p class="small muted mt32" style="text-align:center">Also coming: ${CITY_ORDER.filter((s) => s !== c.slug).map((s) => `<a href="/${s}">${CITIES[s].name}</a>`).join(" and ")}. In ${esc(COMPANY.launchCity)} today? <a href="/search">Find something near you</a>.</p>
