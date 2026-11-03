@@ -6,7 +6,10 @@ export const COMPANY = {
   supportEmail: "hello@bookaestheva.com",
   // Temporary: Hasta Wellness's number, shared until Aestheva has its own line (planned once ~10 practitioners are onboarded).
   supportPhone: "+91 97784 58883",
-  registeredAddress: "1st floor, Anjali Arcade, near Nippon Toyota, Technopark Phase 3 Service Road, Kazhakkoottam, Thiruvananthapuram, Kerala 695583",
+  // Registered office exactly as the Registrar of Companies has it (certificate of incorporation): on invoices and legal pages.
+  registeredAddress: "Anjali Arcade, Arappuraviakom, Attinkuzhi, Kazhakuttam, Thiruvananthapuram, Kerala 695582",
+  // Where to find the office in person: on the contact page.
+  officeAddress: "1st floor, Anjali Arcade, near Nippon Toyota, Technopark Phase 3 Service Road, Kazhakkoottam, Thiruvananthapuram",
   launchCity: "Thiruvananthapuram",
   // Data protection: the person named as Grievance Officer in the privacy notice (required by the IT (SPDI) Rules, 2011).
   grievanceOfficer: "Shaji Anandan",

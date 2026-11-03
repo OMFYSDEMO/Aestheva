@@ -237,7 +237,7 @@ export function contactPage() {
     <div class="contact-grid mt24">
       <a class="contact-card" href="mailto:${esc(COMPANY.supportEmail)}">${ic("mail", 22)}<b>Email</b><span>${fact(COMPANY.supportEmail, "Support email")}</span></a>
       ${COMPANY.supportPhone ? `<a class="contact-card" href="tel:${esc(tel)}">${ic("phone", 22)}<b>Phone</b><span>${esc(COMPANY.supportPhone)}</span></a>` : ""}
-      <div class="contact-card">${ic("pin", 22)}<b>Office</b><span>${fact(COMPANY.registeredAddress, "Registered address")}</span></div>
+      <div class="contact-card">${ic("pin", 22)}<b>Office</b><span>${fact(COMPANY.officeAddress, "Office address")}<br><span class="xs muted">Registered office: ${esc(COMPANY.registeredAddress)}</span></span></div>
     </div>
     <p class="mt24">About a booking? Include your booking reference, which starts with AE-, and we can help faster.</p>
     <p class="small muted">Aestheva is a start-up division of <b>${esc(COMPANY.legalName)}</b> · CIN ${esc(COMPANY.cin)} · GSTIN ${esc(COMPANY.gstin)}.</p>
