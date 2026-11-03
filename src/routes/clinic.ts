@@ -168,8 +168,13 @@ clinic.post("/setup/photos", async (c) => {
 });
 clinic.post("/setup/photos/change", async (c) => {
   const f = await form(c);
-  const action = f.action === "cover" ? "cover" : f.action === "focus" ? "focus" : "remove";
-  await changePhoto(c.env, pid(c), String(f.src ?? ""), action, actor(c), String(f.pos ?? ""));
+  const action = f.action === "cover" ? "cover" : f.action === "focus" ? "focus" : f.action === "alt" ? "alt" : "remove";
+  try { await changePhoto(c.env, pid(c), String(f.src ?? ""), action, actor(c), String((action === "alt" ? f.alt : f.pos) ?? "")); }
+  catch (e) {
+    if (!(e instanceof HttpError) || e.status >= 500) throw e;
+    if (c.req.header("x-requested-with") === "fetch") return c.json({ error: e.message }, e.status as 400);
+    return page(c, "Photos", "setup", photosPage({ p: (await listing(c.env.DB, pid(c))).p, csrf: c.get("csrf"), error: e.message }), e.status);
+  }
   if (c.req.header("x-requested-with") === "fetch") return c.json({ ok: true });
   return c.redirect("/clinic/setup/photos", 303);
 });

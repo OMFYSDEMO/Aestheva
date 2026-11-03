@@ -159,8 +159,14 @@ async function venuePage(c: C, id: string, extra: { message?: string; error?: st
   const previewUrl = `/p/${l.p.slug}${l.p.status === "live" ? "" : `?preview=${encodeURIComponent(c.env.PREVIEW_KEY ?? "")}`}`;
   return page(c, l.p.name, opsVenuePage({ p: l.p, stage: STAGE(l.p), steps: ch.steps, staff: l.staff, services: l.services, photos: photosOf(l.p), docs: l.docs, verifications: ver, previewUrl, csrf: c.get("csrf"), ...extra }), status);
 }
-const STAGE_DONE: Record<string, string> = { document: "Document uploaded.", publish: "Published. The clinic has been emailed.", send_back: "Sent back. The clinic has been emailed your note.", pause: "Paused. The clinic has been emailed." };
+const STAGE_DONE: Record<string, string> = { photo_alt: "Photo description saved.", document: "Document uploaded.", publish: "Published. The clinic has been emailed.", send_back: "Sent back. The clinic has been emailed your note.", pause: "Paused. The clinic has been emailed." };
 ops.get("/venues/:id", (c) => venuePage(c, c.req.param("id"), { message: STAGE_DONE[c.req.query("done") ?? ""] }));
+ops.post("/venues/:id/photos/alt", async (c) => {
+  const f = await c.req.parseBody(), id = c.req.param("id");
+  try { await changePhoto(c.env, id, String(f.src ?? ""), "alt", "ops", String(f.alt ?? "")); }
+  catch (e) { if (e instanceof HttpError && e.status < 500) return venuePage(c, id, { error: e.message }, e.status); throw e; }
+  return c.redirect(`/ops/venues/${encodeURIComponent(id)}?done=photo_alt`, 303);
+});
 ops.post("/venues/:id/photos/focus", async (c) => {
   const f = await c.req.parseBody(), id = c.req.param("id");
   await changePhoto(c.env, id, String(f.src ?? ""), "focus", "ops", String(f.pos ?? ""));

@@ -849,3 +849,4 @@ html{overflow-x:clip}
 /* Category bands: a hairline strip of that category's tools at the top of its pages */
 .cat-band{color:var(--mulberry);opacity:.55;margin:10px 0 6px;overflow:hidden}
 .cat-band .cat-art{display:block;width:100%;height:clamp(62px,9vw,112px)}
+.alt-ed .in{font-size:13px;padding:7px 10px}

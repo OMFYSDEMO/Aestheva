@@ -71,6 +71,15 @@ describe("venue photos", () => {
     expect((await send("GET", `/p/${v.slug}`)).text).toContain("object-position:35% 22%");
     const bad = await send("POST", `/ops/venues/${v.id}/photos/focus`, { csrf, src: `/media/${v.id}/abc123`, pos: "left" }, cookie, { "x-requested-with": "fetch" });
     expect(bad.status).toBe(400);
+    // Edit the description.
+    const alt = await send("POST", `/ops/venues/${v.id}/photos/alt`, { csrf, src: `/media/${v.id}/abc123`, alt: "Treatment room with two beds by the window" }, cookie);
+    expect(alt.status).toBe(303);
+    const stored = JSON.parse((await sql("SELECT photos_json FROM providers WHERE id = ?", v.id))[0].photos_json)[0];
+    expect(stored).toMatchObject({ alt: "Treatment room with two beds by the window", pos: "35% 22%", w: 1125 });
+    expect((await send("GET", `/p/${v.slug}`)).text).toContain('alt="Treatment room with two beds by the window"');
+    const tooShort = await send("POST", `/ops/venues/${v.id}/photos/alt`, { csrf, src: `/media/${v.id}/abc123`, alt: "Room" }, cookie);
+    expect(tooShort.status).toBe(400);
+    expect(tooShort.text).toContain("describe the photo in a short sentence");
   });
 
   it("measures photos uploaded before shapes were saved", async () => {

@@ -215,13 +215,17 @@ export async function addPhoto(env: Env, pid: string, files: Record<"w400" | "w8
   photos.push({ src: `/media/${pid}/${id}`, alt, ...shape });
   await env.DB.batch([env.DB.prepare("UPDATE providers SET photos_json = ? WHERE id = ?").bind(JSON.stringify(photos), pid), audit(env.DB, actor, "listing.photo_added", "provider", pid)]);
 }
-export async function changePhoto(env: Env, pid: string, src: string, action: "remove" | "cover" | "focus", actor: string, pos?: string) {
+export async function changePhoto(env: Env, pid: string, src: string, action: "remove" | "cover" | "focus" | "alt", actor: string, value?: string) {
   const p = await env.DB.prepare("SELECT photos_json FROM providers WHERE id = ?").bind(pid).first<{ photos_json: string }>();
   const photos: StoredPhoto[] = JSON.parse(p?.photos_json || "[]");
   const i = photos.findIndex((x) => x.src === src);
   if (i < 0) throw new HttpError(404, "That photo is no longer there.");
-  if (action === "focus") {
-    const m = /^(\d{1,3})% (\d{1,3})%$/.exec(pos ?? "");
+  if (action === "alt") {
+    const alt = (value ?? "").trim();
+    if (alt.length < 10 || alt.length > 140) throw new HttpError(400, "Please describe the photo in a short sentence, for example “Reception with the waiting area”. It helps clients who use screen readers.");
+    photos[i] = { ...photos[i], alt };
+  } else if (action === "focus") {
+    const m = /^(\d{1,3})% (\d{1,3})%$/.exec(value ?? "");
     if (!m || +m[1] > 100 || +m[2] > 100) throw new HttpError(400, "Tap the photo to choose the part to keep in view.");
     photos[i] = { ...photos[i], pos: `${+m[1]}% ${+m[2]}%` };
   } else {

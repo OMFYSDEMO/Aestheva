@@ -131,6 +131,11 @@ export function photoImg(ph: Photo, sizes: string, opts: { eager?: boolean; deco
   const dims = ph.w && ph.h ? ` width="${ph.w}" height="${ph.h}"` : "";
   return `<img src="${esc(ph.src)}-800.webp" srcset="${set}" sizes="${sizes}"${dims} style="object-position:${photoPos(ph)}" alt="${opts.decorative ? "" : esc(ph.alt)}" ${opts.eager ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async">`;
 }
+/** Change a photo's description, the words read aloud to clients who use screen readers. */
+export function altEditor(ph: Photo, action: string, hidden: Record<string, string>) {
+  return `<form class="alt-ed" method="post" action="${esc(action)}">${Object.entries(hidden).map(([k, v]) => `<input type="hidden" name="${esc(k)}" value="${esc(v)}">`).join("")}
+    <label class="f xs">Description<span class="row" style="gap:6px"><input class="in" name="alt" value="${esc(ph.alt)}" minlength="10" maxlength="140" required><button class="btn btn-o btn-x" type="submit">Save</button></span></label></form>`;
+}
 /**
  * The framing tool: the whole photo, uncropped; tap the part that matters and the form saves it. Below it, how the photo
  * looks in a wide frame. Works through site.js; without JavaScript the photo still shows, centred.
