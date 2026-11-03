@@ -54,6 +54,22 @@ export const INCENTIVES = {
   welcomeCreditPaise: 10000, // ₹100 off the deposit of a client's first booking, paid by Aestheva
 } as const;
 
+/** Regional Partners (Drive: "Regional Partner programme"). Tax treatment to be confirmed with the company's CA. */
+export const PARTNERS = {
+  shareBp: 2500,            // 25% of the commission Aestheva receives (excluding GST) from businesses the partner brought
+  months: 24,               // ... for 24 months from each business's go-live date
+  bonusPaise: 75000,        // ₹750 once a business is live and has 5 completed online bookings
+  bonusBookings: 5,
+  bonusDays: 60,            // ... within 60 days of going live
+  tailMonths: 6,            // after an ordinary ending, shares continue this long
+  gstBp: 1800,              // added for a GST-registered partner
+  tdsBp: 200,               // TDS on commission: s.393(1) Income-tax Act 2025 (formerly s.194H)
+  tdsNoPanBp: 2000,         // without a valid PAN
+  tdsThresholdPaise: 2000000, // TDS applies once a partner's payments pass ₹20,000 in a financial year
+  issueDay: 10,             // statements for a month are made on the 10th of the next month
+  prefix: "PS",
+} as const;
+
 /** Where Aestheva works for now: Thiruvananthapuram and the towns around it. */
 export const SERVICE_AREA = { name: "Thiruvananthapuram", short: "Trivandrum", lat: 8.4875, lng: 76.952, radiusKm: 40 } as const;
 

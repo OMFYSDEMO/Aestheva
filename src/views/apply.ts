@@ -14,7 +14,7 @@ export function applyPage(d: { values: ApplicationForm; errors: Record<string, s
     `<label class="f" for="f-${k}">${label}${hint ? ` <span class="hint">${hint}</span>` : ""}<input class="in" id="f-${k}" name="${k}" value="${val(v, k)}"${inv(k)} ${attrs}>${err(k)}</label>`;
   const select = (k: string, label: string, opts: readonly string[], placeholder: string) =>
     `<label class="f" for="f-${k}">${label}<select class="in" id="f-${k}" name="${k}"${inv(k)} required><option value="">${placeholder}</option>${opts.map((o) => `<option ${val(v, k) === esc(o) ? "selected" : ""}>${esc(o)}</option>`).join("")}</select>${err(k)}</label>`;
-  const labels: Record<string, string> = { business_name: "Business name", business_type: "Kind of business", area: "Area", area_other: "Area", address: "Address", website: "Website", contact_name: "Your name", contact_role: "Your role", phone: "Mobile number", email: "Email", categories: "Services", medical: "Medical services", team_size: "People taking bookings", services_text: "Main services", establishment_reg: "Establishment registration", practitioner_reg: "Practitioner registration", gstin: "GSTIN", heard_from: "How you heard", consent: "Confirmation" };
+  const labels: Record<string, string> = { partner_code: "Partner code", business_name: "Business name", business_type: "Kind of business", area: "Area", area_other: "Area", address: "Address", website: "Website", contact_name: "Your name", contact_role: "Your role", phone: "Mobile number", email: "Email", categories: "Services", medical: "Medical services", team_size: "People taking bookings", services_text: "Main services", establishment_reg: "Establishment registration", practitioner_reg: "Practitioner registration", gstin: "GSTIN", heard_from: "How you heard", consent: "Confirmation" };
   const summary = Object.keys(e).length ? `<div class="form-error" role="alert" tabindex="-1" id="apply-errors"><b>Please check ${Object.keys(e).length === 1 ? "one answer" : `${Object.keys(e).length} answers`}:</b><ul>${Object.keys(e).map((k) => `<li><a href="#${k === "categories" || k === "medical" || k === "consent" ? k : "f-" + k}">${labels[k] ?? k}</a>: ${esc(e[k])}</li>`).join("")}</ul></div>` : "";
   return `<div class="page">
     <a class="btn btn-g btn-s" href="/for-practitioners" style="margin-left:-10px">${ic("chevL", 16)} List your business</a>
@@ -56,6 +56,7 @@ export function applyPage(d: { values: ApplicationForm; errors: Record<string, s
             <div class="grid g2">${input("contact_name", "Your name", 'required maxlength="80" autocomplete="name"')}${select("contact_role", "Your role", ROLES, "Choose one")}</div>
             <div class="grid g2">${input("phone", "Mobile number", 'required type="tel" inputmode="tel" autocomplete="tel" placeholder="98765 43210"')}${input("email", "Email", 'required type="email" autocomplete="email"')}</div>
             ${input("heard_from", "How did you hear about Aestheva?", 'maxlength="120"', "Optional")}
+            ${input("partner_code", "Aestheva partner code", 'maxlength="12" autocapitalize="characters" spellcheck="false" style="max-width:220px"', "Optional. If an Aestheva Regional Partner is helping you, their code, for example KOCHI01")}
           </fieldset>
 
           <div class="apply-sec" id="consent">

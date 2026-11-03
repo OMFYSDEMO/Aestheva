@@ -7,7 +7,7 @@
 export const CLICK_KEYS = ["gclid", "gbraid", "wbraid"] as const;
 export const TAG_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"] as const;
 const KEYS = [...CLICK_KEYS, ...TAG_KEYS] as const;
-export type AdSource = Partial<Record<(typeof KEYS)[number] | "from", string>>;
+export type AdSource = Partial<Record<(typeof KEYS)[number] | "from" | "partner", string>>;
 
 const CLICK = /^[A-Za-z0-9_-]{8,200}$/;
 const TAG = /^[\p{L}\p{N} _.+\-|:/()&']{1,100}$/u;
@@ -20,6 +20,8 @@ export function readSource(q: URLSearchParams | Record<string, string | undefine
   const s: AdSource = {};
   for (const k of CLICK_KEYS) { const v = get(k).trim(); if (CLICK.test(v)) s[k] = v; }
   for (const k of TAG_KEYS) { const v = get(k).trim(); if (TAG.test(v)) s[k] = v; }
+  const partner = get("partner").trim().toUpperCase();
+  if (/^[A-Z][A-Z0-9]{2,11}$/.test(partner)) s.partner = partner;
   const from = [get("from").trim(), landing ?? ""].find((p) => PATH.test(p));
   if (from) s.from = from;
   return s;
@@ -58,6 +60,7 @@ export function sourceGroup(s: AdSource) {
   if (s.gclid || s.gbraid || s.wbraid || ((s.utm_source ?? "").toLowerCase() === "google" && /cpc|paid|ads?/i.test(s.utm_medium ?? "")))
     return `Google Ads${s.utm_campaign ? ` · ${s.utm_campaign}` : ""}`;
   if (s.utm_source) return [s.utm_source, s.utm_medium, s.utm_campaign].filter(Boolean).join(" · ");
+  if (s.partner) return `Partner ${s.partner}`;
   return "No ad or tagged link";
 }
 

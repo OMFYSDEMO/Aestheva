@@ -1,5 +1,7 @@
 // The team's private pages. Sign-in uses the OPS_KEY secret; the session is a signed, HttpOnly cookie scoped to /ops.
 import { Hono, type Context, type Next } from "hono";
+import { getPartner, markPartnerPaid, partnerAccountsCsv, partnerBankCsv, partnerStatement, prevMonth, savePartner, scorecard, setProviderPartner, type PartnerStatementRow } from "../services/partners";
+import { partnerPage, partnersListPage, partnerStatementPage, type PartnerListRow } from "../views/partners";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type { Env } from "../env";
 import { audit, hmacSha256Hex, safeEqual } from "../db";
@@ -102,6 +104,82 @@ ops.post("/joiners/:id/nudge", async (c) => {
   const f = await c.req.parseBody();
   const r = await nudge(c.env, c.req.param("id"), String(f.note ?? ""), c.env.SITE_URL || new URL(c.req.url).origin);
   return c.redirect(`/ops/joiners?sent=${r.sent}`, 303);
+});
+
+// ---------- Regional Partners ----------
+async function partnersList(c: C, extra: { error?: string; values?: Record<string, string> } = {}, status = 200) {
+  const db = c.env.DB, month = prevMonth(nowIst().date);
+  const rows = (await db.prepare(`SELECT p.*,
+      (SELECT COUNT(*) FROM providers v WHERE v.partner_id = p.id) AS businesses,
+      (SELECT COUNT(*) FROM providers v WHERE v.partner_id = p.id AND v.status = 'live') AS live,
+      (SELECT COALESCE(SUM(gross_paise), 0) FROM partner_statements s WHERE s.partner_id = p.id) AS earned,
+      (SELECT COALESCE(SUM(net_paise), 0) FROM partner_statements s WHERE s.partner_id = p.id AND s.status = 'issued') AS unpaid
+    FROM partners p ORDER BY p.status = 'active' DESC, p.region, p.name`).all<PartnerListRow>()).results;
+  return page(c, "Regional Partners", shell(partnersListPage({ rows, csrf: c.get("csrf"), month, ...extra })), status);
+}
+async function partnerDetail(c: C, id: string, extra: { message?: string; error?: string } = {}, status = 200) {
+  const db = c.env.DB, p = await getPartner(db, id);
+  if (!p) throw new HttpError(404, "Unknown partner");
+  const today = nowIst().date, month = c.req.query("month") && /^\d{4}-\d{2}$/.test(c.req.query("month")!) ? c.req.query("month")! : today.slice(0, 7);
+  const [businesses, others, statements, sc] = await Promise.all([
+    db.prepare("SELECT id, name, area, status, live_since FROM providers WHERE partner_id = ? ORDER BY name").bind(id).all<{ id: string; name: string; area: string; status: string; live_since: string | null }>().then((r) => r.results),
+    db.prepare("SELECT id, name, area FROM providers WHERE partner_id IS NULL AND payout_mode <> 'own' ORDER BY name").all<{ id: string; name: string; area: string }>().then((r) => r.results),
+    db.prepare("SELECT * FROM partner_statements WHERE partner_id = ? ORDER BY month DESC").bind(id).all<PartnerStatementRow>().then((r) => r.results),
+    scorecard(db, p, month),
+  ]);
+  return page(c, p.name, shell(partnerPage({ p, csrf: c.get("csrf"), businesses, others, statements, sc, month, site: c.env.SITE_URL || new URL(c.req.url).origin, ...extra })), status);
+}
+const csvFile = (c: C, name: string, body: string) => {
+  c.header("cache-control", "no-store"); c.header("content-type", "text/csv; charset=utf-8"); c.header("content-disposition", `attachment; filename="${name}"`);
+  return c.body("\ufeff" + body);
+};
+ops.get("/partners", (c) => partnersList(c));
+ops.post("/partners", async (c) => {
+  const f = await c.req.parseBody();
+  try { const id = await savePartner(c.env.DB, f); return c.redirect(`/ops/partners/${encodeURIComponent(id)}?done=created`, 303); }
+  catch (e) { if (e instanceof HttpError && e.status < 500) return partnersList(c, { error: e.message, values: Object.fromEntries(Object.entries(f).map(([k, v]) => [k, String(v)])) }, e.status); throw e; }
+});
+ops.get("/partners.csv", async (c) => {
+  const month = c.req.query("month") ?? "";
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new HttpError(400, "Choose a month");
+  return csvFile(c, `aestheva-partners-${month}.csv`, await partnerAccountsCsv(c.env.DB, month));
+});
+ops.get("/partners/bank.csv", async (c) => csvFile(c, `aestheva-partner-payments-${nowIst().date}.csv`, await partnerBankCsv(c.env.DB)));
+ops.get("/partners/statements/:sid", async (c) => {
+  const d = await partnerStatement(c.env.DB, c.req.param("sid"));
+  return page(c, d.s.number, shell(`<div class="statement">${partnerStatementPage({ ...d, csrf: c.get("csrf"), today: nowIst().date })}</div>`));
+});
+ops.post("/partners/statements/:sid/paid", async (c) => {
+  const f = await c.req.parseBody(), sid = c.req.param("sid");
+  try { await markPartnerPaid(c.env.DB, sid, String(f.paid_on ?? ""), String(f.paid_ref ?? "")); }
+  catch (e) {
+    if (e instanceof HttpError && e.status < 500) { const d = await partnerStatement(c.env.DB, sid); return page(c, d.s.number, shell(partnerStatementPage({ ...d, csrf: c.get("csrf"), today: nowIst().date, error: e.message })), e.status); }
+    throw e;
+  }
+  return c.redirect(`/ops/partners/statements/${encodeURIComponent(sid)}`, 303);
+});
+const PARTNER_DONE: Record<string, string> = { created: "Partner added. Share their link to get started.", saved: "Saved.", business: "Businesses updated." };
+ops.get("/partners/:id", (c) => partnerDetail(c, c.req.param("id"), { message: PARTNER_DONE[c.req.query("done") ?? ""] }));
+ops.post("/partners/:id", async (c) => {
+  const id = c.req.param("id");
+  try { await savePartner(c.env.DB, await c.req.parseBody(), id); }
+  catch (e) { if (e instanceof HttpError && e.status < 500) return partnerDetail(c, id, { error: e.message }, e.status); throw e; }
+  return c.redirect(`/ops/partners/${encodeURIComponent(id)}?done=saved`, 303);
+});
+ops.post("/partners/:id/businesses", async (c) => {
+  const f = await c.req.parseBody(), id = c.req.param("id"), pid = String(f.provider_id ?? "");
+  try {
+    if (f.remove) {
+      const v = await c.env.DB.prepare("SELECT partner_id FROM providers WHERE id = ?").bind(pid).first<{ partner_id: string | null }>();
+      if (v?.partner_id !== id) throw new HttpError(400, "That business isn't credited to this partner.");
+      await setProviderPartner(c.env.DB, pid, null, "ops");
+    } else {
+      const v = await c.env.DB.prepare("SELECT partner_id FROM providers WHERE id = ?").bind(pid).first<{ partner_id: string | null }>();
+      if (v?.partner_id) throw new HttpError(409, "That business is already credited to a partner. Remove it there first.");
+      await setProviderPartner(c.env.DB, pid, id, "ops");
+    }
+  } catch (e) { if (e instanceof HttpError && e.status < 500) return partnerDetail(c, id, { error: e.message }, e.status); throw e; }
+  return c.redirect(`/ops/partners/${encodeURIComponent(id)}?done=business`, 303);
 });
 
 ops.get("/money", async (c) => {

@@ -1,6 +1,7 @@
 // Self-serve onboarding. A clinic builds its own listing in the portal (details, photos, team, treatments,
 // documents, terms), submits it, and the Aestheva team publishes it. Every function is scoped to one provider.
 import { AREAS, COMPANY, INCENTIVES, VENUE_TYPES } from "../config";
+import { partnerByCode } from "./partners";
 import { assignFoundingNo, foundingTerms, freePeriod, ownLink } from "./incentives";
 import { isGstin } from "./statements";
 import type { Env } from "../env";
@@ -35,11 +36,13 @@ export async function approveApplication(env: Env, ref: string, siteUrl: string)
   const area = (AREAS as readonly string[]).includes(a.area) ? a.area : "";
   let s = `${id}-${slug(area || "thiruvananthapuram")}`;
   for (let n = 2; await taken("slug", s); n++) s = `${id}-${slug(area || "thiruvananthapuram")}-${n}`;
+  // The partner whose code was on the application is fixed to the business now (the team can change it later).
+  const partner = a.partner_code ? await partnerByCode(db, a.partner_code) : null;
   await db.batch([
-    db.prepare(`INSERT INTO providers (id, slug, name, type, area, address, phone, art, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft')`)
-      .bind(id, s, a.business_name, a.business_type, area, a.address, a.phone, hash32(id) % 8),
+    db.prepare(`INSERT INTO providers (id, slug, name, type, area, address, phone, art, status, partner_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?)`)
+      .bind(id, s, a.business_name, a.business_type, area, a.address, a.phone, hash32(id) % 8, partner?.id ?? null),
     db.prepare("UPDATE applications SET status = 'approved', provider_id = ?, updated_at = ? WHERE ref = ?").bind(id, nowIso(), ref),
-    audit(db, "ops", "application.approved", "application", ref, { providerId: id }),
+    audit(db, "ops", "application.approved", "application", ref, { providerId: id, ...(partner ? { partnerId: partner.id } : {}) }),
   ]);
   let user: ClinicUser;
   try { user = await createClinicUser(db, id, a.contact_name, a.email); }

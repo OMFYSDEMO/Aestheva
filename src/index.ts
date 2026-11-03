@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { makePartnerStatements } from "./services/partners";
 import { measurePhotos } from "./services/onboarding";
 import type { Env } from "./env";
 import { HttpError } from "./db";
@@ -78,6 +79,7 @@ export default {
     ctx.waitUntil(expireHolds(env).then((n) => { if (n) console.log(`released ${n} unpaid holds`); }));
     ctx.waitUntil(pruneApplications(env.DB).catch((e) => console.error("retention clean-up failed", e)));
     ctx.waitUntil(measurePhotos(env).then((n) => { if (n) console.log(`measured ${n} photos`); }, (e) => console.error("photo measuring failed", e)));
+    ctx.waitUntil(makePartnerStatements(env).then((n) => { if (n) console.log(`made ${n} partner statements`); }, (e) => console.error("partner statements failed", e)));
     ctx.waitUntil(moneyJobs(env).then((r) => { if (r.completed || r.made || r.issued || r.paid) console.log("money", r); }, (e) => console.error("money jobs failed", e)));
   },
 } satisfies ExportedHandler<Env>;

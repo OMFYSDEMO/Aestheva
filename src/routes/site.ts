@@ -1,4 +1,5 @@
 import { Hono, type Context } from "hono";
+import { partnerByCode } from "../services/partners";
 import { sentenceCase } from "../views/ui";
 import type { Env } from "../env";
 import { AREAS, COMPANY, INCENTIVES, WAITLIST_CITIES, typeLabel } from "../config";
@@ -186,6 +187,11 @@ site.get("/policies/data-protection", (c) => page(c, { title: "Data protection f
 for (const slug of CITY_ORDER) site.get(`/${slug}`, async (c) => page(c, { ...CITIES[slug].meta, canonical: base(c) + `/${slug}`, city: slug },
   cityPage(CITIES[slug], { joined: c.req.query("joined") === "1", placesLeft: await foundingPlacesLeft(c.env.DB) })));
 site.get("/calicut", (c) => c.redirect("/kozhikode", 301));
+/** A Regional Partner's own link: bookaestheva.com/partner/KOCHI01 opens the business pages with their code. */
+site.get("/partner/:code", async (c) => {
+  const p = await partnerByCode(c.env.DB, c.req.param("code"));
+  return c.redirect(p ? `/for-practitioners?partner=${encodeURIComponent(p.code)}&utm_source=partner&utm_campaign=${encodeURIComponent(p.code)}` : "/for-practitioners", 302);
+});
 site.get("/contact", (c) => page(c, { title: "Contact · Aestheva", canonical: base(c) + "/contact" }, contactPage()));
 site.get("/about", (c) => page(c, { jsonLd: [organisation(base(c))], title: "Our story · Aestheva", description: `Why we built Aestheva, who runs it, and what you can count on when you book care in ${COMPANY.launchCity}.`, canonical: base(c) + "/about", nav: "story", joinPromo: true }, aboutPage()));
 site.get("/for-practitioners", async (c) => page(c, { title: "List your salon, spa or clinic free in Trivandrum · Aestheva", description: `Free listing and online booking for salons, beauty parlours, spas, makeup artists and clinics in ${COMPANY.launchCity}. No commission on bookings from your own link.`, canonical: base(c) + "/for-practitioners", nav: "practitioners" },
@@ -197,8 +203,8 @@ export const venueTitle = (name: string, area: string) =>
 const applyMeta = (c: C) => ({ title: "Apply to list your business free · Aestheva", description: `List your salon, beauty parlour, spa, studio or clinic on Aestheva in ${COMPANY.launchCity}. Free to list; the form takes about five minutes.`, canonical: base(c) + "/for-practitioners/apply", nav: "practitioners" as const });
 site.get("/for-practitioners/apply", async (c) => {
   const cats = await categories(c.env.DB), pre = c.req.query("cat");
-  const src = sourceQuery(readSource(new URL(c.req.url).searchParams));
-  return page(c, applyMeta(c), applyPage({ values: { ...(pre && cats.some((x) => x.id === pre) ? { categories: [pre] } : {}), ...(src ? { src } : {}) }, errors: {}, categories: cats, started: Date.now() }));
+  const source = readSource(new URL(c.req.url).searchParams), src = sourceQuery(source);
+  return page(c, applyMeta(c), applyPage({ values: { ...(pre && cats.some((x) => x.id === pre) ? { categories: [pre] } : {}), ...(src ? { src } : {}), ...(source.partner ? { partner_code: source.partner } : {}) }, errors: {}, categories: cats, started: Date.now() }));
 });
 for (const t of TRADES) site.get(`/for-practitioners/${t.slug}`, async (c) => page(c, {
   title: t.title, description: t.description, canonical: `${base(c)}/for-practitioners/${t.slug}`, nav: "practitioners",
@@ -215,6 +221,8 @@ site.post("/for-practitioners/apply", async (c) => {
   }
   const r = validateApplication(form, cats.map((x) => x.id));
   if (!r.ok) return page(c, { ...applyMeta(c), noindex: true }, applyPage({ values: form, errors: r.errors, categories: cats, started }), 400);
+  if (r.value.partner_code && !(await partnerByCode(c.env.DB, r.value.partner_code)))
+    return page(c, { ...applyMeta(c), noindex: true }, applyPage({ values: form, errors: { partner_code: "We don't recognise that partner code. Please check it with your partner, or leave it blank." }, categories: cats, started }), 400);
   const { ref, repeat } = await createApplication(c.env, r.value, c.req.header("cf-connecting-ip") ?? "");
   // Email the team after responding; a failed email never loses the application, which is already saved.
   if (!repeat) c.executionCtx.waitUntil(notifyNewApplication(c.env, ref, r.value, base(c), r.value.categories.map((id) => cats.find((x) => x.id === id)?.name ?? id)));

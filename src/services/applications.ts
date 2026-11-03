@@ -20,7 +20,7 @@ export type AppStatus = (typeof APP_STATUSES)[number];
 export interface ApplicationRow {
   id: string; ref: string; status: AppStatus; business_name: string; business_type: string; area: string; address: string; website: string;
   contact_name: string; contact_role: string; phone: string; email: string; categories_json: string; medical: number; team_size: number;
-  services_text: string; establishment_reg: string; practitioner_reg: string; gstin: string; heard_from: string; ad_source: string; team_notes: string; provider_id: string | null;
+  services_text: string; establishment_reg: string; practitioner_reg: string; gstin: string; heard_from: string; ad_source: string; partner_code: string; team_notes: string; provider_id: string | null;
   created_at: string; updated_at: string;
 }
 
@@ -29,7 +29,7 @@ export type ApplicationForm = Record<string, string | string[]>;
 export interface CleanApplication {
   business_name: string; business_type: string; area: string; address: string; website: string; contact_name: string; contact_role: string;
   phone: string; email: string; categories: string[]; medical: boolean; team_size: number; services_text: string;
-  establishment_reg: string; practitioner_reg: string; gstin: string; heard_from: string; ad_source: string;
+  establishment_reg: string; practitioner_reg: string; gstin: string; heard_from: string; ad_source: string; partner_code: string;
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -68,6 +68,8 @@ export function validateApplication(f: ApplicationForm, categoryIds: string[]): 
   if (v.practitioner_reg.length > 120) e.practitioner_reg = "That's too long.";
   if (v.gstin && !GSTIN.test(v.gstin)) e.gstin = "That doesn't look like a GSTIN. It has 15 characters, for example 32ABCDE1234F1Z5. Leave it blank if you don't have one.";
   if (v.heard_from.length > 120) e.heard_from = "That's too long.";
+  const pc = str(f, "partner_code").toUpperCase().replace(/\s+/g, "");
+  if (pc && !/^[A-Z][A-Z0-9]{2,11}$/.test(pc)) e.partner_code = "A partner code is 3 to 12 letters and numbers, for example KOCHI01. Leave it blank if you don't have one.";
   if (str(f, "consent") !== "yes") e.consent = "Please confirm you can apply for this business.";
   if (Object.keys(e).length) return { ok: false, errors: e };
   return { ok: true, value: {
@@ -76,6 +78,7 @@ export function validateApplication(f: ApplicationForm, categoryIds: string[]): 
     medical: v.medical === "yes", team_size: team, services_text: v.services_text, establishment_reg: v.establishment_reg,
     practitioner_reg: v.practitioner_reg, gstin: v.gstin, heard_from: v.heard_from,
     ad_source: sourceJson(readSource(new URLSearchParams(str(f, "src")))),
+    partner_code: str(f, "partner_code").toUpperCase().replace(/\s+/g, ""),
   } };
 }
 
@@ -92,10 +95,10 @@ export async function createApplication(env: Env, a: CleanApplication, ip: strin
   const id = newId("app"), ref = newRef("AP");
   await db.batch([
     db.prepare(`INSERT INTO applications (id, ref, business_name, business_type, area, address, website, contact_name, contact_role, phone, email,
-      categories_json, medical, team_size, services_text, establishment_reg, practitioner_reg, gstin, heard_from, ad_source, ip_hash)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(
+      categories_json, medical, team_size, services_text, establishment_reg, practitioner_reg, gstin, heard_from, ad_source, partner_code, ip_hash)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(
       id, ref, a.business_name, a.business_type, a.area, a.address, a.website, a.contact_name, a.contact_role, a.phone, a.email,
-      JSON.stringify(a.categories), a.medical ? 1 : 0, a.team_size, a.services_text, a.establishment_reg, a.practitioner_reg, a.gstin, a.heard_from, a.ad_source, ipHash),
+      JSON.stringify(a.categories), a.medical ? 1 : 0, a.team_size, a.services_text, a.establishment_reg, a.practitioner_reg, a.gstin, a.heard_from, a.ad_source, a.partner_code, ipHash),
     audit(db, "applicant", "application.created", "application", ref, { business: a.business_name, type: a.business_type, area: a.area }),
   ]);
   return { ref, repeat: false };
