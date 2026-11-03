@@ -1,5 +1,5 @@
 // Team pages for Regional Partners: the list, each partner's record, businesses, scorecard and statements.
-import { PARTNERS } from "../config";
+import { COMPANY, PARTNERS } from "../config";
 import { PARTNER_STATUSES, type PartnerLineRow, type PartnerRow, type PartnerStatementRow, type Scorecard } from "../services/partners";
 import { monthLabel } from "../services/statements";
 import { esc, ic } from "./ui";
@@ -100,7 +100,7 @@ export function partnerStatementPage(d: { s: PartnerStatementRow; partner: Partn
       <dl class="kv mt16"><dt>Share</dt><dd>${inr(s.share_paise)}</dd><dt>Bonuses</dt><dd>${inr(s.bonus_paise)}</dd><dt>Earned</dt><dd><b>${inr(s.gross_paise)}</b></dd>
         ${s.gst_paise ? `<dt>GST (${PARTNERS.gstBp / 100}%)</dt><dd>${inr(s.gst_paise)}</dd>` : ""}<dt>Income-tax TDS</dt><dd>${s.tds_paise ? `−${inr(s.tds_paise)}` : "None this month"}</dd>
         <dt>To pay</dt><dd><b>${inr(s.net_paise)}</b></dd>${s.status === "paid" ? `<dt>Paid</dt><dd>${esc(s.paid_on ?? "")} · ${esc(s.paid_ref)}</dd>` : ""}</dl>
-      <p class="xs muted mt12">Made by Aestheva for Haswel Care Private Limited. TDS on commission under section 393(1) of the Income-tax Act, 2025 (formerly section 194H), applied once payments to the partner pass ₹20,000 in a financial year.</p></div>
+      <p class="xs muted mt12">Made by Aestheva for ${esc(COMPANY.legalName)} (PAN ${esc(COMPANY.pan)}, TAN ${esc(COMPANY.tan)}, CIN ${esc(COMPANY.cin)}). TDS on commission under section 393(1) of the Income-tax Act, 2025 (formerly section 194H), applied once payments to the partner pass ₹20,000 in a financial year.</p></div>
     ${s.status === "issued" ? `<form class="card col mt16 no-print" style="gap:12px;max-width:520px" method="post" action="/ops/partners/statements/${esc(s.id)}/paid"><input type="hidden" name="csrf" value="${esc(d.csrf)}">
       <b>Mark as paid</b><div class="grid g2"><label class="f">Paid on<input class="in" type="date" name="paid_on" value="${esc(d.today)}" required></label><label class="f">Bank or UPI reference<input class="in" name="paid_ref" required maxlength="60"></label></div>
       <div><button class="btn btn-ok btn-s" type="submit">Mark ${inr(s.net_paise)} as paid</button></div></form>` : ""}

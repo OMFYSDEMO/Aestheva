@@ -11,7 +11,10 @@ export const COMPANY = {
   // Data protection: the person named as Grievance Officer in the privacy notice (required by the IT (SPDI) Rules, 2011).
   grievanceOfficer: "Shaji Anandan",
   gstin: "32AAHCH7753F1ZL", // Haswel Care's GSTIN, printed on commission invoices. Invoices stay as drafts while it is empty.
-  cin: "U47720KL2025PTC092343",  // Corporate Identity Number: on invoices and wherever the company is named (Companies Act, s.12)
+  cin: "U47720KL2025PTC092343",
+  pan: "AAHCH7753F",            // Haswel Care's PAN (certificate of incorporation, 26 Feb 2025)
+  tan: "TVDH01489F",            // TAN: Aestheva deducts TDS from businesses and partners under it, and businesses see it in Form 26AS
+  // Corporate Identity Number: on invoices and wherever the company is named (Companies Act, s.12)
   privacyUpdated: "2 November 2026",
 } as const;
 

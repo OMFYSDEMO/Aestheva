@@ -3,7 +3,7 @@
 // actually received (excluding GST) from their businesses, for 24 months from each business's go-live date, plus a ₹750
 // bonus once a new business has 5 completed online bookings within 60 days of going live.
 import type { Env } from "../env";
-import { PARTNERS } from "../config";
+import { COMPANY, PARTNERS } from "../config";
 import { HttpError, audit, newId, nowIso } from "../db";
 import { addDays, nowIst } from "../domain/time";
 import { financialYear, monthLabel } from "./statements";
@@ -197,11 +197,12 @@ async function emailStatement(env: Env, partner: PartnerRow, id: string) {
   const rows = lines.map((l) => `${l.note}: ${rupees(l.amount_paise)}${l.kind === "share" ? ` (25% of ${rupees(l.base_paise)})` : ""}`);
   const totals = [`Earned: ${rupees(s.gross_paise)}`, ...(s.gst_paise ? [`GST: ${rupees(s.gst_paise)}`] : []), ...(s.tds_paise ? [`Income-tax TDS: −${rupees(s.tds_paise)}`] : []), `To be paid to your bank account: ${rupees(s.net_paise)}`];
   const text = [`Hello ${first},`, `Your Aestheva Regional Partner statement ${s.number} for ${monthLabel(s.month)}:`, ...rows, totals.join("\n"),
+    ...(s.tds_paise ? [`The TDS is deducted by ${COMPANY.legalName} (TAN ${COMPANY.tan}) and appears in your Form 26AS against your PAN.`] : []),
     "Payment is made to the bank account we hold for you. Reply to this email with any question.", "Aestheva partners team"].join("\n\n");
   const esc = (t: string) => t.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
   const html = `<div style="font-family:Arial,sans-serif;font-size:15px;color:#302A2E;line-height:1.55;max-width:560px"><p>Hello ${esc(first)},</p>
     <p>Your Aestheva Regional Partner statement <b>${esc(s.number)}</b> for ${esc(monthLabel(s.month))}:</p><ul>${rows.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>
-    <p>${totals.map(esc).join("<br>")}</p><p>Payment is made to the bank account we hold for you. Reply to this email with any question.</p><p>Aestheva partners team</p></div>`;
+    <p>${totals.map(esc).join("<br>")}</p>${s.tds_paise ? `<p>The TDS is deducted by ${esc(COMPANY.legalName)} (TAN ${esc(COMPANY.tan)}) and appears in your Form 26AS against your PAN.</p>` : ""}<p>Payment is made to the bank account we hold for you. Reply to this email with any question.</p><p>Aestheva partners team</p></div>`;
   const r = await sendEmail(env, partner.email, { subject: `Your Aestheva partner statement for ${monthLabel(s.month)}`, text, html });
   if (r.ok) await env.DB.prepare("UPDATE partner_statements SET emailed_at = ? WHERE id = ?").bind(nowIso(), id).run();
 }
@@ -231,8 +232,8 @@ const money = (p: number) => (p / 100).toFixed(2);
 export async function partnerAccountsCsv(db: D1Database, month: string) {
   const rows = (await db.prepare(`SELECT s.*, p.name, p.code, p.region, p.pan, p.gstin FROM partner_statements s JOIN partners p ON p.id = s.partner_id WHERE s.month = ? ORDER BY s.number`)
     .bind(month).all<PartnerStatementRow & { name: string; code: string; region: string; pan: string; gstin: string }>()).results;
-  return csv([["Statement", "Month", "Partner", "Code", "Region", "PAN", "GSTIN", "Share", "Bonus", "Gross", "GST", "TDS", "Net paid", "Status", "Paid on", "Reference"],
-    ...rows.map((r) => [r.number, r.month, r.name, r.code, r.region, r.pan, r.gstin, money(r.share_paise), money(r.bonus_paise), money(r.gross_paise), money(r.gst_paise), money(r.tds_paise), money(r.net_paise), r.status, r.paid_on ?? "", r.paid_ref])]);
+  return csv([["Statement", "Month", "Partner", "Code", "Region", "PAN", "GSTIN", "Share", "Bonus", "Gross", "GST", "TDS", "Net paid", "Status", "Paid on", "Reference", "Deductor TAN"],
+    ...rows.map((r) => [r.number, r.month, r.name, r.code, r.region, r.pan, r.gstin, money(r.share_paise), money(r.bonus_paise), money(r.gross_paise), money(r.gst_paise), money(r.tds_paise), money(r.net_paise), r.status, r.paid_on ?? "", r.paid_ref, COMPANY.tan])]);
 }
 
 /** For the bank: one row per statement waiting to be paid, with the partner's account. */

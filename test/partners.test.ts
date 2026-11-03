@@ -133,10 +133,11 @@ describe("Regional Partners", () => {
     expect(bank).toContain("Anitha Joseph,123456789012,SBIN0070123,330.00,Aestheva partner");
     const st = await send("GET", `/ops/partners/statements/${nov.id}`, undefined, ops);
     expect(st.text).toContain("section 393(1)");
+    expect(st.text).toContain("TAN TVDH01489F");
     expect((await send("POST", `/ops/partners/statements/${nov.id}/paid`, { csrf, paid_on: "2026-12-12", paid_ref: "UTR1234567" }, ops)).status).toBe(303);
     expect((await send("POST", `/ops/partners/statements/${nov.id}/paid`, { csrf, paid_on: "2026-12-12", paid_ref: "UTR1234567" }, ops)).status).toBe(409);
     const accounts = (await send("GET", "/ops/partners.csv?month=2026-11", undefined, ops)).text;
-    expect(accounts).toContain("Anitha Joseph,KOCHI01,Kochi,ABCDE1234F,,750.00,0.00,750.00,0.00,420.00,330.00,paid,2026-12-12,UTR1234567");
+    expect(accounts).toContain("Anitha Joseph,KOCHI01,Kochi,ABCDE1234F,,750.00,0.00,750.00,0.00,420.00,330.00,paid,2026-12-12,UTR1234567,TVDH01489F");
     expect((await send("GET", "/ops/partners/bank.csv", undefined, ops)).text).not.toContain("330.00");
     const list = (await send("GET", "/ops/partners", undefined, ops)).text;
     expect(list).toContain("Anitha Joseph");

@@ -109,9 +109,9 @@ export async function taxFile(db: D1Database, month: string) {
     WHERE s.month = ? ORDER BY p.name, b.date`).bind(month).all<Record<string, string | number | null>>()).results;
   const rupees = (k: string) => (v: unknown) => k.endsWith("_paise") ? (Number(v) / 100).toFixed(2) : String(v ?? "");
   const cols = ["month", "invoice_no", "name", "pan", "gstin", "ref", "date", "outcome", "price_paise", "taxable_paise", "collected_paise", "commission_paise", "gst_paise", "tds_paise", "tcs_paise", "net_paise"];
-  const head = ["Month", "Invoice", "Business", "PAN", "GSTIN", "Booking", "Date", "Outcome", "Gross value (₹)", "Value excl. GST (₹)", "Collected by Aestheva (₹)", "Commission (₹)", "GST on commission (₹)", "TDS (₹)", "TCS (₹)", "Net to business (₹)"];
+  const head = ["Month", "Invoice", "Business", "PAN", "GSTIN", "Booking", "Date", "Outcome", "Gross value (₹)", "Value excl. GST (₹)", "Collected by Aestheva (₹)", "Commission (₹)", "GST on commission (₹)", "TDS (₹)", "TCS (₹)", "Net to business (₹)", "Deductor TAN"];
   const cell = (s: string) => /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  return [head.join(","), ...rows.map((r) => cols.map((k) => cell(rupees(k)(r[k]))).join(","))].join("\r\n") + "\r\n";
+  return [head.join(","), ...rows.map((r) => [...cols.map((k) => cell(rupees(k)(r[k]))), COMPANY.tan].join(","))].join("\r\n") + "\r\n";
 }
 
 // ---------- scheduled work ----------

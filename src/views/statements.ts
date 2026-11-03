@@ -30,7 +30,7 @@ export function statementPage(d: Detail & { gstin: string; back: string; draftNo
   const invoice = s.invoice_no ? `<section class="invoice card mt16">
       <div class="row between wrap" style="gap:16px;align-items:flex-start">
         <div><div class="eyebrow">Tax invoice</div><h2 class="mt8" style="font-size:26px">${esc(s.invoice_no)}</h2><p class="small muted mt8">Date: ${s.issued_at ? fmtDate(s.issued_at.slice(0, 10), true) : ""}</p></div>
-        <div class="small" style="text-align:right"><b>${esc(COMPANY.legalName)}</b><br>${esc(COMPANY.registeredAddress)}<br>GSTIN ${esc(d.gstin)} · CIN ${esc(COMPANY.cin)}</div>
+        <div class="small" style="text-align:right"><b>${esc(COMPANY.legalName)}</b><br>${esc(COMPANY.registeredAddress)}<br>GSTIN ${esc(d.gstin)} · CIN ${esc(COMPANY.cin)}<br>PAN ${esc(COMPANY.pan)} · TAN ${esc(COMPANY.tan)}</div>
       </div>
       <div class="grid g2 mt16 small"><div><div class="xs muted">Billed to</div><b>${esc(p.name)}</b><br>${esc(p.address)}${p.gstin ? `<br>GSTIN ${esc(p.gstin)}` : ""}</div>
         <div><div class="xs muted">Place of supply</div>Kerala (${BILLING.homeState})</div></div>
@@ -56,7 +56,7 @@ export function statementPage(d: Detail & { gstin: string; back: string; draftNo
     <section class="card mt16"><h3 style="font-size:20px">Summary</h3><dl class="kv mt12">${summary.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}
       <dt><b>${s.net_paise >= 0 ? "Due to you" : "You pay Aestheva"}</b></dt><dd><b>${inr(Math.abs(s.net_paise))}</b></dd></dl>
       ${s.status === "issued" && s.payment_link_url ? `<a class="btn btn-p mt16 no-print" href="${esc(s.payment_link_url)}" target="_blank" rel="noopener">Pay ${inr(due)} online</a><p class="xs muted mt8 no-print">UPI, cards or netbanking, through Razorpay. This statement updates by itself once paid.</p>` : ""}
-      ${s.tds_paise || s.tcs_paise ? `<p class="xs muted mt12">TDS and TCS aren't charges. They are tax Aestheva deducts on your behalf, as a marketplace must, and pays to the government against your ${s.tds_paise ? `PAN${p.pan ? ` (${esc(p.pan)})` : ""}` : ""}${s.tds_paise && s.tcs_paise ? " and " : ""}${s.tcs_paise ? "GSTIN" : ""}. You can claim it in your returns.${s.tds_paise && !p.pan ? " <b>Add your PAN under Your listing, Details, so the TDS is credited to you.</b>" : ""}</p>` : ""}
+      ${s.tds_paise || s.tcs_paise ? `<p class="xs muted mt12">TDS and TCS aren't charges. They are tax Aestheva deducts on your behalf, as a marketplace must, and pays to the government against your ${s.tds_paise ? `PAN${p.pan ? ` (${esc(p.pan)})` : ""}` : ""}${s.tds_paise && s.tcs_paise ? " and " : ""}${s.tcs_paise ? "GSTIN" : ""}. You can claim it in your returns.${s.tds_paise ? ` It appears in your Form 26AS against the deductor ${esc(COMPANY.legalName)}, TAN ${esc(COMPANY.tan)}.` : ""}${s.tds_paise && !p.pan ? " <b>Add your PAN under Your listing, Details, so the TDS is credited to you.</b>" : ""}</p>` : ""}
       ${s.status === "paid" && s.paid_at ? `<p class="small mt12" style="color:var(--sage-d)">${ic("check", 14)} Paid on ${fmtDate(s.paid_at.slice(0, 10), true)}. Thank you.</p>` : ""}
     </section>
     <section class="card mt16"><h3 style="font-size:20px">Bookings</h3>
