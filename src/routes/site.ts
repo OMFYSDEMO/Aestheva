@@ -1,4 +1,5 @@
 import { Hono, type Context } from "hono";
+import { sentenceCase } from "../views/ui";
 import type { Env } from "../env";
 import { AREAS, COMPANY, INCENTIVES, WAITLIST_CITIES, typeLabel } from "../config";
 import { setCookie } from "hono/cookie";
@@ -108,7 +109,7 @@ site.get("/p/:slug", async (c) => {
   const [cats, next, offers] = await Promise.all([categories(db), nextAvailable(db, d.services), liveOffers(db, today, [d.provider.id])]);
   return page(c, {
     title: venueTitle(d.provider.name, d.provider.area),
-    description: `${d.provider.tagline}. ${typeLabel(d.provider.type)} in ${d.provider.area}, ${d.provider.city}: ${d.services.length ? `${d.services.length} services from ${inrPlain(Math.min(...d.services.map((s) => s.price_paise)))}, with live free times. Book online.` : "see services, prices and free times."}`,
+    description: `${sentenceCase(d.provider.tagline).replace(/[\s.!,;:]+$/, "")}. ${typeLabel(d.provider.type)} in ${d.provider.area}, ${d.provider.city}: ${d.services.length ? `${d.services.length} services from ${inrPlain(Math.min(...d.services.map((s) => s.price_paise)))}, with live free times. Book online.` : "see services, prices and free times."}`,
     canonical: `${base(c)}/p/${d.provider.slug}`, nav: "explore", noindex: d.provider.status !== "live",
     jsonLd: d.provider.status === "live" ? [business(base(c), d), breadcrumbs(base(c), [["Home", "/"], [d.provider.area, `/search?area=${encodeURIComponent(d.provider.area)}`], [d.provider.name, `/p/${d.provider.slug}`]])] : undefined,
     ogImage: photosOf(d.provider)[0] ? `${base(c)}${photosOf(d.provider)[0].src}-og.jpg` : undefined,
@@ -225,7 +226,7 @@ site.post("/for-practitioners/apply", async (c) => {
 /** Live services matching a guide. Medical guides list only medical services, beauty guides only non-medical ones. */
 function topicMatches(t: Topic, providers: ProviderRow[], services: ServiceRow[], catName: (id: string) => string) {
   const f: SearchQuery = { q: t.q, area: "", near: "", cat: "", kind: "all", sort: "rec" };
-  return providers.flatMap((p) => matchServices(services.filter((s) => s.provider_id === p.id), p, f, catName)
+  return providers.flatMap((p) => matchServices(services.filter((s) => s.provider_id === p.id), p, f, catName, true)
     .filter((s) => (t.medical ? isMedical(s) : !isMedical(s))).map((s) => ({ p, s })))
     .sort((a, b) => a.s.price_paise - b.s.price_paise);
 }

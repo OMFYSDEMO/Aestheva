@@ -8,7 +8,7 @@ import type { PublicOffer } from "./booking";
 import type { ProviderDetail, ProviderRow, Rating, ServiceRow } from "../services/catalog";
 import { isMedical } from "../services/catalog";
 import type { Photo } from "./ui";
-import { CAT_META, MED_NOTE, avatar, catIcon, catTile, esc, ic, inr, linkPhones, mapsUrl, isPortrait, photoImg, photosOf, stars, venueMark, venueThumb } from "./ui";
+import { CAT_META, MED_NOTE, avatar, catIcon, catTile, esc, ic, inr, linkPhones, mapsUrl, isPortrait, photoImg, photosOf, sentenceCase, stars, venueMark, venueThumb } from "./ui";
 
 type Next = Map<string, { date: string; min: number }>;
 const quals = (t: { quals_json: string }): string[] => { try { const q = JSON.parse(t.quals_json || "[]"); return Array.isArray(q) ? q.map(String) : []; } catch { return []; } };
@@ -26,7 +26,7 @@ function venueCard(p: ProviderRow, svcs: ServiceRow[], rating: Rating | undefine
   return `<a class="vcard${cover ? " has-cover" : ""}" href="/p/${esc(p.slug)}">
     ${cover ? `<div class="vcard-cover">${photoImg(cover, "(max-width:760px) 100vw, 560px")}</div>` : ""}
     <div class="vcard-top">${cover ? "" : venueMark(p.name, p.id, p.art)}<div class="col" style="gap:2px;min-width:0"><span class="eyebrow" style="color:var(--muted)">${esc(typeLabel(p.type))} · ${esc(p.area)}</span><h3>${esc(p.name)}</h3></div>${rating ? stars(rating.avg, rating.n) : '<span class="badge b-blush">New</span>'}</div>
-    <p class="small muted">${esc(p.tagline)}</p>
+    <p class="small muted">${esc(sentenceCase(p.tagline))}</p>
     <div class="vcard-cats">${cats.map((c) => `<span>${esc(c)}</span>`).join("")}</div>
     <div class="vcard-foot"><span class="small">From <b>${inr(minPrice(svcs))}</b></span>${na ? `<span class="next-pill">${ic("clock", 14)} ${nextLabel(na, today)}</span>` : '<span class="small muted">Fully booked for 10 days</span>'}</div>
   </a>`;
@@ -176,11 +176,15 @@ export function searchTerms(q: string) {
   return t ? [t, ...SYNONYMS.filter(([re]) => re.test(t)).flatMap(([, alts]) => alts)] : [];
 }
 
-export function matchServices(svcs: ServiceRow[], p: ProviderRow, f: SearchQuery, catName: (id: string) => string) {
+/**
+ * The services matching a search. A business whose name or tagline matches shows all its services, which suits a
+ * search box; a price guide passes servicesOnly, so it lists only services that are that thing.
+ */
+export function matchServices(svcs: ServiceRow[], p: ProviderRow, f: SearchQuery, catName: (id: string) => string, servicesOnly = false) {
   const terms = searchTerms(f.q);
   let list = svcs;
   if (terms.length) {
-    const provHit = `${p.name} ${p.tagline} ${p.type}`.toLowerCase().includes(terms[0]);
+    const provHit = !servicesOnly && `${p.name} ${p.tagline} ${p.type}`.toLowerCase().includes(terms[0]);
     if (!provHit) list = list.filter((s) => {
       const hay = `${s.name} ${catName(s.cat)} ${s.description}`.toLowerCase();
       return terms.some((q) => hay.includes(q) || q.split(/\s+/).every((w) => hay.includes(w)));
@@ -210,7 +214,7 @@ export function searchPage(d: {
       ${photosOf(p)[0] ? `<a class="rcard-photo" href="/p/${esc(p.slug)}" tabindex="-1" aria-hidden="true">${photoImg(photosOf(p)[0], "(max-width:760px) 100vw, 260px", { decorative: true, eager: i === 0 })}</a>` : `<a class="rcard-mark" href="/p/${esc(p.slug)}" tabindex="-1" aria-hidden="true">${venueMark(p.name, p.id, p.art, "l")}</a>`}
       <div style="padding:18px 20px" class="col">
         <span class="eyebrow" style="color:var(--muted)">${esc(typeLabel(p.type))}</span>
-        <h3><a href="/p/${esc(p.slug)}" style="color:inherit;text-decoration:none">${esc(p.name)}</a></h3><p class="small muted">${esc(p.tagline)}</p>
+        <h3><a href="/p/${esc(p.slug)}" style="color:inherit;text-decoration:none">${esc(p.name)}</a></h3><p class="small muted">${esc(sentenceCase(p.tagline))}</p>
         <div class="row wrap small muted" style="gap:14px">${r ? stars(r.avg, r.n) : "<span>No reviews yet</span>"}<span class="row" style="gap:4px">${ic("pin", 14)} ${esc(p.area)}${km !== undefined && fromLabel ? ` · <b style="color:var(--charcoal);font-weight:600">${kmLabel(km)}</b>` : ""}</span>${verifications ? `<span class="row" style="gap:4px;color:var(--sage-d)">${ic("shield", 14)} ${verifications} checks by scope</span>` : ""}</div>
         ${svcs.some((s) => offers.has(s.id)) ? `<span class="badge b-offer" style="align-self:flex-start">${ic("clock", 12)} Quiet-hour offers: up to ${inr(Math.max(...svcs.map((s) => offers.get(s.id) ?? 0)))} off</span>` : ""}
         <div class="mt8">${svcs.slice(0, 3).map((s) => `<div class="svc-line"><span>${esc(s.name)} ${isMedical(s) ? '<span class="badge b-med" style="padding:1px 7px;font-size:10.5px">Medical</span>' : ""}</span><span class="muted" style="white-space:nowrap">${s.dur_min} min · <b style="color:var(--charcoal)">${inr(s.price_paise)}</b></span></div>`).join("")}${svcs.length > 3 ? `<div class="xs muted mt8">+ ${svcs.length - 3} more matching</div>` : ""}</div>
@@ -284,7 +288,7 @@ export function providerPage(d: ProviderDetail & { categories: { id: string; nam
       <div class="col" style="gap:6px;min-width:0">
         <div class="row wrap" style="gap:8px"><span class="eyebrow">${esc(typeLabel(p.type))} · ${esc(p.area)}</span>${medical ? `<span class="badge b-med">${ic("shield", 12)} Doctor-led</span>` : d.services.length && d.services.every((s) => s.cat === "tattoo") ? `<span class="badge b-beauty">${catIcon("tattoo", 12)} Tattoo &amp; body art</span>` : `<span class="badge b-beauty">${ic("leaf", 12)} Beauty &amp; wellness</span>`}</div>
         <h1>${esc(p.name)}</h1>
-        <p class="lede">${esc(p.tagline)}</p>
+        <p class="lede">${esc(sentenceCase(p.tagline))}</p>
         <div class="row wrap small muted" style="gap:6px 16px">${d.rating ? stars(d.rating.avg, d.rating.n) : '<span class="badge b-blush">New on Aestheva</span>'}<span class="row" style="gap:4px">${ic("pin", 15)} ${esc(p.area)}, ${esc(p.city)}</span><span class="row" style="gap:4px;align-items:flex-start">${ic("clock", 15, 'style="flex-shrink:0;margin-top:2px"')} <span>${linkPhones(p.hours_text)}</span></span></div>
       </div>
     </header>

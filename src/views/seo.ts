@@ -32,6 +32,8 @@ function businessType(services: { cat: string; kind: string }[]) {
   const cats = new Set(services.map((s) => s.cat));
   if (services.some(isMedical)) return cats.size === 1 && cats.has("dental") ? ["Dentist"] : ["MedicalClinic", "HealthAndBeautyBusiness"];
   if (cats.size === 1) return [({ hair: "HairSalon", nails: "NailSalon", tattoo: "TattooParlor", ayur: "DaySpa", body: "DaySpa", skin: "BeautySalon", groom: "BeautySalon" } as Record<string, string>)[[...cats][0]] ?? "HealthAndBeautyBusiness"];
+  // A salon doing hair, skin, nails and makeup together is still a beauty salon.
+  if ([...cats].every((c) => ["hair", "skin", "nails", "groom"].includes(c))) return ["BeautySalon"];
   return ["HealthAndBeautyBusiness"];
 }
 
