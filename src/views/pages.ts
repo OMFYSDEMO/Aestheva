@@ -349,7 +349,9 @@ export function notFoundPage(msg = "We couldn't find that page.") {
  */
 export function venueGallery(photos: Photo[], name: string) {
   const n = photos.length, shown = Math.min(n, 3);
-  const layout = n === 1 ? (isPortrait(photos[0]) ? "one tall" : "one") : n === 2 ? "two" : `many${isPortrait(photos[0]) ? " tall" : ""}`;
+  // Mostly portraits among the first three: three equal columns, so none is squeezed into a thin strip.
+  const trio = photos.slice(0, 3).filter(isPortrait).length >= 2;
+  const layout = n === 1 ? (isPortrait(photos[0]) ? "one tall" : "one") : n === 2 ? "two" : trio ? "many trio" : `many${isPortrait(photos[0]) ? " tall" : ""}`;
   const sizes = (i: number) => (n === 1 ? "(max-width:1280px) 100vw, 1232px" : i === 0 ? "(max-width:760px) 86vw, 760px" : "(max-width:760px) 86vw, 480px");
   const tiles = photos.map((ph, i) => `<figure data-gal="${i}"${i >= shown ? ' class="extra"' : ""}>${photoImg(ph, sizes(i), { eager: i === 0 })}${i === shown - 1 && n > shown ? `<span class="v-more" aria-hidden="true">+${n - shown}</span>` : ""}</figure>`).join("");
   return `<div class="v-photos mt12 ${layout}" data-gallery-open>${tiles}</div>

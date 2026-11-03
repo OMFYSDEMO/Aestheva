@@ -53,6 +53,8 @@ describe("venue photos", () => {
     expect(five).toContain("object-position:50% 30%");   // a portrait is framed on its upper third
     expect(five).toContain("object-position:20% 70%");   // a chosen point wins
     expect(venueGallery([ph(1)], "One")).toContain('class="v-photos mt12 one"');
+    // Mostly portraits, like Chippy's: three equal columns.
+    expect(venueGallery([ph(1, true), ph(2, true), ph(3, true), ph(4), ph(5, true)], "Chippy’s")).toContain('class="v-photos mt12 many trio"');
   });
 
   it("lets the team choose the part of a photo to keep in view", async () => {

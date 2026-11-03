@@ -522,6 +522,8 @@ a[href^="tel:"]{white-space:nowrap}
 .v-photos.many{display:grid;grid-template-columns:1.6fr 1fr;gap:8px;height:380px}
 .v-photos.many.tall{grid-template-columns:1fr 1.1fr}
 .v-photos.many figure:first-child{grid-row:span 2}
+.v-photos.trio{grid-template-columns:repeat(3,1fr);height:420px}
+.v-photos.trio figure:first-child{grid-row:auto}
 .v-photos .extra{display:none}
 .v-more{position:absolute;right:12px;bottom:12px;background:rgba(48,42,46,.78);color:#fff;font-weight:600;font-size:14px;padding:6px 12px;border-radius:999px}
 .v-swipe{display:none}
