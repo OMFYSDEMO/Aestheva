@@ -2,6 +2,8 @@
 import { Hono, type Context, type Next } from "hono";
 import { getPartner, markPartnerPaid, partnerAccountsCsv, partnerBankCsv, partnerStatement, prevMonth, savePartner, scorecard, setProviderPartner, type PartnerStatementRow } from "../services/partners";
 import { partnerApplicationPage, partnerPage, partnersListPage, partnerStatementPage, type PartnerListRow } from "../views/partners";
+import { addLeader, inviteLeader, leaders as leaderList, setLeaderActive } from "../services/leadership";
+import { leadersAdminPage } from "../views/leadership";
 import { invitePartner, linkApplicationToPartner, partnerApplication, partnerApplications, partnerLogin, setPartnerLoginActive, updatePartnerApplication } from "../services/partner-portal";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type { Env } from "../env";
@@ -215,6 +217,32 @@ ops.post("/partners/:id/businesses", async (c) => {
     }
   } catch (e) { if (e instanceof HttpError && e.status < 500) return partnerDetail(c, id, { error: e.message }, e.status); throw e; }
   return c.redirect(`/ops/partners/${encodeURIComponent(id)}?done=business`, 303);
+});
+
+// ---------- Leadership: logins only. The record itself is at /leadership, behind leaders' own logins. ----------
+const LEADER_DONE: Record<string, string> = { added: "Leader added. Send them the invitation when you're ready.", invited: "Invitation emailed. The link works for 3 days.", off: "Login turned off. They're signed out.", on: "Login turned back on." };
+async function leadersAdmin(c: C, extra: { message?: string; error?: string; link?: string; values?: Record<string, string> } = {}, status = 200) {
+  return page(c, "Leadership", shell(leadersAdminPage({ leaders: await leaderList(c.env.DB), csrf: c.get("csrf"), ...extra })), status);
+}
+ops.get("/leadership", (c) => leadersAdmin(c, { message: LEADER_DONE[c.req.query("done") ?? ""] }));
+ops.post("/leadership", async (c) => {
+  const f = await c.req.parseBody();
+  try { await addLeader(c.env.DB, f); }
+  catch (e) { if (e instanceof HttpError && e.status < 500) return leadersAdmin(c, { error: e.message, values: Object.fromEntries(Object.entries(f).map(([k, v]) => [k, String(v)])) }, e.status); throw e; }
+  return c.redirect("/ops/leadership?done=added", 303);
+});
+ops.post("/leadership/:id/:action", async (c) => {
+  const id = c.req.param("id"), action = c.req.param("action");
+  try {
+    if (action === "invite") {
+      const r = await inviteLeader(c.env, id, c.env.SITE_URL || new URL(c.req.url).origin);
+      // When the email fails the one-time link is shown on this page only, never put in a URL.
+      return r.sent ? c.redirect("/ops/leadership?done=invited", 303) : leadersAdmin(c, { error: `The email to ${r.email} couldn't be sent (${r.code ?? "error"}).`, link: r.link });
+    }
+    if (action !== "on" && action !== "off") throw new HttpError(404, "Unknown action");
+    await setLeaderActive(c.env.DB, id, action === "on");
+    return c.redirect(`/ops/leadership?done=${action}`, 303);
+  } catch (e) { if (e instanceof HttpError && e.status < 500) return leadersAdmin(c, { error: e.message }, e.status); throw e; }
 });
 
 ops.get("/money", async (c) => {

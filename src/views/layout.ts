@@ -73,7 +73,7 @@ ${ribbon}
 <main id="main">
 ${body}
 </main>
-${o.app ? `<footer class="footer app-foot"><p>Aestheva ${o.app.label === "partners" ? "Regional Partners" : "for business"} · Help: <a href="mailto:${esc(COMPANY.supportEmail)}">${esc(COMPANY.supportEmail)}</a></p></footer>` : `<footer class="footer">${o.city ? CITIES[o.city].footer : SKYLINE}<div class="footer-in">
+${o.app ? `<footer class="footer app-foot"><p>Aestheva ${o.app.label === "partners" ? "Regional Partners" : o.app.label === "leadership" ? "leadership" : "for business"} · Help: <a href="mailto:${esc(COMPANY.supportEmail)}">${esc(COMPANY.supportEmail)}</a></p></footer>` : `<footer class="footer">${o.city ? CITIES[o.city].footer : SKYLINE}<div class="footer-in">
   <div class="footer-brand">
     <div class="logo logo-foot"><span class="wm">aestheva</span></div>
     <p class="mt12">Beauty, wellness and care in ${esc(COMPANY.launchCity)}, booked with the price, the person and the time settled before you arrive.</p>
