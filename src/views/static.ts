@@ -320,6 +320,19 @@ export function practitionersPage(cats: { id: string; name: string }[] = [], pla
     ["We check by scope", "Registrations for medical care; a training certificate, portfolio or proof of work for beauty, wellness and body art; an ID or business proof for everyone."],
     ["Go live", "Your profile, services and free times appear on Aestheva, and bookings arrive in your calendar."],
   ];
+  const keepReady = [
+    "Your business name, address, phone number and opening hours",
+    "A short introduction to your business or your work",
+    "Your PAN, for the tax on commission invoices",
+    "Your services: names, full prices and how long each takes",
+    "Your team, or just you, and each person’s working hours",
+    "Three or more photos of your space or your work, that you have the right to share",
+  ];
+  const keepDocs = [
+    ["Beauty, wellness and body art", "a training certificate, or a portfolio or proof of your work"],
+    ["Clinics", "council registration for each doctor or dentist, and the clinic’s registration"],
+    ["Everyone", "an ID (PAN or masked Aadhaar) or business proof (GST, trade licence or Udyam)"],
+  ];
   return `<div class="page join" style="padding-top:0">
   <section class="story-hero">
     <div>
@@ -363,6 +376,14 @@ export function practitionersPage(cats: { id: string; name: string }[] = [], pla
       <p class="mt12">Bookings you add yourself, for your regulars, phone calls or walk-ins, carry no commission. If a client cancels or doesn't turn up, you pay nothing.</p>
       <p class="mt12 small muted">Questions first? Email <a href="mailto:${esc(COMPANY.supportEmail)}">${esc(COMPANY.supportEmail)}</a>.</p></div>
   </section>
+
+  <section class="mt64" id="keep-ready"><div class="eyebrow">What to keep ready</div><h2 class="mt8">Have these to hand when you set up</h2>
+    <p class="mt8 muted">You don’t need any of this to apply. Keep it handy for when you set up your listing, and it takes about 30 minutes.</p>
+    <div class="grid g2 mt24">
+      <div class="card"><h3>About your business</h3><ul class="ticks mt12">${keepReady.map((t) => `<li>${ic("check", 14)} <span>${t}</span></li>`).join("")}</ul></div>
+      <div class="card"><h3>Documents we check</h3><ul class="ticks mt12">${keepDocs.map(([who, what]) => `<li>${ic("check", 14)} <span><b>${who}:</b> ${what}</span></li>`).join("")}</ul>
+        <p class="small muted mt12">You upload documents in your portal, where only the Aestheva team can see them. For ID, a masked Aadhaar (only the last four digits showing) is enough. Never send documents by WhatsApp or email.</p></div>
+    </div></section>
 
   <section class="story-band mt64">
     <div class="story-in">

@@ -31,7 +31,12 @@ describe("online applications", () => {
     const form = await send("GET", "/for-practitioners/apply");
     expect(form.status).toBe(200);
     for (const s of ["Tell us about you and your work", 'name="business_name"', 'value="dental"', "Send application"]) expect(form.text).toContain(s);
-    expect((await send("GET", "/for-practitioners")).text).toContain('href="/for-practitioners/apply"');
+    const join = (await send("GET", "/for-practitioners")).text;
+    expect(join).toContain('href="/for-practitioners/apply"');
+    // What to keep ready for setup, by type of business, with no documents needed to apply.
+    expect(join).toContain("Have these to hand when you set up");
+    expect(join).toContain("council registration for each doctor or dentist");
+    expect(join).toContain("a masked Aadhaar");
   });
 
   it("stores a valid application and thanks the applicant with a reference", async () => {

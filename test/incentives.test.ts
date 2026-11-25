@@ -21,6 +21,11 @@ async function book(body: Record<string, unknown>, cookie?: string) {
 async function slot(service: string, date: string) {
   return (await req("GET", `/api/slots?service=${service}&staff=any&from=${date}&days=1`)).json.days[0].slots[0] as { min: number };
 }
+/** The first day on or after `from` days ahead with a free slot for the service, so a closed weekday never breaks a test. */
+async function openDay(service: string, from: number) {
+  for (let n = from; n < from + 10; n++) { const s = await slot(service, day(n)); if (s) return { n, date: day(n), min: s.min }; }
+  throw new Error(`no free slot for ${service}`);
+}
 
 beforeAll(seed);
 
@@ -54,12 +59,12 @@ describe("founding partners", () => {
 
   it("apply the founding rate to new online bookings", async () => {
     await sql("UPDATE providers SET founding_no = 1, live_since = ? WHERE id = 'p3'", today);
-    const s = await slot("v15", day(4));
-    const r = await book({ serviceId: "v15", staffId: "any", date: day(4), start: s.min, ...guest, phone: "9700000001" });
+    const s = await openDay("v15", 4);
+    const r = await book({ serviceId: "v15", staffId: "any", date: s.date, start: s.min, ...guest, phone: "9700000001" });
     expect((await sql("SELECT commission_bp FROM bookings WHERE ref = ?", r.json.ref))[0].commission_bp).toBe(0);
     await sql("UPDATE providers SET live_since = ? WHERE id = 'p3'", addDays(today, -200));
-    const s2 = await slot("v15", day(5));
-    const r2 = await book({ serviceId: "v15", staffId: "any", date: day(5), start: s2.min, ...guest, phone: "9700000002" });
+    const s2 = await openDay("v15", s.n + 1);
+    const r2 = await book({ serviceId: "v15", staffId: "any", date: s2.date, start: s2.min, ...guest, phone: "9700000002" });
     expect((await sql("SELECT commission_bp FROM bookings WHERE ref = ?", r2.json.ref))[0].commission_bp).toBe(750);
     await sql("UPDATE providers SET founding_no = NULL WHERE id = 'p3'");
   });
